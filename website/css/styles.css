@@ -1320,6 +1320,13 @@ ol {
     color: var(--color-gray-500);
 }
 
+.download-trial-note {
+    margin-top: var(--space-4);
+    font-size: var(--text-base);
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
 .download-separator {
     color: var(--color-gray-300);
 }
@@ -1536,8 +1543,15 @@ ol {
 }
 
 .copyright,
-.made-with {
+.made-with,
+.legal-disclaimer {
     font-size: var(--text-sm);
+}
+
+.legal-disclaimer {
+    color: var(--color-gray-500);
+    max-width: 600px;
+    text-align: center;
 }
 
 @media (max-width: 768px) {

@@ -9,8 +9,10 @@ import mimetypes
 from pathlib import Path
 from typing import Optional, Dict, List, Any
 from datetime import datetime
-# License gate import
-from sortmeout.core.license import can_execute_ai, get_license, LicenseAuthority
+
+# License gate import - SINGLE AI GATE
+from sortmeout.core.license import can_execute_ai, record_ai_execution, get_ai_blocked_message
+
 try:
     import anthropic
 
@@ -98,13 +100,13 @@ class FileAssistant:
             pass
 
         return result
-    
+
     def list_files_in_folder(self, folder_path: str) -> List[Dict]:
         """List all files in a folder with details."""
         folder = Path(os.path.expanduser(folder_path))
         if not folder.exists():
             return []
-        
+
         files = []
         try:
             for item in folder.iterdir():
@@ -119,7 +121,7 @@ class FileAssistant:
                 files.append(info)
         except PermissionError:
             pass
-        
+
         return sorted(files, key=lambda x: (not x["is_dir"], x["name"].lower()))
 
     def _load_history(self):
@@ -199,13 +201,11 @@ class FileAssistant:
 
     def get_suggestion(self, filepath: str, user_context: str = "") -> Dict[str, Any]:
         """Get AI suggestion for what to do with a file."""
-        # LICENSE GATE: AI execution requires active license
-        if not can_execute_ai():
-            return {
-                "error": "license_required",
-                "message": LicenseAuthority.get_expired_message()
-            }
-        
+        # SINGLE AI GATE - hard stop if not allowed
+        allowed, message = can_execute_ai()
+        if not allowed:
+            return {"error": "license_required", "message": message}
+
         file_info = self.analyze_file(filepath)
 
         if "error" in file_info:
@@ -264,6 +264,9 @@ Svara på SVENSKA i detta JSON-format:
                 max_tokens=1000,
                 messages=[{"role": "user", "content": prompt}],
             )
+            
+            # Record successful AI execution for rate limiting
+            record_ai_execution()
 
             # Parse response
             response_text = response.content[0].text
@@ -371,21 +374,23 @@ Svara på SVENSKA i detta JSON-format:
 
     def chat(self, message: str, files: List[str] = None) -> str:
         """General chat with the assistant about files. Maintains conversation history."""
-        
-        # LICENSE GATE: AI execution requires active license
-        if not can_execute_ai():
-            return (
-                "🔒 **AI Assistant requires an active Pro license.**\n\n"
-                + LicenseAuthority.get_expired_message()
-            )
-        
+
+        # SINGLE AI GATE - hard stop if not allowed
+        allowed, blocked_message = can_execute_ai()
+        if not allowed:
+            return blocked_message
+
         # FÖRST: Kolla om användaren bekräftar väntande kommandon
-        if self._user_has_confirmed(message) and hasattr(self, 'pending_commands') and self.pending_commands:
+        if (
+            self._user_has_confirmed(message)
+            and hasattr(self, "pending_commands")
+            and self.pending_commands
+        ):
             num_commands = len(self.pending_commands)
             result = self._execute_pending_commands()
             self.pending_commands = []
             return f"🚀 **Utför {num_commands} åtgärder...**{result}"
-        
+
         files_context = ""
         if files:
             for f in files:
@@ -396,7 +401,7 @@ Svara på SVENSKA i detta JSON-format:
 
         folder_context = json.dumps(self.folder_structure, indent=2)
         home_dir = os.path.expanduser("~")
-        
+
         # Hämta detaljerad lista över Downloads-filer
         downloads_files = self.list_files_in_folder("~/Downloads")
         downloads_list = ""
@@ -482,6 +487,9 @@ VIKTIGT:
                 system=system_prompt,
                 messages=self.conversation_history,
             )
+            
+            # Record successful AI execution for rate limiting
+            record_ai_execution()
 
             assistant_response = response.content[0].text
 
@@ -495,9 +503,11 @@ VIKTIGT:
                 # Ta bort EXECUTE-kommandon från svaret så de inte visas
                 clean_response = self._remove_execute_commands(assistant_response)
                 if self.pending_commands:
-                    clean_response += f"\n\n*({len(self.pending_commands)} åtgärder väntar på bekräftelse)*"
+                    clean_response += (
+                        f"\n\n*({len(self.pending_commands)} åtgärder väntar på bekräftelse)*"
+                    )
                 return clean_response
-            
+
             # Utför eventuella kommandon i svaret (om ingen fråga ställs)
             executed_response = self._execute_commands_in_response(assistant_response)
 
@@ -509,52 +519,73 @@ VIKTIGT:
     def _is_asking_for_confirmation(self, response: str) -> bool:
         """Detekterar om AI:n frågar användaren om bekräftelse."""
         confirmation_phrases = [
-            "vill du att jag", "vill du att jag genomför",
-            "(ja/nej)", "ja eller nej", "bekräfta",
-            "ska jag utföra", "ska jag genomföra",
-            "godkänner du", "vill du fortsätta"
+            "vill du att jag",
+            "vill du att jag genomför",
+            "(ja/nej)",
+            "ja eller nej",
+            "bekräfta",
+            "ska jag utföra",
+            "ska jag genomföra",
+            "godkänner du",
+            "vill du fortsätta",
         ]
         response_lower = response.lower()
         return any(phrase in response_lower for phrase in confirmation_phrases)
-    
+
     def _user_has_confirmed(self, message: str) -> bool:
         """Kollar om användarens meddelande är en bekräftelse."""
-        confirmations = ["ja", "yes", "kör", "gör det", "utför", "ok", "okej", "genomför", "fortsätt", "japp", "jepp", "absolutely", "sure"]
+        confirmations = [
+            "ja",
+            "yes",
+            "kör",
+            "gör det",
+            "utför",
+            "ok",
+            "okej",
+            "genomför",
+            "fortsätt",
+            "japp",
+            "jepp",
+            "absolutely",
+            "sure",
+        ]
         message_lower = message.lower().strip()
         return message_lower in confirmations or message_lower.startswith("ja ")
-    
+
     def _extract_commands(self, response: str) -> list:
         """Extraherar EXECUTE-kommandon från svaret utan att köra dem."""
         import re
+
         pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash)\s+"([^"]+)"(?:\s+"([^"]+)")?\]'
         return re.findall(pattern, response)
-    
+
     def _remove_execute_commands(self, response: str) -> str:
         """Tar bort EXECUTE-kommandon från AI:ns svar."""
         import re
+
         pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash)\s+"([^"]+)"(?:\s+"([^"]+)")?\]'
         clean = re.sub(pattern, "", response)
         # Ta bort extra tomma rader
-        clean = re.sub(r'\n{3,}', '\n\n', clean)
+        clean = re.sub(r"\n{3,}", "\n\n", clean)
         return clean.strip()
-    
+
     def _execute_pending_commands(self) -> str:
         """Kör alla väntande kommandon."""
         import shutil
         import os
         from pathlib import Path
-        
-        if not hasattr(self, 'pending_commands') or not self.pending_commands:
+
+        if not hasattr(self, "pending_commands") or not self.pending_commands:
             return "\n\n*Inga väntande kommandon att köra.*"
-        
+
         successful = []
         failed = []
-        
+
         for match in self.pending_commands:
             action = match[0]
             path1 = os.path.expanduser(match[1])
             path2 = os.path.expanduser(match[2]) if match[2] else None
-            
+
             try:
                 if action == "mkdir":
                     os.makedirs(path1, exist_ok=True)
@@ -570,10 +601,16 @@ VIKTIGT:
                         failed.append(f"❌ {Path(path1).name} (finns ej)")
                 elif action == "trash":
                     import subprocess
+
                     if os.path.exists(path1):
                         subprocess.run(
-                            ["osascript", "-e", f'tell application "Finder" to delete POSIX file "{path1}"'],
-                            check=True, capture_output=True,
+                            [
+                                "osascript",
+                                "-e",
+                                f'tell application "Finder" to delete POSIX file "{path1}"',
+                            ],
+                            check=True,
+                            capture_output=True,
                         )
                         successful.append(f"🗑️ {Path(path1).name}")
                     else:
@@ -592,7 +629,7 @@ VIKTIGT:
                         successful.append(f"✏️ {src.name} → {path2}")
             except Exception as e:
                 failed.append(f"❌ {Path(path1).name}: {str(e)[:30]}")
-        
+
         # Kompakt resultatrapport
         result = "\n\n---\n"
         if successful:
@@ -601,11 +638,11 @@ VIKTIGT:
             result += f"⚠️ **{len(failed)} misslyckades**\n"
             for f in failed[:5]:  # Visa max 5 fel
                 result += f"  {f}\n"
-        
+
         # Uppdatera mappstruktur
         if successful:
             self._load_folder_structure()
-        
+
         return result
 
     def _execute_commands_in_response(self, response: str) -> str:
@@ -641,12 +678,14 @@ VIKTIGT:
                             dest = Path(path2) / src.name
                             shutil.move(str(src), str(dest))
                             successful.append(f"✅ Flyttade: {src.name} → {Path(path2).name}/")
-                            self._save_history({
-                                "filename": src.name,
-                                "action": "move",
-                                "destination": str(dest),
-                                "timestamp": datetime.now().isoformat(),
-                            })
+                            self._save_history(
+                                {
+                                    "filename": src.name,
+                                    "action": "move",
+                                    "destination": str(dest),
+                                    "timestamp": datetime.now().isoformat(),
+                                }
+                            )
                         else:
                             failed.append(f"❌ Kunde inte flytta - finns ej: {Path(path1).name}")
                     else:
@@ -678,10 +717,16 @@ VIKTIGT:
 
                 elif action == "trash":
                     import subprocess
+
                     if os.path.exists(path1):
                         subprocess.run(
-                            ["osascript", "-e", f'tell application "Finder" to delete POSIX file "{path1}"'],
-                            check=True, capture_output=True,
+                            [
+                                "osascript",
+                                "-e",
+                                f'tell application "Finder" to delete POSIX file "{path1}"',
+                            ],
+                            check=True,
+                            capture_output=True,
                         )
                         successful.append(f"✅ Slängde i papperskorg: {Path(path1).name}")
                     else:
@@ -693,30 +738,32 @@ VIKTIGT:
         # Ta bort EXECUTE-kommandon från AI:ns svar
         clean_response = re.sub(pattern, "", response).strip()
         # Ta bort tomma rader som blev kvar
-        clean_response = re.sub(r'\n{3,}', '\n\n', clean_response)
+        clean_response = re.sub(r"\n{3,}", "\n\n", clean_response)
 
         # Bygg resultatrapport
         result_lines = []
-        
+
         if successful or failed:
             result_lines.append("\n\n---")
-            
+
             if successful:
                 result_lines.append(f"📋 **Genomförda åtgärder ({len(successful)}):**")
                 result_lines.extend(successful)
-            
+
             if failed:
                 if successful:
                     result_lines.append("")  # Blank rad
                 result_lines.append(f"⚠️ **Misslyckades ({len(failed)}):**")
                 result_lines.extend(failed)
                 result_lines.append("")
-                result_lines.append("*Tips: Kontrollera att filerna/mapparna finns och försök igen.*")
-            
+                result_lines.append(
+                    "*Tips: Kontrollera att filerna/mapparna finns och försök igen.*"
+                )
+
             # Om ALLT misslyckades, lägg till en varning
             if failed and not successful:
                 clean_response = "**OBS: Inga åtgärder kunde genomföras.**\n\n" + clean_response
-            
+
             # Uppdatera mappstrukturen efter ändringar
             if successful:
                 self._load_folder_structure()

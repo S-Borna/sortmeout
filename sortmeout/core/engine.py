@@ -36,6 +36,7 @@ class ProcessingResult:
         errors: Any errors that occurred.
         processing_time: Time taken to process.
     """
+
     file_path: str
     matched_rules: List[str] = field(default_factory=list)
     executed_actions: List[ActionResult] = field(default_factory=list)
@@ -267,12 +268,14 @@ class RuleEngine:
 
             except Exception as e:
                 logger.error("Action execution error: %s", e)
-                results.append(ActionResult(
-                    success=False,
-                    action_type=action.action_type,
-                    source_path=current_path,
-                    error=str(e),
-                ))
+                results.append(
+                    ActionResult(
+                        success=False,
+                        action_type=action.action_type,
+                        source_path=current_path,
+                        error=str(e),
+                    )
+                )
 
                 if action.stop_on_error:
                     should_stop = True

@@ -14,25 +14,50 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Import rule editor
 try:
     from sortmeout.gui.rule_editor import show_rule_editor
+
     HAS_RULE_EDITOR = True
 except ImportError:
     HAS_RULE_EDITOR = False
 try:
     import rumps
     from AppKit import (
-        NSApplication, NSApp, NSWindow, NSWindowStyleMaskTitled,
-        NSWindowStyleMaskClosable, NSWindowStyleMaskResizable,
-        NSWindowStyleMaskMiniaturizable, NSBackingStoreBuffered,
-        NSTableView, NSTableColumn, NSScrollView, NSButton,
-        NSTextField, NSFont, NSColor, NSView, NSStackView,
+        NSApplication,
+        NSApp,
+        NSWindow,
+        NSWindowStyleMaskTitled,
+        NSWindowStyleMaskClosable,
+        NSWindowStyleMaskResizable,
+        NSWindowStyleMaskMiniaturizable,
+        NSBackingStoreBuffered,
+        NSTableView,
+        NSTableColumn,
+        NSScrollView,
+        NSButton,
+        NSTextField,
+        NSFont,
+        NSColor,
+        NSView,
+        NSStackView,
         NSUserInterfaceLayoutOrientationVertical,
         NSUserInterfaceLayoutOrientationHorizontal,
-        NSPopUpButton, NSComboBox, NSAlert, NSAlertStyleInformational,
-        NSOpenPanel, NSModalResponseOK, NSBezelStyleRounded,
-        NSSplitView, NSOutlineView, NSImage, NSImageNameFolder,
-        NSLayoutConstraint, NSMenuItem, NSMenu, NSStatusBar
+        NSPopUpButton,
+        NSComboBox,
+        NSAlert,
+        NSAlertStyleInformational,
+        NSOpenPanel,
+        NSModalResponseOK,
+        NSBezelStyleRounded,
+        NSSplitView,
+        NSOutlineView,
+        NSImage,
+        NSImageNameFolder,
+        NSLayoutConstraint,
+        NSMenuItem,
+        NSMenu,
+        NSStatusBar,
     )
     from Foundation import NSObject, NSRect, NSPoint, NSSize, NSMakeRect
+
     HAS_APPKIT = True
 except ImportError:
     HAS_APPKIT = False
@@ -54,7 +79,7 @@ def load_config():
     ensure_config_dir()
     if os.path.exists(CONFIG_FILE):
         try:
-            with open(CONFIG_FILE, 'r') as f:
+            with open(CONFIG_FILE, "r") as f:
                 return json.load(f)
         except:
             pass
@@ -64,7 +89,7 @@ def load_config():
 def save_config(config):
     """Save configuration to file."""
     ensure_config_dir()
-    with open(CONFIG_FILE, 'w') as f:
+    with open(CONFIG_FILE, "w") as f:
         json.dump(config, f, indent=2)
 
 
@@ -74,13 +99,10 @@ class SortMeOutApp(rumps.App):
     def __init__(self):
         # Import license authority
         from sortmeout.core.license import get_license
+
         self.license = get_license()
-        
-        super().__init__(
-            "SortMeOut",
-            title="📂",
-            quit_button=None
-        )
+
+        super().__init__("SortMeOut", title="📂", quit_button=None)
 
         self.config = load_config()
         self.watching = False
@@ -104,30 +126,30 @@ class SortMeOutApp(rumps.App):
             rumps.MenuItem("ℹ️ About SortMeOut"),
             rumps.MenuItem("❌ Quit"),
         ]
-    
+
     @rumps.clicked("🔑 Enter Pro License...")
     def enter_license(self, _):
         """Show license entry dialog."""
         from sortmeout.core.license import get_license, LicenseState
-        
+
         license_auth = get_license()
-        
+
         if license_auth.state == LicenseState.PRO_ACTIVE:
             rumps.alert(
                 title="Pro License Active",
-                message="Your Pro license is already active.\n\nThank you for supporting SortMeOut!"
+                message="Your Pro license is already active.\n\nThank you for supporting SortMeOut!",
             )
             return
-        
+
         # Simple license entry via alert (rumps doesn't have text input)
         rumps.alert(
             title="Enter Pro License",
             message=(
                 "To enter your Pro license key, add it to:\n\n"
                 f"{CONFIG_DIR}/license.json\n\n"
-                "Format: {\"pro_license_key\": \"YOUR-KEY-HERE\"}\n\n"
+                'Format: {"pro_license_key": "YOUR-KEY-HERE"}\n\n'
                 "Get your license at: sortmeout.saidborna.com"
-            )
+            ),
         )
 
     @rumps.clicked("▶ Start Watching")
@@ -147,25 +169,23 @@ class SortMeOutApp(rumps.App):
         """Start file watching."""
         # LICENSE GATE: Check if watching is allowed
         from sortmeout.core.license import can_watch_filesystem, LicenseAuthority
-        
+
         if not can_watch_filesystem():
-            rumps.alert(
-                title="License Required",
-                message=LicenseAuthority.get_expired_message()
-            )
+            rumps.alert(title="License Required", message=LicenseAuthority.get_expired_message())
             return
-        
+
         self.config = load_config()
 
         if not self.config.get("folders") or not self.config.get("rules"):
             rumps.alert(
                 title="No Rules Configured",
-                message="Please add folders and rules first.\n\nClick 'Manage Folders & Rules...' to get started."
+                message="Please add folders and rules first.\n\nClick 'Manage Folders & Rules...' to get started.",
             )
             return
 
         try:
             from sortmeout.app import SortMeOut
+
             self.watcher = SortMeOut()
 
             # Add folders and rules from config
@@ -183,7 +203,7 @@ class SortMeOutApp(rumps.App):
             rumps.notification(
                 title="SortMeOut",
                 subtitle="Watching Started",
-                message=f"Monitoring {folder_count} folder(s) with {rule_count} rule(s)."
+                message=f"Monitoring {folder_count} folder(s) with {rule_count} rule(s).",
             )
         except Exception as e:
             rumps.alert(title="Error", message=f"Could not start watcher:\n{e}")
@@ -204,7 +224,7 @@ class SortMeOutApp(rumps.App):
         rumps.notification(
             title="SortMeOut",
             subtitle="Watching Stopped",
-            message="File monitoring has been stopped."
+            message="File monitoring has been stopped.",
         )
 
     @rumps.clicked("🔄 Organize Now")
@@ -212,20 +232,17 @@ class SortMeOutApp(rumps.App):
         """Organize all existing files based on rules."""
         # LICENSE GATE: Check if automation is allowed
         from sortmeout.core.license import can_execute_automation, LicenseAuthority
-        
+
         if not can_execute_automation():
-            rumps.alert(
-                title="License Required",
-                message=LicenseAuthority.get_expired_message()
-            )
+            rumps.alert(title="License Required", message=LicenseAuthority.get_expired_message())
             return
-        
+
         self.config = load_config()
 
         if not self.config.get("rules"):
             rumps.alert(
                 title="No Rules Configured",
-                message="Please add rules first.\n\nClick '➕ Quick Add Rule...' to get started."
+                message="Please add rules first.\n\nClick '➕ Quick Add Rule...' to get started.",
             )
             return
 
@@ -242,7 +259,7 @@ class SortMeOutApp(rumps.App):
             rumps.notification(
                 title="SortMeOut",
                 subtitle="No Folders",
-                message="No folders configured to organize."
+                message="No folders configured to organize.",
             )
             return
 
@@ -256,9 +273,11 @@ class SortMeOutApp(rumps.App):
 
             # Get all files in folder
             try:
-                files = [f for f in os.listdir(folder_path)
-                        if os.path.isfile(os.path.join(folder_path, f))
-                        and not f.startswith('.')]
+                files = [
+                    f
+                    for f in os.listdir(folder_path)
+                    if os.path.isfile(os.path.join(folder_path, f)) and not f.startswith(".")
+                ]
             except Exception as e:
                 total_errors += 1
                 continue
@@ -273,7 +292,7 @@ class SortMeOutApp(rumps.App):
 
                     # Check if rule applies to this folder
                     rule_folder = os.path.expanduser(rule.get("folder", ""))
-                    if rule_folder and rule_folder.rstrip('/') != folder_path.rstrip('/'):
+                    if rule_folder and rule_folder.rstrip("/") != folder_path.rstrip("/"):
                         continue
 
                     # Check conditions
@@ -291,13 +310,13 @@ class SortMeOutApp(rumps.App):
             rumps.notification(
                 title="SortMeOut",
                 subtitle="Organization Complete",
-                message=f"Organized {total_moved} file(s)."
+                message=f"Organized {total_moved} file(s).",
             )
         else:
             rumps.notification(
                 title="SortMeOut",
                 subtitle="Organization Complete",
-                message="No files needed organization."
+                message="No files needed organization.",
             )
 
     def _file_matches_rule(self, filepath, rule):
@@ -314,8 +333,8 @@ class SortMeOutApp(rumps.App):
             value = condition.get("value", "")
 
             if cond_type == "extension":
-                ext = os.path.splitext(filename)[1].lower().lstrip('.')
-                if operator == "equals" and ext != value.lower().lstrip('.'):
+                ext = os.path.splitext(filename)[1].lower().lstrip(".")
+                if operator == "equals" and ext != value.lower().lstrip("."):
                     return False
                 if operator == "contains" and value.lower() not in ext:
                     return False
@@ -348,12 +367,10 @@ class SortMeOutApp(rumps.App):
     def _parse_size(self, size_str):
         """Parse size string like '10MB' to bytes."""
         size_str = str(size_str).upper().strip()
-        multipliers = {
-            'B': 1, 'KB': 1024, 'MB': 1024**2, 'GB': 1024**3, 'TB': 1024**4
-        }
+        multipliers = {"B": 1, "KB": 1024, "MB": 1024**2, "GB": 1024**3, "TB": 1024**4}
         for suffix, mult in multipliers.items():
             if size_str.endswith(suffix):
-                return int(float(size_str[:-len(suffix)]) * mult)
+                return int(float(size_str[: -len(suffix)]) * mult)
         return int(size_str)
 
     def _execute_rule_actions(self, filepath, rule):
@@ -380,6 +397,7 @@ class SortMeOutApp(rumps.App):
                                 counter += 1
 
                         import shutil
+
                         shutil.move(filepath, dest_path)
                         return True
                     except Exception as e:
@@ -395,6 +413,7 @@ class SortMeOutApp(rumps.App):
                         dest_path = os.path.join(destination, filename)
 
                         import shutil
+
                         shutil.copy2(filepath, dest_path)
                         return True
                     except Exception as e:
@@ -405,10 +424,15 @@ class SortMeOutApp(rumps.App):
                 try:
                     # Move to macOS Trash
                     import subprocess
-                    subprocess.run([
-                        'osascript', '-e',
-                        f'tell application "Finder" to delete POSIX file "{filepath}"'
-                    ], check=True)
+
+                    subprocess.run(
+                        [
+                            "osascript",
+                            "-e",
+                            f'tell application "Finder" to delete POSIX file "{filepath}"',
+                        ],
+                        check=True,
+                    )
                     return True
                 except Exception as e:
                     print(f"Trash error: {e}")
@@ -446,24 +470,25 @@ class SortMeOutApp(rumps.App):
     def advanced_rule_editor(self, _):
         """Open the advanced rule editor window."""
         if HAS_RULE_EDITOR:
+
             def on_rule_saved(rule_data):
                 """Handle saved rule from editor."""
                 # Add to config
                 self.config.setdefault("rules", []).append(rule_data)
                 save_config(self.config)
                 self.reload_config()
-                
+
                 rumps.notification(
                     title="SortMeOut",
                     subtitle="Rule Created",
-                    message=f"Rule '{rule_data['name']}' has been created."
+                    message=f"Rule '{rule_data['name']}' has been created.",
                 )
-            
+
             show_rule_editor(on_save=on_rule_saved)
         else:
             rumps.alert(
                 title="Not Available",
-                message="Advanced Rule Editor requires PyObjC.\nPlease use Quick Add Rule instead."
+                message="Advanced Rule Editor requires PyObjC.\nPlease use Quick Add Rule instead.",
             )
 
     @rumps.clicked("📂 Open Config Folder")
@@ -482,7 +507,7 @@ class SortMeOutApp(rumps.App):
         """Show about dialog."""
         rumps.alert(
             title="About SortMeOut",
-            message="SortMeOut v1.0.1\n\nIntelligent file automation for macOS.\nAutomatically organize your files with powerful rules.\n\n© 2026 Said Borna\nProprietary License\n\nhttps://sortmeout.saidborna.com"
+            message="SortMeOut v1.0.1\n\nIntelligent file automation for macOS.\nAutomatically organize your files with powerful rules.\n\n© 2026 Said Borna\nProprietary License\n\nhttps://sortmeout.saidborna.com",
         )
 
     @rumps.clicked("❌ Quit")
@@ -505,7 +530,7 @@ def show_quick_rule_dialog(config, reload_callback):
     import subprocess
 
     # Use AppleScript for a simple dialog
-    script = '''
+    script = """
     tell application "System Events"
         activate
         set dialogResult to display dialog "Quick Add Rule
@@ -518,42 +543,42 @@ Enter a file extension to organize (e.g., pdf, jpg, docx):" default answer "pdf"
             return ""
         end if
     end tell
-    '''
+    """
 
-    result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
+    result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
     extension = result.stdout.strip()
 
     if not extension:
         return
 
     # Clean extension
-    extension = extension.lower().lstrip('.')
+    extension = extension.lower().lstrip(".")
 
     # Ask for destination
-    script2 = f'''
+    script2 = f"""
     tell application "System Events"
         activate
         set destFolder to choose folder with prompt "Choose destination folder for .{extension} files:"
         return POSIX path of destFolder
     end tell
-    '''
+    """
 
-    result2 = subprocess.run(['osascript', '-e', script2], capture_output=True, text=True)
+    result2 = subprocess.run(["osascript", "-e", script2], capture_output=True, text=True)
     destination = result2.stdout.strip()
 
     if not destination:
         return
 
     # Ask for source folder
-    script3 = '''
+    script3 = """
     tell application "System Events"
         activate
         set srcFolder to choose folder with prompt "Choose folder to watch (e.g., Downloads):"
         return POSIX path of srcFolder
     end tell
-    '''
+    """
 
-    result3 = subprocess.run(['osascript', '-e', script3], capture_output=True, text=True)
+    result3 = subprocess.run(["osascript", "-e", script3], capture_output=True, text=True)
     source = result3.stdout.strip()
 
     if not source:
@@ -566,13 +591,9 @@ Enter a file extension to organize (e.g., pdf, jpg, docx):" default answer "pdf"
     rule = {
         "name": f"Move .{extension} files",
         "folder": source,
-        "conditions": [
-            {"type": "extension", "operator": "equals", "value": extension}
-        ],
-        "actions": [
-            {"type": "move", "destination": destination}
-        ],
-        "enabled": True
+        "conditions": [{"type": "extension", "operator": "equals", "value": extension}],
+        "actions": [{"type": "move", "destination": destination}],
+        "enabled": True,
     }
 
     config.setdefault("rules", []).append(rule)
@@ -582,7 +603,7 @@ Enter a file extension to organize (e.g., pdf, jpg, docx):" default answer "pdf"
     rumps.notification(
         title="SortMeOut",
         subtitle="Rule Added",
-        message=f"New rule: Move .{extension} files to {os.path.basename(destination.rstrip('/'))}"
+        message=f"New rule: Move .{extension} files to {os.path.basename(destination.rstrip('/'))}",
     )
 
 
@@ -595,7 +616,11 @@ def show_management_window(config, reload_callback):
     rules = config.get("rules", [])
 
     folders_text = "\n".join([f"• {f}" for f in folders]) if folders else "No folders configured"
-    rules_text = "\n".join([f"• {r.get('name', 'Unnamed')}" for r in rules]) if rules else "No rules configured"
+    rules_text = (
+        "\n".join([f"• {r.get('name', 'Unnamed')}" for r in rules])
+        if rules
+        else "No rules configured"
+    )
 
     message = f"""WATCHED FOLDERS:
 {folders_text}
@@ -605,15 +630,15 @@ RULES:
 
 What would you like to do?"""
 
-    script = f'''
+    script = f"""
     tell application "System Events"
         activate
         set dialogResult to display dialog "{message}" buttons {{"Add Folder", "Add Rule", "Edit Config"}} default button "Add Rule" with title "SortMeOut - Manage"
         return button returned of dialogResult
     end tell
-    '''
+    """
 
-    result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
+    result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
     choice = result.stdout.strip()
 
     if choice == "Add Folder":
@@ -631,15 +656,15 @@ def add_folder_dialog(config, reload_callback):
     """Add a folder to watch."""
     import subprocess
 
-    script = '''
+    script = """
     tell application "System Events"
         activate
         set watchFolder to choose folder with prompt "Choose a folder to watch:"
         return POSIX path of watchFolder
     end tell
-    '''
+    """
 
-    result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
+    result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
     folder = result.stdout.strip()
 
     if folder and folder not in config.get("folders", []):
@@ -650,7 +675,7 @@ def add_folder_dialog(config, reload_callback):
         rumps.notification(
             title="SortMeOut",
             subtitle="Folder Added",
-            message=f"Now watching: {os.path.basename(folder.rstrip('/'))}"
+            message=f"Now watching: {os.path.basename(folder.rstrip('/'))}",
         )
 
 

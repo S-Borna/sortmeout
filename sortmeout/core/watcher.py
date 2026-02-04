@@ -110,8 +110,7 @@ class FileEventHandler(FileSystemEventHandler):
             # Clean up old entries
             cutoff = now.timestamp() - 60  # Keep last minute
             self._recent_events = {
-                p: t for p, t in self._recent_events.items()
-                if t.timestamp() > cutoff
+                p: t for p, t in self._recent_events.items() if t.timestamp() > cutoff
             }
 
         return True
@@ -198,7 +197,7 @@ class FolderWatcher:
         # LICENSE GATE: Filesystem watching requires active license
         if not can_watch_filesystem():
             raise RuntimeError(LicenseAuthority.get_expired_message())
-        
+
         if self._observer is not None:
             return
 
