@@ -72,6 +72,10 @@ class SortMeOutApp(rumps.App):
     """Main menu bar application."""
 
     def __init__(self):
+        # Import license authority
+        from sortmeout.core.license import get_license
+        self.license = get_license()
+        
         super().__init__(
             "SortMeOut",
             title="📂",
@@ -82,8 +86,10 @@ class SortMeOutApp(rumps.App):
         self.watching = False
         self.watcher = None
 
-        # Build menu
+        # Build menu with license status
         self.menu = [
+            rumps.MenuItem(f"📋 {self.license.get_status_message()}"),
+            None,  # Separator
             rumps.MenuItem("▶ Start Watching"),
             rumps.MenuItem("🔄 Organize Now"),
             None,  # Separator
@@ -91,12 +97,38 @@ class SortMeOutApp(rumps.App):
             rumps.MenuItem("➕ Quick Add Rule..."),
             rumps.MenuItem("✨ Advanced Rule Editor..."),
             None,
+            rumps.MenuItem("🔑 Enter Pro License..."),
             rumps.MenuItem("📂 Open Config Folder"),
             rumps.MenuItem("📖 Documentation"),
             None,
             rumps.MenuItem("ℹ️ About SortMeOut"),
             rumps.MenuItem("❌ Quit"),
         ]
+    
+    @rumps.clicked("🔑 Enter Pro License...")
+    def enter_license(self, _):
+        """Show license entry dialog."""
+        from sortmeout.core.license import get_license, LicenseState
+        
+        license_auth = get_license()
+        
+        if license_auth.state == LicenseState.PRO_ACTIVE:
+            rumps.alert(
+                title="Pro License Active",
+                message="Your Pro license is already active.\n\nThank you for supporting SortMeOut!"
+            )
+            return
+        
+        # Simple license entry via alert (rumps doesn't have text input)
+        rumps.alert(
+            title="Enter Pro License",
+            message=(
+                "To enter your Pro license key, add it to:\n\n"
+                f"{CONFIG_DIR}/license.json\n\n"
+                "Format: {\"pro_license_key\": \"YOUR-KEY-HERE\"}\n\n"
+                "Get your license at: sortmeout.saidborna.com"
+            )
+        )
 
     @rumps.clicked("▶ Start Watching")
     def toggle_watching(self, sender):
@@ -113,6 +145,16 @@ class SortMeOutApp(rumps.App):
 
     def start_watching(self, sender):
         """Start file watching."""
+        # LICENSE GATE: Check if watching is allowed
+        from sortmeout.core.license import can_watch_filesystem, LicenseAuthority
+        
+        if not can_watch_filesystem():
+            rumps.alert(
+                title="License Required",
+                message=LicenseAuthority.get_expired_message()
+            )
+            return
+        
         self.config = load_config()
 
         if not self.config.get("folders") or not self.config.get("rules"):
@@ -165,9 +207,19 @@ class SortMeOutApp(rumps.App):
             message="File monitoring has been stopped."
         )
 
-    @rumps.clicked("� Organize Now")
+    @rumps.clicked("🔄 Organize Now")
     def organize_now(self, _):
         """Organize all existing files based on rules."""
+        # LICENSE GATE: Check if automation is allowed
+        from sortmeout.core.license import can_execute_automation, LicenseAuthority
+        
+        if not can_execute_automation():
+            rumps.alert(
+                title="License Required",
+                message=LicenseAuthority.get_expired_message()
+            )
+            return
+        
         self.config = load_config()
 
         if not self.config.get("rules"):

@@ -17,6 +17,7 @@ import logging
 
 from sortmeout.core.rule import Rule
 from sortmeout.core.action import Action, ActionResult
+from sortmeout.core.license import can_execute_automation, LicenseAuthority
 from sortmeout.utils.logger import get_logger
 from sortmeout.utils.file_info import get_file_info
 
@@ -117,6 +118,11 @@ class RuleEngine:
         """
         start_time = datetime.now()
         result = ProcessingResult(file_path=file_path)
+
+        # LICENSE GATE: Automation requires active license
+        if not can_execute_automation():
+            result.errors.append(LicenseAuthority.get_expired_message())
+            return result
 
         # Check if file still exists
         if not os.path.exists(file_path):

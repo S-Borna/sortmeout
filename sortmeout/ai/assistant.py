@@ -9,7 +9,8 @@ import mimetypes
 from pathlib import Path
 from typing import Optional, Dict, List, Any
 from datetime import datetime
-
+# License gate import
+from sortmeout.core.license import can_execute_ai, get_license, LicenseAuthority
 try:
     import anthropic
 
@@ -198,6 +199,13 @@ class FileAssistant:
 
     def get_suggestion(self, filepath: str, user_context: str = "") -> Dict[str, Any]:
         """Get AI suggestion for what to do with a file."""
+        # LICENSE GATE: AI execution requires active license
+        if not can_execute_ai():
+            return {
+                "error": "license_required",
+                "message": LicenseAuthority.get_expired_message()
+            }
+        
         file_info = self.analyze_file(filepath)
 
         if "error" in file_info:
@@ -363,6 +371,13 @@ Svara på SVENSKA i detta JSON-format:
 
     def chat(self, message: str, files: List[str] = None) -> str:
         """General chat with the assistant about files. Maintains conversation history."""
+        
+        # LICENSE GATE: AI execution requires active license
+        if not can_execute_ai():
+            return (
+                "🔒 **AI Assistant requires an active Pro license.**\n\n"
+                + LicenseAuthority.get_expired_message()
+            )
         
         # FÖRST: Kolla om användaren bekräftar väntande kommandon
         if self._user_has_confirmed(message) and hasattr(self, 'pending_commands') and self.pending_commands:

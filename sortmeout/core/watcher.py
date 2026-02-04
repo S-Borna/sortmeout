@@ -14,6 +14,7 @@ from typing import Callable, Dict, List, Optional, Set
 from datetime import datetime
 import time
 
+from sortmeout.core.license import can_watch_filesystem, LicenseAuthority
 from watchdog.observers import Observer
 from watchdog.events import (
     FileSystemEventHandler,
@@ -194,6 +195,10 @@ class FolderWatcher:
 
     def start(self) -> None:
         """Start watching the folder."""
+        # LICENSE GATE: Filesystem watching requires active license
+        if not can_watch_filesystem():
+            raise RuntimeError(LicenseAuthority.get_expired_message())
+        
         if self._observer is not None:
             return
 
