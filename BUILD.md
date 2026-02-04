@@ -26,41 +26,47 @@
 
 ## Website (Automatic)
 
-**Platform:** Cloudflare Pages  
-**URL:** https://sortmeout.saidborna.com  
-**Source directory:** `website/`  
-**Build command:** None (static HTML)  
+**Platform:** Cloudflare Pages
+**URL:** <https://sortmeout.saidborna.com>
+**Source directory:** `website/`
+**Build command:** None (static HTML)
 
 ### Deploy
+
 ```bash
 git push
 ```
+
 Cloudflare Pages bygger automatiskt vid push till `main`.
 
 ---
 
 ## macOS App (Manual)
 
-**Tool:** PyInstaller  
-**Output:** `dist/SortMeOut.app` → `dist/SortMeOut.dmg`  
-**Spec file:** `sortmeout.spec`  
+**Tool:** PyInstaller
+**Output:** `dist/SortMeOut.app` → `dist/SortMeOut.dmg`
+**Spec file:** `sortmeout.spec`
 
 ### Prerequisites
+
 ```bash
 pip3 install pyinstaller pyobjc-core pyobjc-framework-Cocoa anthropic
 ```
 
 ### Build .app
+
 ```bash
 pyinstaller sortmeout.spec --noconfirm
 ```
 
 ### Create .dmg
+
 ```bash
 hdiutil create -volname "SortMeOut" -srcfolder dist/SortMeOut.app -ov -format UDZO dist/SortMeOut.dmg
 ```
 
 ### Upload to GitHub Release
+
 ```bash
 gh release upload v1.0.0 dist/SortMeOut.dmg --clobber
 ```
@@ -70,6 +76,7 @@ gh release upload v1.0.0 dist/SortMeOut.dmg --clobber
 ## Development (Local)
 
 Kör direkt från källkod utan att bygga:
+
 ```bash
 python3 -m sortmeout.gui.main_window
 ```
