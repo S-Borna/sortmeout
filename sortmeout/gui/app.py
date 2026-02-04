@@ -85,17 +85,23 @@ class MenuBarApp:
             rumps.MenuItem("Folders", callback=None),
             rumps.MenuItem("Recent Activity", callback=self._show_activity),
             None,
-            rumps.MenuItem("Trash", [
-                rumps.MenuItem("View Trash Status", callback=self._show_trash_status),
-                rumps.MenuItem("Empty Trash", callback=self._empty_trash),
-            ]),
+            rumps.MenuItem(
+                "Trash",
+                [
+                    rumps.MenuItem("View Trash Status", callback=self._show_trash_status),
+                    rumps.MenuItem("Empty Trash", callback=self._empty_trash),
+                ],
+            ),
             None,
             rumps.MenuItem("Preferences...", callback=self._show_preferences),
-            rumps.MenuItem("Help", [
-                rumps.MenuItem("Documentation", callback=self._open_docs),
-                rumps.MenuItem("Report Issue", callback=self._report_issue),
-                rumps.MenuItem(f"About SortMeOut v{__version__}", callback=self._show_about),
-            ]),
+            rumps.MenuItem(
+                "Help",
+                [
+                    rumps.MenuItem("Documentation", callback=self._open_docs),
+                    rumps.MenuItem("Report Issue", callback=self._report_issue),
+                    rumps.MenuItem(f"About SortMeOut v{__version__}", callback=self._show_about),
+                ],
+            ),
             None,
             rumps.MenuItem("Quit SortMeOut", callback=self._quit),
         ]
@@ -129,7 +135,7 @@ class MenuBarApp:
                     folder_name = os.path.basename(folder) or folder
                     item = rumps.MenuItem(
                         f"{folder_name} ({len(rules)} rules)",
-                        callback=lambda _, f=folder: self._show_folder_details(f)
+                        callback=lambda _, f=folder: self._show_folder_details(f),
                     )
                     try:
                         folders_menu.add(item)
@@ -152,20 +158,14 @@ class MenuBarApp:
             self._running = False
             sender.title = "Start Watching"
             self.app.title = "SortMeOut"
-            rumps.notification(
-                "SortMeOut",
-                "Stopped",
-                "File watching has been stopped."
-            )
+            rumps.notification("SortMeOut", "Stopped", "File watching has been stopped.")
         else:
             self.sortmeout.start_background()
             self._running = True
             sender.title = "Stop Watching"
             self.app.title = "SortMeOut ●"
             rumps.notification(
-                "SortMeOut",
-                "Started",
-                f"Watching {len(self.sortmeout.get_folders())} folder(s)."
+                "SortMeOut", "Started", f"Watching {len(self.sortmeout.get_folders())} folder(s)."
             )
 
     def _toggle_preview(self, sender: rumps.MenuItem) -> None:
@@ -176,9 +176,7 @@ class MenuBarApp:
         if self._preview_mode:
             sender.state = 1  # Checkmark
             rumps.notification(
-                "SortMeOut",
-                "Preview Mode",
-                "Actions will be logged but not executed."
+                "SortMeOut", "Preview Mode", "Actions will be logged but not executed."
             )
         else:
             sender.state = 0
@@ -187,63 +185,58 @@ class MenuBarApp:
         """Open the AI assistant chat window."""
         try:
             from sortmeout.gui.chat_window import show_chat_window
+
             show_chat_window()
         except ImportError as e:
             logger.error("Could not import chat_window: %s", e)
             rumps.alert(
                 title="AI Assistant",
-                message="Could not open AI Assistant.\n\nMake sure all dependencies are installed."
+                message="Could not open AI Assistant.\n\nMake sure all dependencies are installed.",
             )
         except Exception as e:
             logger.error("Failed to open AI assistant: %s", e)
-            rumps.alert(
-                title="Error",
-                message=f"Could not open AI Assistant:\n{e}"
-            )
+            rumps.alert(title="Error", message=f"Could not open AI Assistant:\n{e}")
 
     def _analyze_file(self, _) -> None:
         """Analyze a file with AI."""
         import subprocess
-        
+
         # Use AppleScript to pick a file
-        script = '''
+        script = """
             tell application "System Events"
                 activate
                 set theFile to choose file with prompt "Select a file to analyze:"
                 return POSIX path of theFile
             end tell
-        '''
+        """
         try:
             result = subprocess.run(
                 ["osascript", "-e", script],
                 capture_output=True,
                 text=True,
             )
-            
+
             if result.returncode == 0 and result.stdout.strip():
                 file_path = result.stdout.strip()
-                
+
                 # Try to analyze with AI
                 try:
                     from sortmeout.ai.assistant import FileAssistant
-                    
+
                     assistant = FileAssistant()
                     analysis = assistant.analyze_file(file_path)
-                    
+
                     rumps.alert(
                         title=f"Analysis: {os.path.basename(file_path)}",
-                        message=analysis.get("summary", "Could not analyze file.")
+                        message=analysis.get("summary", "Could not analyze file."),
                     )
                 except ImportError:
                     rumps.alert(
                         title="AI Not Available",
-                        message="AI Assistant requires the anthropic package.\n\nRun: pip install anthropic"
+                        message="AI Assistant requires the anthropic package.\n\nRun: pip install anthropic",
                     )
                 except Exception as e:
-                    rumps.alert(
-                        title="Analysis Failed",
-                        message=f"Could not analyze file:\n{e}"
-                    )
+                    rumps.alert(title="Analysis Failed", message=f"Could not analyze file:\n{e}")
         except Exception as e:
             logger.error("Failed to analyze file: %s", e)
 
@@ -258,7 +251,7 @@ class MenuBarApp:
                 f"Rules matched: {stats['rules_matched']}\n"
                 f"Actions executed: {stats['actions_executed']}\n"
                 f"Errors: {stats['errors']}"
-            )
+            ),
         )
 
     def _show_folder_details(self, folder: str) -> None:
@@ -275,15 +268,13 @@ class MenuBarApp:
             title=f"Folder: {os.path.basename(folder)}",
             message=message,
             ok="Close",
-            cancel="Process Now"
+            cancel="Process Now",
         )
 
         if response == 0:  # Cancel = Process Now
             self.sortmeout.process_folder(folder)
             rumps.notification(
-                "SortMeOut",
-                "Processing Complete",
-                f"Processed files in {os.path.basename(folder)}"
+                "SortMeOut", "Processing Complete", f"Processed files in {os.path.basename(folder)}"
             )
 
     def _add_folder(self, _) -> None:
@@ -291,13 +282,14 @@ class MenuBarApp:
         try:
             # Use AppleScript to show folder picker
             import subprocess
-            script = '''
+
+            script = """
                 tell application "System Events"
                     activate
                     set theFolder to choose folder with prompt "Select a folder to watch:"
                     return POSIX path of theFolder
                 end tell
-            '''
+            """
             result = subprocess.run(
                 ["osascript", "-e", script],
                 capture_output=True,
@@ -309,9 +301,7 @@ class MenuBarApp:
                 if self.sortmeout.add_folder(folder):
                     self._update_folders_menu()
                     rumps.notification(
-                        "SortMeOut",
-                        "Folder Added",
-                        f"Now watching: {os.path.basename(folder)}"
+                        "SortMeOut", "Folder Added", f"Now watching: {os.path.basename(folder)}"
                     )
         except Exception as e:
             logger.error("Failed to add folder: %s", e)
@@ -326,7 +316,7 @@ class MenuBarApp:
                 f"Items: {info.item_count}\n"
                 f"Size: {info.size_human}\n"
                 f"Oldest item: {info.oldest_item_date.strftime('%Y-%m-%d') if info.oldest_item_date else 'N/A'}"
-            )
+            ),
         )
 
     def _empty_trash(self, _) -> None:
@@ -335,23 +325,19 @@ class MenuBarApp:
             title="Empty Trash",
             message="Are you sure you want to empty the Trash? This cannot be undone.",
             ok="Empty Trash",
-            cancel="Cancel"
+            cancel="Cancel",
         )
 
         if response == 1:  # OK
             if empty_trash():
-                rumps.notification(
-                    "SortMeOut",
-                    "Trash Emptied",
-                    "The Trash has been emptied."
-                )
+                rumps.notification("SortMeOut", "Trash Emptied", "The Trash has been emptied.")
 
     def _show_preferences(self, _) -> None:
         """Show preferences window."""
         # In a full implementation, this would open a preferences window
         rumps.alert(
             title="Preferences",
-            message="Preferences window coming soon!\n\nFor now, use the CLI:\nsortmeout config show"
+            message="Preferences window coming soon!\n\nFor now, use the CLI:\nsortmeout config show",
         )
 
     def _open_docs(self, _) -> None:
@@ -371,7 +357,7 @@ class MenuBarApp:
                 "Open-source file automation for macOS.\n\n"
                 "Inspired by Noodlesoft Hazel.\n\n"
                 "https://github.com/yourusername/sortmeout"
-            )
+            ),
         )
 
     def _update_status(self, _) -> None:
