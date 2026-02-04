@@ -264,7 +264,7 @@ Svara på SVENSKA i detta JSON-format:
                 max_tokens=1000,
                 messages=[{"role": "user", "content": prompt}],
             )
-            
+
             # Record successful AI execution for rate limiting
             record_ai_execution()
 
@@ -487,7 +487,7 @@ VIKTIGT:
                 system=system_prompt,
                 messages=self.conversation_history,
             )
-            
+
             # Record successful AI execution for rate limiting
             record_ai_execution()
 

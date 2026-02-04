@@ -68,7 +68,7 @@ class LicenseAuthority:
         self._trial_start: Optional[datetime] = None
         self._pro_license_key: Optional[str] = None
         self._trial_consumed: bool = False  # True if trial was used and Pro was later deactivated
-        
+
         # Rate limit tracking (trial only)
         self._ai_usage_date: Optional[str] = None  # ISO date string
         self._ai_usage_count: int = 0
@@ -107,10 +107,10 @@ class LicenseAuthority:
 
             # Load pro license key
             self._pro_license_key = data.get("pro_license_key")
-            
+
             # Load trial consumed flag
             self._trial_consumed = data.get("trial_consumed", False)
-            
+
             # Load rate limit tracking
             self._ai_usage_date = data.get("ai_usage_date")
             self._ai_usage_count = data.get("ai_usage_count", 0)
@@ -143,7 +143,7 @@ class LicenseAuthority:
         if self._pro_license_key and self._pro_license_key.strip():
             self._state = LicenseState.PRO_ACTIVE
             return
-        
+
         # If trial was consumed (Pro was activated then deactivated), force expired
         if self._trial_consumed:
             self._state = LicenseState.TRIAL_EXPIRED
@@ -230,27 +230,27 @@ class LicenseAuthority:
     def activate_pro_license(self, payload: str) -> bool:
         """
         Activate Pro license with opaque payload.
-        
+
         This is the PAYMENT HOOK for external payment providers.
         Payment providers will call this method with their payload.
-        
+
         STUB BEHAVIOR (temporary):
         - Any non-empty payload = PRO_ACTIVE
-        
+
         This method does NOT validate payload format.
         This method does NOT make external calls.
         This method is PROVIDER-AGNOSTIC.
-        
+
         Args:
             payload: Opaque activation payload from payment provider.
-            
+
         Returns:
             True if activation successful, False otherwise.
         """
         # STUB: Any non-empty payload activates Pro
         if not payload or not payload.strip():
             return False
-        
+
         # Store the payload as-is (for future validation if needed)
         self._pro_license_key = payload.strip()
         self._state = LicenseState.PRO_ACTIVE
@@ -266,16 +266,16 @@ class LicenseAuthority:
     def deactivate_pro_license(self) -> None:
         """
         Deactivate Pro license immediately.
-        
+
         This is the PAYMENT HOOK for subscription cancellation.
-        
+
         Effects (IMMEDIATE, no grace period):
         - State becomes TRIAL_EXPIRED (not TRIAL_ACTIVE)
         - AI execution = OFF
         - Automation execution = OFF
         - File content reading = OFF
         - App enters SHELL MODE
-        
+
         Trial expiration is FINAL. This does NOT restart trial.
         """
         self._pro_license_key = None
@@ -292,17 +292,17 @@ class LicenseAuthority:
     def can_execute_ai(self) -> Tuple[bool, str]:
         """
         SINGLE AI GATE - ALL AI execution MUST pass through this function.
-        
+
         Returns:
             Tuple of (allowed: bool, message: str)
             - If allowed: (True, "")
             - If blocked: (False, AI_BLOCKED_MESSAGE)
-        
+
         Rules:
         - TRIAL_ACTIVE: allowed if under daily limit
         - PRO_ACTIVE: always allowed (unlimited)
         - TRIAL_EXPIRED: never allowed
-        
+
         This function does NOT:
         - Send prompts
         - Generate tokens
@@ -311,39 +311,39 @@ class LicenseAuthority:
         - Cache
         """
         state = self.state
-        
+
         # PRO_ACTIVE: unlimited, always allowed
         if state == LicenseState.PRO_ACTIVE:
             return (True, "")
-        
+
         # TRIAL_ACTIVE: allowed if under daily limit
         if state == LicenseState.TRIAL_ACTIVE:
             if self._check_trial_rate_limit():
                 return (True, "")
             else:
                 return (False, AI_BLOCKED_MESSAGE)
-        
+
         # TRIAL_EXPIRED or any other state: blocked
         return (False, AI_BLOCKED_MESSAGE)
-    
+
     def _check_trial_rate_limit(self) -> bool:
         """
         Check if trial user is under daily AI limit.
         Resets counter if date has changed.
-        
+
         Returns:
             True if under limit, False if limit reached.
         """
         today = date.today().isoformat()
-        
+
         # Reset counter if new day
         if self._ai_usage_date != today:
             self._ai_usage_date = today
             self._ai_usage_count = 0
             self._save_license()
-        
+
         return self._ai_usage_count < TRIAL_AI_DAILY_LIMIT
-    
+
     def record_ai_execution(self) -> None:
         """
         Record an AI execution for rate limiting.
@@ -351,16 +351,16 @@ class LicenseAuthority:
         """
         if self.state != LicenseState.TRIAL_ACTIVE:
             return  # Only track during trial
-        
+
         today = date.today().isoformat()
-        
+
         if self._ai_usage_date != today:
             self._ai_usage_date = today
             self._ai_usage_count = 0
-        
+
         self._ai_usage_count += 1
         self._save_license()
-    
+
     def get_trial_ai_remaining(self) -> int:
         """
         Get remaining AI executions for today during trial.
@@ -368,11 +368,11 @@ class LicenseAuthority:
         """
         if self.state != LicenseState.TRIAL_ACTIVE:
             return 0
-        
+
         today = date.today().isoformat()
         if self._ai_usage_date != today:
             return TRIAL_AI_DAILY_LIMIT
-        
+
         return max(0, TRIAL_AI_DAILY_LIMIT - self._ai_usage_count)
 
     def can_execute_automation(self) -> bool:
@@ -438,7 +438,7 @@ def get_license() -> LicenseAuthority:
 def can_execute_ai() -> Tuple[bool, str]:
     """
     SINGLE AI GATE - Check if AI execution is allowed.
-    
+
     Returns:
         Tuple of (allowed: bool, message: str)
         - If allowed: (True, "")
@@ -480,13 +480,13 @@ def can_watch_filesystem() -> bool:
 def activate_pro_license(payload: str) -> bool:
     """
     Activate Pro license with opaque payload.
-    
+
     This is the PRIMARY PAYMENT HOOK.
     Payment providers (Stripe, Paddle, etc.) call this after successful payment.
-    
+
     Args:
         payload: Opaque activation payload from payment provider.
-        
+
     Returns:
         True if activation successful, False otherwise.
     """
@@ -496,10 +496,10 @@ def activate_pro_license(payload: str) -> bool:
 def deactivate_pro_license() -> None:
     """
     Deactivate Pro license immediately.
-    
+
     This is the CANCELLATION HOOK.
     Payment providers call this on subscription cancellation.
-    
+
     Effects are IMMEDIATE:
     - AI = OFF
     - Automation = OFF
