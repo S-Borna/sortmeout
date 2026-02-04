@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SortMeOut Documentation - Complete guide to file automation for macOS">
+    <title>Documentation - SortMeOut</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
+
+    <style>
+        :root {
+            --color-bg: #0a0a0f;
+            --color-bg-elevated: #12121a;
+            --color-bg-hover: #1a1a25;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-text: #ffffff;
+            --color-text-secondary: rgba(255, 255, 255, 0.7);
+            --color-text-muted: rgba(255, 255, 255, 0.5);
+            --color-primary: #6366f1;
+            --color-primary-light: #818cf8;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-error: #ef4444;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Layout */
+        .docs-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            background: var(--color-bg-elevated);
+            border-right: 1px solid var(--color-border);
+            padding: 2rem 0;
+        }
+
+        .sidebar-header {
+            padding: 0 1.5rem 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--color-text);
+        }
+
+        .sidebar-logo svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .sidebar-logo span {
+            font-weight: 600;
+            font-size: 1.125rem;
+        }
+
+        .sidebar-version {
+            display: inline-block;
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            background: var(--color-primary);
+            border-radius: 4px;
+            color: white;
+        }
+
+        .sidebar-nav {
+            padding: 0 1rem;
+        }
+
+        .nav-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--color-text-muted);
+            padding: 0 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-section ul {
+            list-style: none;
+        }
+
+        .nav-section a {
+            display: block;
+            padding: 0.5rem 0.75rem;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            transition: all 0.15s ease;
+        }
+
+        .nav-section a:hover {
+            background: var(--color-bg-hover);
+            color: var(--color-text);
+        }
+
+        .nav-section a.active {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--color-primary-light);
+        }
+
+        /* Main Content */
+        .docs-content {
+            max-width: 900px;
+            padding: 3rem 4rem;
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-top: 3rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: var(--color-text-secondary);
+        }
+
+        .lead {
+            font-size: 1.125rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        /* Code */
+        code {
+            font-family: var(--font-mono);
+            font-size: 0.875em;
+            background: var(--color-bg-elevated);
+            padding: 0.125rem 0.375rem;
+            border-radius: 4px;
+            border: 1px solid var(--color-border);
+        }
+
+        pre {
+            background: var(--color-bg-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: 0.875rem;
+            line-height: 1.7;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        th {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        td {
+            color: var(--color-text-secondary);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--color-bg-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .card-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Callouts */
+        .callout {
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            border-left: 4px solid;
+        }
+
+        .callout-info {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--color-primary);
+        }
+
+        .callout-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: var(--color-warning);
+        }
+
+        .callout-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--color-success);
+        }
+
+        .callout-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .callout p {
+            margin: 0;
+        }
+
+        /* Feature Grid */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .feature-item {
+            background: var(--color-bg-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(99, 102, 241, 0.15);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.75rem;
+            font-size: 1.25rem;
+        }
+
+        .feature-item h4 {
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .feature-item p {
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 1rem 0 1rem 1.5rem;
+            color: var(--color-text-secondary);
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Steps */
+        .steps {
+            counter-reset: step;
+            list-style: none;
+            margin-left: 0;
+            padding-left: 2.5rem;
+        }
+
+        .steps li {
+            position: relative;
+            padding-bottom: 1.5rem;
+            border-left: 2px solid var(--color-border);
+            padding-left: 1.5rem;
+            margin-bottom: 0;
+        }
+
+        .steps li:last-child {
+            border-left: none;
+            padding-bottom: 0;
+        }
+
+        .steps li::before {
+            counter-increment: step;
+            content: counter(step);
+            position: absolute;
+            left: -15px;
+            width: 28px;
+            height: 28px;
+            background: var(--color-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        /* Keyboard shortcuts */
+        kbd {
+            display: inline-block;
+            padding: 0.125rem 0.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            background: var(--color-bg-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        /* Print styles for PDF export */
+        @media print {
+            .sidebar {
+                display: none;
+            }
+
+            .docs-layout {
+                display: block;
+            }
+
+            .docs-content {
+                max-width: 100%;
+                padding: 0;
+            }
+
+            body {
+                background: white;
+                color: black;
+            }
+
+            h2 {
+                page-break-before: always;
+            }
+
+            pre, .card {
+                break-inside: avoid;
+            }
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .docs-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .docs-content {
+                padding: 2rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="docs-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="../" class="sidebar-logo">
+                    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="10" fill="url(#logo-grad)" />
+                        <path d="M12 14h16M12 20h12M12 26h8" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+                        <circle cx="28" cy="26" r="4" fill="white" />
+                        <defs>
+                            <linearGradient id="logo-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#6366F1" />
+                                <stop offset="1" stop-color="#8B5CF6" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span>SortMeOut</span>
+                </a>
+                <span class="sidebar-version">v1.0</span>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <h4 class="nav-section-title">Getting Started</h4>
+                    <ul>
+                        <li><a href="#introduction" class="active">Introduction</a></li>
+                        <li><a href="#installation">Installation</a></li>
+                        <li><a href="#quick-start">Quick Start</a></li>
+                        <li><a href="#permissions">Permissions</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h4 class="nav-section-title">Core Concepts</h4>
+                    <ul>
+                        <li><a href="#watched-folders">Watched Folders</a></li>
+                        <li><a href="#rules">Rules</a></li>
+                        <li><a href="#conditions">Conditions</a></li>
+                        <li><a href="#actions">Actions</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h4 class="nav-section-title">Reference</h4>
+                    <ul>
+                        <li><a href="#condition-reference">Condition Reference</a></li>
+                        <li><a href="#action-reference">Action Reference</a></li>
+                        <li><a href="#variables">Variables & Patterns</a></li>
+                        <li><a href="#keyboard-shortcuts">Keyboard Shortcuts</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h4 class="nav-section-title">Advanced</h4>
+                    <ul>
+                        <li><a href="#configuration">Configuration</a></li>
+                        <li><a href="#cli">Command Line</a></li>
+                        <li><a href="#troubleshooting">Troubleshooting</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h4 class="nav-section-title">Resources</h4>
+                    <ul>
+                        <li><a href="#examples">Rule Examples</a></li>
+                        <li><a href="#faq">FAQ</a></li>
+                        <li><a href="#support">Support</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="docs-content">
+            <section id="introduction">
+                <h1>SortMeOut Documentation</h1>
+                <p class="lead">
+                    Welcome to SortMeOut — the intelligent file automation tool for macOS. 
+                    This documentation will guide you through everything from installation 
+                    to advanced rule configuration.
+                </p>
+
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <div class="feature-icon">🚀</div>
+                        <h4>Quick Start</h4>
+                        <p>Get up and running in minutes with our step-by-step guide.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">📖</div>
+                        <h4>In-Depth Guides</h4>
+                        <p>Learn every feature with comprehensive documentation.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">💡</div>
+                        <h4>Examples</h4>
+                        <p>Ready-to-use rule templates for common scenarios.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🛠️</div>
+                        <h4>Reference</h4>
+                        <p>Complete reference for all conditions and actions.</p>
+                    </div>
+                </div>
+
+                <div class="callout callout-info">
+                    <div class="callout-title">System Requirements</div>
+                    <p>SortMeOut requires macOS 12.0 (Monterey) or later.</p>
+                </div>
+            </section>
+
+            <section id="installation">
+                <h2>Installation</h2>
+                
+                <h3>Download & Install</h3>
+                <ol class="steps">
+                    <li>
+                        <strong>Download SortMeOut</strong><br>
+                        Visit <a href="../#download">sortmeout.saidborna.com</a> and download the latest DMG file.
+                    </li>
+                    <li>
+                        <strong>Open the DMG</strong><br>
+                        Double-click the downloaded <code>SortMeOut.dmg</code> file.
+                    </li>
+                    <li>
+                        <strong>Drag to Applications</strong><br>
+                        Drag the SortMeOut icon to your Applications folder.
+                    </li>
+                    <li>
+                        <strong>Launch SortMeOut</strong><br>
+                        Open SortMeOut from your Applications folder or Spotlight.
+                    </li>
+                    <li>
+                        <strong>Grant Permissions</strong><br>
+                        Follow the prompts to grant necessary system permissions.
+                    </li>
+                </ol>
+
+                <div class="callout callout-warning">
+                    <div class="callout-title">First Launch</div>
+                    <p>On first launch, macOS may show a security warning. Right-click the app and select "Open" to bypass this.</p>
+                </div>
+            </section>
+
+            <section id="permissions">
+                <h2>Required Permissions</h2>
+                <p>SortMeOut requires specific permissions to monitor and organize your files:</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Permission</th>
+                            <th>Purpose</th>
+                            <th>Required</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Full Disk Access</strong></td>
+                            <td>Monitor all folders and move files between locations</td>
+                            <td>✓ Yes</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Notifications</strong></td>
+                            <td>Alert you when files are organized</td>
+                            <td>Recommended</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Accessibility</strong></td>
+                            <td>Advanced automation features (Shortcuts, AppleScript)</td>
+                            <td>Optional</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Granting Permissions</h3>
+                <ol>
+                    <li>Open <strong>System Settings</strong> (or System Preferences on older macOS)</li>
+                    <li>Navigate to <strong>Privacy & Security</strong></li>
+                    <li>Select the permission category (e.g., Full Disk Access)</li>
+                    <li>Click the lock icon and authenticate</li>
+                    <li>Enable the toggle for SortMeOut</li>
+                </ol>
+            </section>
+
+            <section id="quick-start">
+                <h2>Quick Start Guide</h2>
+                <p>Get your first rule running in under 2 minutes:</p>
+
+                <ol class="steps">
+                    <li>
+                        <strong>Add a Watched Folder</strong><br>
+                        Click the menu bar icon → Preferences → Folders → + button.<br>
+                        Select your Downloads folder.
+                    </li>
+                    <li>
+                        <strong>Create Your First Rule</strong><br>
+                        Go to Rules tab → Click + to create a new rule.<br>
+                        Name it "Organize PDFs".
+                    </li>
+                    <li>
+                        <strong>Add a Condition</strong><br>
+                        Click "Add Condition" → Select "Extension" → "equals" → type "pdf"
+                    </li>
+                    <li>
+                        <strong>Add an Action</strong><br>
+                        Click "Add Action" → Select "Move to" → Choose ~/Documents/PDFs
+                    </li>
+                    <li>
+                        <strong>Activate</strong><br>
+                        Save the rule and toggle it to enabled. Done!
+                    </li>
+                </ol>
+
+                <div class="callout callout-success">
+                    <div class="callout-title">🎉 That's it!</div>
+                    <p>Any PDF file added to Downloads will now automatically move to your PDFs folder.</p>
+                </div>
+            </section>
+
+            <section id="watched-folders">
+                <h2>Watched Folders</h2>
+                <p>Watched folders are directories that SortMeOut monitors for new or changed files.</p>
+
+                <h3>How Monitoring Works</h3>
+                <ul>
+                    <li>SortMeOut uses macOS FSEvents for efficient, low-overhead monitoring</li>
+                    <li>New files trigger rule evaluation within seconds</li>
+                    <li>Subfolders are optionally included based on your settings</li>
+                    <li>Multiple folders can be watched simultaneously</li>
+                </ul>
+
+                <h3>Recommended Folders to Watch</h3>
+                <div class="card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Folder</th>
+                                <th>Use Case</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>~/Downloads</code></td>
+                                <td>Auto-sort downloads by type</td>
+                            </tr>
+                            <tr>
+                                <td><code>~/Desktop</code></td>
+                                <td>Keep desktop clean</td>
+                            </tr>
+                            <tr>
+                                <td><code>~/Documents</code></td>
+                                <td>Organize documents into subfolders</td>
+                            </tr>
+                            <tr>
+                                <td><code>~/Pictures/Screenshots</code></td>
+                                <td>Manage screenshots</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="rules">
+                <h2>Understanding Rules</h2>
+                <p>Rules are the heart of SortMeOut. Each rule defines <strong>when</strong> to act (conditions) and <strong>what</strong> to do (actions).</p>
+
+                <div class="card">
+                    <pre><code>Rule: "Organize PDFs"
+├── Conditions (IF)
+│   └── Extension equals "pdf"
+│   └── Size greater than "1MB"
+│
+├── Actions (THEN)
+│   └── Move to ~/Documents/PDFs/
+│   └── Add tag "Archived"
+│
+└── Options
+    └── Continue processing: No
+    └── Priority: 10</code></pre>
+                </div>
+
+                <h3>Rule Evaluation</h3>
+                <ul>
+                    <li>Rules are evaluated in <strong>priority order</strong> (lower number = higher priority)</li>
+                    <li>By default, processing <strong>stops</strong> after the first matching rule</li>
+                    <li>Enable "Continue processing" to allow multiple rules to match</li>
+                </ul>
+
+                <h3>Match Modes</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mode</th>
+                            <th>Logic</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>All</strong></td>
+                            <td>AND</td>
+                            <td>Every condition must match</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Any</strong></td>
+                            <td>OR</td>
+                            <td>At least one condition must match</td>
+                        </tr>
+                        <tr>
+                            <td><strong>None</strong></td>
+                            <td>NOT</td>
+                            <td>No conditions can match</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="condition-reference">
+                <h2>Condition Reference</h2>
+                <p>Complete list of available conditions for matching files.</p>
+
+                <h3>File Name Conditions</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Condition</th>
+                            <th>Operators</th>
+                            <th>Example</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Name</strong></td>
+                            <td>equals, contains, starts with, ends with, matches regex</td>
+                            <td>Name contains "invoice"</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Extension</strong></td>
+                            <td>equals, is in list, is not</td>
+                            <td>Extension is "pdf"</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Full Name</strong></td>
+                            <td>equals, contains, matches</td>
+                            <td>Full name matches "*_backup.*"</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Size Conditions</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Condition</th>
+                            <th>Operators</th>
+                            <th>Example</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Size</strong></td>
+                            <td>greater than, less than, between</td>
+                            <td>Size &gt; 10 MB</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p>Supported units: <code>B</code>, <code>KB</code>, <code>MB</code>, <code>GB</code>, <code>TB</code></p>
+
+                <h3>Date Conditions</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Condition</th>
+                            <th>Operators</th>
+                            <th>Example</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Date Created</strong></td>
+                            <td>is today, within last, more than ago, before, after</td>
+                            <td>Created within last 7 days</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Date Modified</strong></td>
+                            <td>is today, within last, more than ago, before, after</td>
+                            <td>Modified more than 30 days ago</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Date Added</strong></td>
+                            <td>is today, within last, more than ago</td>
+                            <td>Added today</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>macOS Specific</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Condition</th>
+                            <th>Description</th>
+                            <th>Example</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Tags</strong></td>
+                            <td>Finder tags/labels</td>
+                            <td>Has tag "Important"</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Kind</strong></td>
+                            <td>Finder file kind</td>
+                            <td>Kind is "PDF Document"</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Where From</strong></td>
+                            <td>Download source URL</td>
+                            <td>Downloaded from "github.com"</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Finder Comment</strong></td>
+                            <td>Spotlight comment</td>
+                            <td>Comment contains "archive"</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="action-reference">
+                <h2>Action Reference</h2>
+                <p>Complete list of available actions to perform on matching files.</p>
+
+                <h3>File Operations</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Parameters</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Move to</strong></td>
+                            <td>Destination folder</td>
+                            <td>Move file to specified folder</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Copy to</strong></td>
+                            <td>Destination folder</td>
+                            <td>Copy file to specified folder</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Rename</strong></td>
+                            <td>Pattern</td>
+                            <td>Rename file using variables</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Delete</strong></td>
+                            <td>—</td>
+                            <td>Move to Trash</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Archive</strong></td>
+                            <td>Format (zip, tar, etc.)</td>
+                            <td>Compress file</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>macOS Actions</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Parameters</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Add Tags</strong></td>
+                            <td>Tag names</td>
+                            <td>Add Finder tags</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Remove Tags</strong></td>
+                            <td>Tag names</td>
+                            <td>Remove specific tags</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Set Color Label</strong></td>
+                            <td>Color</td>
+                            <td>Set Finder color label</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Open With</strong></td>
+                            <td>Application</td>
+                            <td>Open file with specific app</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Reveal in Finder</strong></td>
+                            <td>—</td>
+                            <td>Show file in Finder</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Script Actions</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Parameters</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Run Shell Script</strong></td>
+                            <td>Command</td>
+                            <td>Execute shell command</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Run AppleScript</strong></td>
+                            <td>Script</td>
+                            <td>Execute AppleScript</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Run Shortcut</strong></td>
+                            <td>Shortcut name</td>
+                            <td>Run a macOS Shortcut</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="variables">
+                <h2>Variables & Patterns</h2>
+                <p>Use variables in rename patterns and destinations to create dynamic paths.</p>
+
+                <h3>Available Variables</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Description</th>
+                            <th>Example Output</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>{name}</code></td>
+                            <td>Filename without extension</td>
+                            <td>document</td>
+                        </tr>
+                        <tr>
+                            <td><code>{ext}</code></td>
+                            <td>File extension</td>
+                            <td>pdf</td>
+                        </tr>
+                        <tr>
+                            <td><code>{date}</code></td>
+                            <td>Current date (YYYY-MM-DD)</td>
+                            <td>2026-02-04</td>
+                        </tr>
+                        <tr>
+                            <td><code>{time}</code></td>
+                            <td>Current time (HH-MM-SS)</td>
+                            <td>14-30-00</td>
+                        </tr>
+                        <tr>
+                            <td><code>{created}</code></td>
+                            <td>File creation date</td>
+                            <td>2026-01-15</td>
+                        </tr>
+                        <tr>
+                            <td><code>{modified}</code></td>
+                            <td>File modification date</td>
+                            <td>2026-02-01</td>
+                        </tr>
+                        <tr>
+                            <td><code>{year}</code></td>
+                            <td>Current year</td>
+                            <td>2026</td>
+                        </tr>
+                        <tr>
+                            <td><code>{month}</code></td>
+                            <td>Current month (01-12)</td>
+                            <td>02</td>
+                        </tr>
+                        <tr>
+                            <td><code>{counter}</code></td>
+                            <td>Auto-increment number</td>
+                            <td>001</td>
+                        </tr>
+                        <tr>
+                            <td><code>{parent}</code></td>
+                            <td>Parent folder name</td>
+                            <td>Downloads</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Pattern Examples</h3>
+                <div class="card">
+                    <pre><code># Rename with date prefix
+{date} - {name}.{ext}
+→ 2026-02-04 - document.pdf
+
+# Organize by year/month
+~/Documents/{year}/{month}/{name}.{ext}
+→ ~/Documents/2026/02/document.pdf
+
+# Add counter for duplicates
+{name}_{counter}.{ext}
+→ document_001.pdf</code></pre>
+                </div>
+            </section>
+
+            <section id="keyboard-shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Shortcut</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><kbd>⌘</kbd> + <kbd>N</kbd></td>
+                            <td>New Rule</td>
+                        </tr>
+                        <tr>
+                            <td><kbd>⌘</kbd> + <kbd>S</kbd></td>
+                            <td>Save Rule</td>
+                        </tr>
+                        <tr>
+                            <td><kbd>⌘</kbd> + <kbd>,</kbd></td>
+                            <td>Open Preferences</td>
+                        </tr>
+                        <tr>
+                            <td><kbd>⌘</kbd> + <kbd>R</kbd></td>
+                            <td>Run Rules Now</td>
+                        </tr>
+                        <tr>
+                            <td><kbd>⌘</kbd> + <kbd>Q</kbd></td>
+                            <td>Quit SortMeOut</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="configuration">
+                <h2>Configuration</h2>
+                <p>SortMeOut stores configuration in <code>~/.config/sortmeout/</code></p>
+
+                <h3>Configuration Files</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>config.json</code></td>
+                            <td>Main configuration</td>
+                        </tr>
+                        <tr>
+                            <td><code>rules.json</code></td>
+                            <td>All defined rules</td>
+                        </tr>
+                        <tr>
+                            <td><code>sortmeout.log</code></td>
+                            <td>Application logs</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Settings Reference</h3>
+                <div class="card">
+                    <pre><code>{
+  "start_at_login": true,
+  "check_interval": 5,
+  "show_notifications": true,
+  "preview_mode": false,
+  "log_level": "info",
+  "theme": "system"
+}</code></pre>
+                </div>
+            </section>
+
+            <section id="cli">
+                <h2>Command Line Interface</h2>
+                <p>SortMeOut includes a CLI for advanced users and scripting.</p>
+
+                <h3>Basic Commands</h3>
+                <div class="card">
+                    <pre><code># Start the daemon
+sortmeout start
+
+# Stop the daemon
+sortmeout stop
+
+# Check status
+sortmeout status
+
+# Run rules once on a folder
+sortmeout run ~/Downloads
+
+# List all rules
+sortmeout rules list
+
+# Enable/disable a rule
+sortmeout rules enable "Rule Name"
+sortmeout rules disable "Rule Name"
+
+# Process a specific file
+sortmeout process /path/to/file.pdf</code></pre>
+                </div>
+            </section>
+
+            <section id="troubleshooting">
+                <h2>Troubleshooting</h2>
+
+                <h3>Common Issues</h3>
+
+                <div class="card">
+                    <h4 class="card-title">Files aren't being processed</h4>
+                    <ul>
+                        <li>Verify SortMeOut is running (check menu bar icon)</li>
+                        <li>Confirm the folder is in your watched list</li>
+                        <li>Check that Full Disk Access is enabled</li>
+                        <li>Review your rule conditions</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h4 class="card-title">Permission denied errors</h4>
+                    <ul>
+                        <li>Open System Settings → Privacy & Security</li>
+                        <li>Grant Full Disk Access to SortMeOut</li>
+                        <li>Restart SortMeOut after changing permissions</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h4 class="card-title">High CPU usage</h4>
+                    <ul>
+                        <li>Reduce the number of watched folders</li>
+                        <li>Increase the check interval in settings</li>
+                        <li>Exclude folders with many frequent changes</li>
+                    </ul>
+                </div>
+
+                <h3>Getting Logs</h3>
+                <p>For debugging, check the log file:</p>
+                <div class="card">
+                    <pre><code># View recent logs
+tail -f ~/.config/sortmeout/sortmeout.log
+
+# Or open in Console.app
+open -a Console ~/.config/sortmeout/sortmeout.log</code></pre>
+                </div>
+            </section>
+
+            <section id="examples">
+                <h2>Rule Examples</h2>
+                <p>Ready-to-use rule templates for common scenarios.</p>
+
+                <div class="card">
+                    <h4 class="card-title">📄 Organize Documents by Type</h4>
+                    <pre><code>Folder: ~/Downloads
+Conditions: Extension is in [pdf, doc, docx, txt]
+Actions: Move to ~/Documents/{ext}/</code></pre>
+                </div>
+
+                <div class="card">
+                    <h4 class="card-title">🖼️ Sort Images by Date</h4>
+                    <pre><code>Folder: ~/Pictures
+Conditions: Kind is "Image"
+Actions: Move to ~/Pictures/{year}/{month}/</code></pre>
+                </div>
+
+                <div class="card">
+                    <h4 class="card-title">🗑️ Clean Old Downloads</h4>
+                    <pre><code>Folder: ~/Downloads
+Conditions: Date added more than 30 days ago
+Actions: Move to Trash</code></pre>
+                </div>
+
+                <div class="card">
+                    <h4 class="card-title">📸 Process Screenshots</h4>
+                    <pre><code>Folder: ~/Desktop
+Conditions: 
+  - Name starts with "Screenshot"
+  - Extension is "png"
+Actions:
+  - Move to ~/Pictures/Screenshots/
+  - Rename to "{created} - Screenshot.png"</code></pre>
+                </div>
+
+                <div class="card">
+                    <h4 class="card-title">💼 Tag Work Files</h4>
+                    <pre><code>Folder: ~/Downloads
+Conditions: Downloaded from "company.sharepoint.com"
+Actions: 
+  - Move to ~/Documents/Work/
+  - Add tag "Work"</code></pre>
+                </div>
+            </section>
+
+            <section id="faq">
+                <h2>Frequently Asked Questions</h2>
+
+                <div class="card">
+                    <h4 class="card-title">Does SortMeOut run at startup?</h4>
+                    <p>Yes, by default. You can change this in Preferences → General.</p>
+                </div>
+
+                <div class="card">
+                    <h4 class="card-title">Can I undo an action?</h4>
+                    <p>Files moved to Trash can be recovered. For other actions, check the activity log for the original location.</p>
+                </div>
+
+                <div class="card">
+                    <h4 class="card-title">How do I backup my rules?</h4>
+                    <p>Export rules from Preferences → Rules → Export, or copy <code>~/.config/sortmeout/rules.json</code></p>
+                </div>
+
+                <div class="card">
+                    <h4 class="card-title">Can I run rules manually?</h4>
+                    <p>Yes! Click the menu bar icon → "Run Rules Now" or use the CLI: <code>sortmeout run</code></p>
+                </div>
+            </section>
+
+            <section id="support">
+                <h2>Support</h2>
+                <p>Need help? We're here for you.</p>
+
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <div class="feature-icon">📧</div>
+                        <h4>Email Support</h4>
+                        <p>support@saidborna.com</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🌐</div>
+                        <h4>Website</h4>
+                        <p>sortmeout.saidborna.com</p>
+                    </div>
+                </div>
+
+                <hr style="margin: 2rem 0; border: 0; border-top: 1px solid var(--color-border);">
+
+                <p style="font-size: 0.875rem; color: var(--color-text-muted);">
+                    SortMeOut v1.0 • © 2026 Said Borna. All rights reserved.<br>
+                    This documentation is proprietary. Unauthorized distribution is prohibited.
+                </p>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Active nav link highlighting
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.sidebar-nav a');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 100;
+                if (scrollY >= sectionTop) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
