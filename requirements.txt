@@ -1,0 +1,16 @@
+# Core dependencies
+watchdog>=3.0.0
+pyobjc-core>=9.0
+pyobjc-framework-Cocoa>=9.0
+pyobjc-framework-FSEvents>=9.0
+pyobjc-framework-Quartz>=9.0
+pyobjc-framework-ScriptingBridge>=9.0
+pyyaml>=6.0
+python-dateutil>=2.8.0
+rich>=13.0.0
+click>=8.0.0
+appdirs>=1.4.0
+humanize>=4.0.0
+
+# GUI dependencies
+rumps>=0.4.0

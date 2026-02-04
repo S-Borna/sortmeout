@@ -1,0 +1,114 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="bg1" x1="0" y1="0" x2="1200" y2="800" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#FAFAFA"/>
+            <stop offset="1" stop-color="#F4F4F5"/>
+        </linearGradient>
+        <filter id="shadow1" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="8" stdDeviation="16" flood-opacity="0.12"/>
+        </filter>
+    </defs>
+
+    <rect width="1200" height="800" fill="url(#bg1)"/>
+
+    <!-- Main Window -->
+    <g filter="url(#shadow1)">
+        <rect x="80" y="40" width="1040" height="720" rx="12" fill="white"/>
+
+        <!-- Title Bar -->
+        <rect x="80" y="40" width="1040" height="44" rx="12" fill="#FAFAFA"/>
+        <rect x="80" y="72" width="1040" height="12" fill="#FAFAFA"/>
+        <circle cx="106" cy="62" r="6" fill="#FF5F56"/>
+        <circle cx="126" cy="62" r="6" fill="#FFBD2E"/>
+        <circle cx="146" cy="62" r="6" fill="#27CA40"/>
+        <text x="600" y="67" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="500" fill="#71717A" text-anchor="middle">SortMeOut — Rules Editor</text>
+
+        <!-- Sidebar -->
+        <rect x="80" y="84" width="220" height="676" fill="#FAFAFA"/>
+
+        <text x="100" y="120" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#A1A1AA">WATCHED FOLDERS</text>
+
+        <rect x="96" y="132" width="188" height="36" rx="6" fill="#6366F1"/>
+        <text x="116" y="156" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="white">📥 Downloads</text>
+
+        <text x="116" y="196" font-family="Inter, sans-serif" font-size="13" fill="#52525B">📄 Documents</text>
+        <text x="116" y="230" font-family="Inter, sans-serif" font-size="13" fill="#52525B">🖥️ Desktop</text>
+
+        <text x="100" y="280" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#A1A1AA">MY RULES</text>
+
+        <text x="116" y="310" font-family="Inter, sans-serif" font-size="13" fill="#52525B">📋 Sort PDFs</text>
+        <text x="116" y="340" font-family="Inter, sans-serif" font-size="13" fill="#52525B">📋 Archive Old Files</text>
+        <text x="116" y="370" font-family="Inter, sans-serif" font-size="13" fill="#52525B">📋 Clean Screenshots</text>
+        <text x="116" y="400" font-family="Inter, sans-serif" font-size="13" fill="#52525B">📋 Organize Music</text>
+
+        <rect x="96" y="430" width="188" height="36" rx="6" fill="#F4F4F5" stroke="#E4E4E7" stroke-dasharray="4 2"/>
+        <text x="190" y="454" font-family="Inter, sans-serif" font-size="13" fill="#A1A1AA" text-anchor="middle">+ New Rule</text>
+
+        <!-- Main Panel -->
+        <text x="340" y="120" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#18181B">Sort PDFs</text>
+        <circle cx="465" cy="114" r="5" fill="#22C55E"/>
+        <text x="480" y="120" font-family="Inter, sans-serif" font-size="12" fill="#22C55E">Active</text>
+
+        <!-- Conditions Section -->
+        <text x="340" y="170" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#71717A">CONDITIONS</text>
+
+        <rect x="340" y="185" width="760" height="90" rx="8" fill="#FAFAFA"/>
+
+        <text x="360" y="220" font-family="Inter, sans-serif" font-size="13" fill="#52525B">If</text>
+        <rect x="380" y="202" width="140" height="32" rx="6" fill="white" stroke="#E4E4E7"/>
+        <text x="395" y="224" font-family="Inter, sans-serif" font-size="13" fill="#18181B">Extension</text>
+
+        <rect x="530" y="202" width="80" height="32" rx="6" fill="white" stroke="#E4E4E7"/>
+        <text x="545" y="224" font-family="Inter, sans-serif" font-size="13" fill="#18181B">is</text>
+
+        <rect x="620" y="202" width="100" height="32" rx="6" fill="#EEF2FF" stroke="#C7D2FE"/>
+        <text x="635" y="224" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#4338CA">.pdf</text>
+
+        <text x="360" y="260" font-family="Inter, sans-serif" font-size="12" fill="#A1A1AA">+ Add another condition</text>
+
+        <!-- Actions Section -->
+        <text x="340" y="310" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#71717A">ACTIONS</text>
+
+        <rect x="340" y="325" width="760" height="180" rx="8" fill="#FAFAFA"/>
+
+        <text x="360" y="360" font-family="Inter, sans-serif" font-size="13" fill="#52525B">Then</text>
+        <rect x="400" y="342" width="140" height="32" rx="6" fill="white" stroke="#E4E4E7"/>
+        <text x="415" y="364" font-family="Inter, sans-serif" font-size="13" fill="#18181B">Move to</text>
+
+        <rect x="550" y="342" width="240" height="32" rx="6" fill="#F0FDF4" stroke="#BBF7D0"/>
+        <text x="565" y="364" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#166534">~/Documents/PDFs</text>
+
+        <!-- Second Action -->
+        <text x="360" y="410" font-family="Inter, sans-serif" font-size="13" fill="#52525B">And</text>
+        <rect x="400" y="392" width="140" height="32" rx="6" fill="white" stroke="#E4E4E7"/>
+        <text x="415" y="414" font-family="Inter, sans-serif" font-size="13" fill="#18181B">Rename with</text>
+
+        <rect x="550" y="392" width="300" height="32" rx="6" fill="#FEF3C7" stroke="#FDE68A"/>
+        <text x="565" y="414" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#92400E">{date}_{original_name}</text>
+
+        <!-- Third Action -->
+        <text x="360" y="460" font-family="Inter, sans-serif" font-size="13" fill="#52525B">And</text>
+        <rect x="400" y="442" width="140" height="32" rx="6" fill="white" stroke="#E4E4E7"/>
+        <text x="415" y="464" font-family="Inter, sans-serif" font-size="13" fill="#18181B">Tag with</text>
+
+        <rect x="550" y="442" width="100" height="32" rx="6" fill="#FCE7F3" stroke="#FBCFE8"/>
+        <text x="565" y="464" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#9D174D">Important</text>
+
+        <text x="360" y="495" font-family="Inter, sans-serif" font-size="12" fill="#A1A1AA">+ Add another action</text>
+
+        <!-- Preview Section -->
+        <text x="340" y="550" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#71717A">PREVIEW</text>
+
+        <rect x="340" y="565" width="760" height="100" rx="8" fill="#FAFAFA"/>
+        <text x="360" y="600" font-family="Inter, sans-serif" font-size="12" fill="#71717A">When a file with .pdf extension is added to Downloads:</text>
+        <text x="370" y="625" font-family="Inter, sans-serif" font-size="13" fill="#18181B">📄 invoice.pdf → 📁 ~/Documents/PDFs/2024-01-15_invoice.pdf</text>
+        <text x="370" y="650" font-family="Inter, sans-serif" font-size="12" fill="#22C55E">✓ Tagged as "Important"</text>
+
+        <!-- Save Button -->
+        <rect x="340" y="690" width="120" height="40" rx="8" fill="#6366F1"/>
+        <text x="400" y="716" font-family="Inter, sans-serif" font-size="14" font-weight="600" fill="white" text-anchor="middle">Save Rule</text>
+
+        <rect x="480" y="690" width="100" height="40" rx="8" fill="white" stroke="#E4E4E7"/>
+        <text x="530" y="716" font-family="Inter, sans-serif" font-size="14" font-weight="500" fill="#52525B" text-anchor="middle">Test</text>
+    </g>
+</svg>

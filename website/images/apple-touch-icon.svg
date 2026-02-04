@@ -1,0 +1,21 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="touch-gradient" x1="0" y1="0" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#6366F1"/>
+            <stop offset="1" stop-color="#8B5CF6"/>
+        </linearGradient>
+    </defs>
+
+    <!-- Background -->
+    <rect width="180" height="180" rx="38" fill="url(#touch-gradient)"/>
+
+    <!-- Folder Icon -->
+    <g transform="translate(40, 45)">
+        <!-- Folder back -->
+        <path d="M0 25 L0 85 Q0 95 10 95 L90 95 Q100 95 100 85 L100 25 Q100 15 90 15 L45 15 L35 5 L10 5 Q0 5 0 15 Z" fill="white" fill-opacity="0.9"/>
+
+        <!-- Sorting arrow -->
+        <path d="M35 40 L50 55 L65 40" stroke="#6366F1" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <path d="M50 55 L50 75" stroke="#6366F1" stroke-width="6" stroke-linecap="round"/>
+    </g>
+</svg>

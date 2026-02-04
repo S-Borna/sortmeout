@@ -1,0 +1,140 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sortmeout"
+version = "1.0.0"
+description = "Open-source file automation and organization tool for macOS"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "SortMeOut Contributors"}
+]
+keywords = [
+    "automation",
+    "file-management",
+    "macos",
+    "organization",
+    "rules",
+    "workflow"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: MacOS X",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Desktop Environment :: File Managers",
+    "Topic :: System :: Filesystems",
+    "Topic :: Utilities",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "watchdog>=3.0.0",
+    "pyobjc-core>=9.0",
+    "pyobjc-framework-Cocoa>=9.0",
+    "pyobjc-framework-FSEvents>=9.0",
+    "pyobjc-framework-Quartz>=9.0",
+    "pyobjc-framework-ScriptingBridge>=9.0",
+    "pyyaml>=6.0",
+    "python-dateutil>=2.8.0",
+    "rich>=13.0.0",
+    "click>=8.0.0",
+    "appdirs>=1.4.0",
+    "humanize>=4.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-mock>=3.0.0",
+    "mypy>=1.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "isort>=5.0.0",
+    "pre-commit>=3.0.0",
+]
+gui = [
+    "rumps>=0.4.0",
+    "pyobjc-framework-Cocoa>=9.0",
+]
+
+[project.scripts]
+sortmeout = "sortmeout.cli:main"
+sortmeout-gui = "sortmeout.gui.app:main"
+
+[project.urls]
+Homepage = "https://sortmeout.saidborna.com"
+Documentation = "https://github.com/S-Borna/sortmeout/tree/main/docs"
+Repository = "https://github.com/S-Borna/sortmeout"
+Issues = "https://github.com/S-Borna/sortmeout/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sortmeout*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311", "py312"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip_gitignore = true
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = [
+    "build",
+    "dist",
+    "venv",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+addopts = "-v --tb=short"
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["sortmeout"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

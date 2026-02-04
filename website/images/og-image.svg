@@ -1,0 +1,37 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="og-bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#6366F1"/>
+            <stop offset="0.5" stop-color="#8B5CF6"/>
+            <stop offset="1" stop-color="#A855F7"/>
+        </linearGradient>
+        <linearGradient id="og-accent" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+            <stop stop-color="white" stop-opacity="0.2"/>
+            <stop offset="1" stop-color="white" stop-opacity="0"/>
+        </linearGradient>
+    </defs>
+
+    <!-- Background -->
+    <rect width="1200" height="630" fill="url(#og-bg)"/>
+
+    <!-- Decorative circles -->
+    <circle cx="100" cy="100" r="200" fill="url(#og-accent)"/>
+    <circle cx="1100" cy="530" r="250" fill="url(#og-accent)"/>
+
+    <!-- Logo Icon -->
+    <g transform="translate(500, 150)">
+        <rect width="200" height="200" rx="40" fill="white" fill-opacity="0.15"/>
+        <g transform="translate(40, 35)">
+            <path d="M0 30 L0 100 Q0 115 15 115 L105 115 Q120 115 120 100 L120 30 Q120 15 105 15 L55 15 L42 0 L15 0 Q0 0 0 15 Z" fill="white"/>
+            <path d="M40 45 L60 70 L80 45" stroke="#6366F1" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M60 70 L60 95" stroke="#6366F1" stroke-width="8" stroke-linecap="round"/>
+        </g>
+    </g>
+
+    <!-- Text -->
+    <text x="600" y="420" font-family="Inter, system-ui, sans-serif" font-size="72" font-weight="800" fill="white" text-anchor="middle">SortMeOut</text>
+
+    <text x="600" y="480" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="400" fill="white" fill-opacity="0.9" text-anchor="middle">Automated File Organization for macOS</text>
+
+    <text x="600" y="540" font-family="Inter, system-ui, sans-serif" font-size="20" fill="white" fill-opacity="0.7" text-anchor="middle">Open Source • Free Forever • Privacy-First</text>
+</svg>

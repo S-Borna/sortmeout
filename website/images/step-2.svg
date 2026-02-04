@@ -1,0 +1,50 @@
+<svg width="400" height="320" viewBox="0 0 400 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="step2-bg" x1="0" y1="0" x2="400" y2="320" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#ECFDF5"/>
+            <stop offset="1" stop-color="#D1FAE5"/>
+        </linearGradient>
+        <linearGradient id="step2-accent" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#10B981"/>
+            <stop offset="1" stop-color="#059669"/>
+        </linearGradient>
+    </defs>
+
+    <!-- Background -->
+    <rect width="400" height="320" rx="16" fill="url(#step2-bg)"/>
+
+    <!-- Rule Builder Card -->
+    <g transform="translate(40, 50)">
+        <rect width="320" height="180" rx="12" fill="white" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.1))"/>
+
+        <!-- Header -->
+        <rect width="320" height="40" rx="12" fill="#F0FDF4"/>
+        <rect y="28" width="320" height="12" fill="#F0FDF4"/>
+        <text x="20" y="26" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#059669">Create Rule</text>
+
+        <!-- Rule Condition -->
+        <text x="20" y="70" font-family="Inter, sans-serif" font-size="11" font-weight="500" fill="#6B7280">IF</text>
+        <rect x="20" y="78" width="130" height="30" rx="6" fill="#F3F4F6"/>
+        <text x="30" y="98" font-family="Inter, sans-serif" font-size="12" fill="#374151">Extension</text>
+        <rect x="160" y="78" width="70" height="30" rx="6" fill="#F3F4F6"/>
+        <text x="170" y="98" font-family="Inter, sans-serif" font-size="12" fill="#374151">is</text>
+        <rect x="240" y="78" width="60" height="30" rx="6" fill="#DCFCE7"/>
+        <text x="250" y="98" font-family="Inter, sans-serif" font-size="12" font-weight="500" fill="#166534">.pdf</text>
+
+        <!-- Rule Action -->
+        <text x="20" y="130" font-family="Inter, sans-serif" font-size="11" font-weight="500" fill="#6B7280">THEN</text>
+        <rect x="20" y="138" width="130" height="30" rx="6" fill="#F3F4F6"/>
+        <text x="30" y="158" font-family="Inter, sans-serif" font-size="12" fill="#374151">Move to</text>
+        <rect x="160" y="138" width="140" height="30" rx="6" fill="#DCFCE7"/>
+        <text x="170" y="158" font-family="Inter, sans-serif" font-size="12" font-weight="500" fill="#166534">~/Documents</text>
+    </g>
+
+    <!-- Gear icon -->
+    <g transform="translate(165, 245)">
+        <circle cx="35" cy="20" r="25" fill="url(#step2-accent)"/>
+        <text x="35" y="28" font-family="Inter, sans-serif" font-size="24" text-anchor="middle">⚙️</text>
+    </g>
+
+    <!-- Text -->
+    <text x="200" y="300" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600" fill="#047857" text-anchor="middle">Define Your Rules</text>
+</svg>
