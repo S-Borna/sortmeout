@@ -76,6 +76,9 @@ class MenuBarApp:
     def _build_menu(self) -> None:
         """Build the menu bar menu."""
         self.app.menu = [
+            rumps.MenuItem("💬 AI Assistant...", callback=self._open_ai_assistant),
+            rumps.MenuItem("📎 Analyze File...", callback=self._analyze_file),
+            None,  # Separator
             rumps.MenuItem("Start Watching", callback=self._toggle_watching),
             rumps.MenuItem("Preview Mode", callback=self._toggle_preview),
             None,  # Separator
@@ -102,29 +105,45 @@ class MenuBarApp:
 
     def _update_folders_menu(self) -> None:
         """Update the folders submenu."""
-        folders_menu = self.app.menu["Folders"]
+        try:
+            folders_menu = self.app.menu.get("Folders")
+            if folders_menu is None:
+                return
 
-        # Clear existing items
-        folders_menu.clear()
+            # Try to clear - some rumps versions don't support this
+            try:
+                folders_menu.clear()
+            except (AttributeError, TypeError):
+                pass  # Ignore if clear() not supported
 
-        folders = self.sortmeout.get_folders()
+            folders = self.sortmeout.get_folders()
 
-        if not folders:
-            folders_menu.add(rumps.MenuItem("No folders configured", callback=None))
-            folders_menu["No folders configured"].set_callback(None)
-        else:
-            for folder in folders:
-                rules = self.sortmeout.get_rules(folder)
-                folder_name = os.path.basename(folder) or folder
-                item = rumps.MenuItem(
-                    f"{folder_name} ({len(rules)} rules)",
-                    callback=lambda _, f=folder: self._show_folder_details(f)
-                )
-                folders_menu.add(item)
+            if not folders:
+                try:
+                    folders_menu.add(rumps.MenuItem("No folders configured", callback=None))
+                except:
+                    pass
+            else:
+                for folder in folders:
+                    rules = self.sortmeout.get_rules(folder)
+                    folder_name = os.path.basename(folder) or folder
+                    item = rumps.MenuItem(
+                        f"{folder_name} ({len(rules)} rules)",
+                        callback=lambda _, f=folder: self._show_folder_details(f)
+                    )
+                    try:
+                        folders_menu.add(item)
+                    except:
+                        pass
 
-        # Add separator and "Add Folder" option
-        folders_menu.add(None)
-        folders_menu.add(rumps.MenuItem("Add Folder...", callback=self._add_folder))
+            # Add separator and "Add Folder" option
+            try:
+                folders_menu.add(None)
+                folders_menu.add(rumps.MenuItem("Add Folder...", callback=self._add_folder))
+            except:
+                pass
+        except Exception as e:
+            logger.warning("Could not update folders menu: %s", e)
 
     def _toggle_watching(self, sender: rumps.MenuItem) -> None:
         """Toggle watching on/off."""
@@ -163,6 +182,70 @@ class MenuBarApp:
             )
         else:
             sender.state = 0
+
+    def _open_ai_assistant(self, _) -> None:
+        """Open the AI assistant chat window."""
+        try:
+            from sortmeout.gui.chat_window import show_chat_window
+            show_chat_window()
+        except ImportError as e:
+            logger.error("Could not import chat_window: %s", e)
+            rumps.alert(
+                title="AI Assistant",
+                message="Could not open AI Assistant.\n\nMake sure all dependencies are installed."
+            )
+        except Exception as e:
+            logger.error("Failed to open AI assistant: %s", e)
+            rumps.alert(
+                title="Error",
+                message=f"Could not open AI Assistant:\n{e}"
+            )
+
+    def _analyze_file(self, _) -> None:
+        """Analyze a file with AI."""
+        import subprocess
+        
+        # Use AppleScript to pick a file
+        script = '''
+            tell application "System Events"
+                activate
+                set theFile to choose file with prompt "Select a file to analyze:"
+                return POSIX path of theFile
+            end tell
+        '''
+        try:
+            result = subprocess.run(
+                ["osascript", "-e", script],
+                capture_output=True,
+                text=True,
+            )
+            
+            if result.returncode == 0 and result.stdout.strip():
+                file_path = result.stdout.strip()
+                
+                # Try to analyze with AI
+                try:
+                    from sortmeout.ai.assistant import FileAssistant
+                    
+                    assistant = FileAssistant()
+                    analysis = assistant.analyze_file(file_path)
+                    
+                    rumps.alert(
+                        title=f"Analysis: {os.path.basename(file_path)}",
+                        message=analysis.get("summary", "Could not analyze file.")
+                    )
+                except ImportError:
+                    rumps.alert(
+                        title="AI Not Available",
+                        message="AI Assistant requires the anthropic package.\n\nRun: pip install anthropic"
+                    )
+                except Exception as e:
+                    rumps.alert(
+                        title="Analysis Failed",
+                        message=f"Could not analyze file:\n{e}"
+                    )
+        except Exception as e:
+            logger.error("Failed to analyze file: %s", e)
 
     def _show_activity(self, _) -> None:
         """Show recent activity."""
