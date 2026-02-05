@@ -9,7 +9,8 @@ SortMeOut är nu skyddad med omfattande säkerhetsåtgärder för att förhindra
 ## 🛡️ Implementerade Säkerhetsfunktioner
 
 ### 1. **DevTools Protection**
-- **Multi-metod detektion**: 
+
+- **Multi-metod detektion**:
   - Fönsterstorlek-analys
   - Timing-baserad detektion
   - Console-manipulation detektion
@@ -19,6 +20,7 @@ SortMeOut är nu skyddad med omfattande säkerhetsåtgärder för att förhindra
 - **Kontinuerlig övervakning**: Kontrollerar varje sekund för DevTools-aktivitet
 
 ### 2. **Anti-Scraping Skydd**
+
 - **Bot-detektion**:
   - PhantomJS
   - Selenium WebDriver
@@ -29,11 +31,13 @@ SortMeOut är nu skyddad med omfattande säkerhetsåtgärder för att förhindra
 - **Automation-detektion**: Upptäcker och blockerar automatiserade besök
 
 ### 3. **Console Protection**
+
 - Alla console-metoder är inaktiverade
 - Console-objektet är fruset och kan inte modifieras
 - Debugger-fällor för att förhindra debugging
 
 ### 4. **Keyboard & Mouse Protection**
+
 - **Blockerade tangenter**:
   - F12 (DevTools)
   - Ctrl/Cmd + Shift + I (Inspect)
@@ -47,37 +51,44 @@ SortMeOut är nu skyddad med omfattande säkerhetsåtgärder för att förhindra
 - **Drag & drop blockerat**: Ingen dra-och-släpp funktion
 
 ### 5. **Copy/Paste Protection**
+
 - **Kopierings-begränsning**: Stora textmängder kan inte kopieras
 - **Copyright-varning**: Klistrat innehåll ersätts med copyright-meddelande
 - **Klippnings-skydd**: Cut-funktionen är inaktiverad
 
 ### 6. **Source Code Protection**
+
 - View-source blockerat
 - Fake copyright-kommentarer injekterade
 - Copyright meta-tags
 - Code obfuscation
 
 ### 7. **DOM Protection**
+
 - **Mutation Observer**: Övervakar och blockerar misstänkta DOM-ändringar
 - **Script Injection Prevention**: Blockerar icke-auktoriserade scripts
 - **Object Freezing**: Kritiska JavaScript-objekt är frysta
 
 ### 8. **Performance Monitoring**
+
 - Upptäcker långsam prestanda (debugging-indikation)
 - Övervakar för abnorma timing-beteenden
 - Automatisk blockering vid misstänkta mönster
 
 ### 9. **Screen Recording Detection**
+
 - Canvas-baserad detektion
 - Övervakning för screen capture
 - Regelbunden kontroll var 5:e sekund
 
 ### 10. **Invisible Watermarking**
+
 - Osynliga vattenmärken på alla sidor
 - Copyright-notis inbäddad
 - Spårbarhet vid screenshot-spridning
 
 ### 11. **Security Headers (HTTP)**
+
 - **Content-Security-Policy**: Strikta regler för content loading
 - **X-Frame-Options**: DENY för att förhindra clickjacking
 - **X-Content-Type-Options**: nosniff
@@ -90,6 +101,7 @@ SortMeOut är nu skyddad med omfattande säkerhetsåtgärder för att förhindra
 ## 📁 Filer
 
 ### Säkerhetsskript
+
 - **`website/js/security.js`**: Huvudsakligt säkerhetsskript (530+ rader)
   - DevTools-detektion
   - Bot-skydd
@@ -98,12 +110,14 @@ SortMeOut är nu skyddad med omfattande säkerhetsåtgärder för att förhindra
   - Keyboard/mouse-skydd
 
 ### HTML-filer (uppdaterade)
+
 - **`website/index.html`**: Huvudsida med security headers och script
 - **`website/privacy.html`**: Privacy policy med säkerhetsskydd
-- **`website/terms.html`**: Terms of service med säkerhetsskydd  
+- **`website/terms.html`**: Terms of service med säkerhetsskydd
 - **`website/docs/index.html`**: Dokumentation med säkerhetsskydd
 
 ### Dokumentation
+
 - **`CLOUDFLARE_SETUP.md`**: Komplett guide för Cloudflare-konfiguration
 - **`SECURITY_README.md`**: Denna fil
 
@@ -113,7 +127,8 @@ SortMeOut är nu skyddad med omfattande säkerhetsåtgärder för att förhindra
 
 För fullständigt skydd, konfigurera Cloudflare enligt **`CLOUDFLARE_SETUP.md`**:
 
-### Viktiga Cloudflare-funktioner:
+### Viktiga Cloudflare-funktioner
+
 1. **SSL/TLS**: Full (strict) mode med HSTS
 2. **WAF (Web Application Firewall)**: Blockera kända bottar och scrapers
 3. **Rate Limiting**: Begränsa requests från samma IP
@@ -127,9 +142,10 @@ För fullständigt skydd, konfigurera Cloudflare enligt **`CLOUDFLARE_SETUP.md`*
 
 ## 🧪 Testning
 
-### Manuella tester:
+### Manuella tester
 
 1. **DevTools Test**:
+
    ```
    1. Öppna webbplatsen
    2. Tryck F12 eller Högerklick → Inspektera
@@ -137,6 +153,7 @@ För fullständigt skydd, konfigurera Cloudflare enligt **`CLOUDFLARE_SETUP.md`*
    ```
 
 2. **Console Test**:
+
    ```javascript
    // Öppna DevTools (om möjligt) och kör:
    console.log("Test");
@@ -144,25 +161,28 @@ För fullständigt skydd, konfigurera Cloudflare enligt **`CLOUDFLARE_SETUP.md`*
    ```
 
 3. **Copy Test**:
+
    ```
    1. Försök markera och kopiera stor text
    2. Verifiera att copyright-meddelande visas
    ```
 
 4. **Right-Click Test**:
+
    ```
    1. Högerklicka på sidan
    2. Verifiera att context menu blockeras
    ```
 
 5. **Keyboard Shortcuts Test**:
+
    ```
    1. Tryck Ctrl+U (View Source)
    2. Tryck Ctrl+S (Save Page)
    3. Verifiera att inget händer
    ```
 
-### Automatiska tester:
+### Automatiska tester
 
 ```bash
 # Testa med curl (ska blockeras av Cloudflare)
@@ -175,25 +195,25 @@ python -c "import requests; print(requests.get('https://sortmeout.saidborna.com/
 curl -I https://sortmeout.saidborna.com/
 ```
 
-### Online säkerhetstester:
+### Online säkerhetstester
 
-1. **SSL Labs**: https://www.ssllabs.com/ssltest/
+1. **SSL Labs**: <https://www.ssllabs.com/ssltest/>
    - Mål: **A+ rating**
 
-2. **Security Headers**: https://securityheaders.com/
+2. **Security Headers**: <https://securityheaders.com/>
    - Mål: **A+ rating**
 
-3. **CSP Evaluator**: https://csp-evaluator.withgoogle.com/
+3. **CSP Evaluator**: <https://csp-evaluator.withgoogle.com/>
    - Validera Content Security Policy
 
-4. **Mozilla Observatory**: https://observatory.mozilla.org/
+4. **Mozilla Observatory**: <https://observatory.mozilla.org/>
    - Mål: **A+ rating**
 
 ---
 
 ## 🚀 Installation & Distribution
 
-### För utveckling:
+### För utveckling
 
 ```bash
 # Inget behövs - security.js laddas automatiskt
@@ -203,9 +223,10 @@ python3 -m http.server 8000
 # Öppna: http://localhost:8000
 ```
 
-### För produktion:
+### För produktion
 
 1. **Deploy till hosting**:
+
    ```bash
    # Kopiera alla website-filer
    rsync -avz website/ user@server:/var/www/sortmeout/
@@ -225,12 +246,14 @@ python3 -m http.server 8000
 ### Cloudflare Analytics
 
 Övervaka följande:
+
 - **Security Events**: Antal blockerade requests
 - **Bot Traffic**: Identifierade bottar
 - **Rate Limiting**: Triggers och blocks
 - **Firewall Events**: WAF-träffar
 
-### Logs att övervaka:
+### Logs att övervaka
+
 - Blocked User Agents
 - Suspicious IPs
 - Rate limit violations
@@ -262,9 +285,9 @@ const CONFIG = {
 I HTML `<head>`:
 
 ```html
-<meta http-equiv="Content-Security-Policy" 
-      content="default-src 'self'; 
-               script-src 'self' 'unsafe-inline'; 
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self';
+               script-src 'self' 'unsafe-inline';
                ...">
 ```
 
@@ -275,6 +298,7 @@ I HTML `<head>`:
 ### Problem: Legitima användare blockeras
 
 **Lösning**:
+
 1. Kontrollera Cloudflare Firewall Events
 2. Lägg till IP i whitelist
 3. Justera Bot Fight Mode sensitivity
@@ -283,7 +307,9 @@ I HTML `<head>`:
 ### Problem: DevTools-skydd triggas för tidigt
 
 **Lösning**:
+
 1. Öka `threshold` i security.js:
+
    ```javascript
    const threshold = 200; // Öka från 160
    ```
@@ -291,8 +317,10 @@ I HTML `<head>`:
 ### Problem: Text kan inte markeras i formulär
 
 **Lösning**:
+
 - Text selection är tillåten i `<input>` och `<textarea>` automatiskt
 - Om problem kvarstår, lägg till:
+
   ```css
   .allow-select {
       user-select: text !important;
@@ -302,6 +330,7 @@ I HTML `<head>`:
 ### Problem: Cloudflare blockerar för mycket
 
 **Lösning**:
+
 1. Sänk Security Level från "High" till "Medium"
 2. Skapa Custom Rules för kända legitima bottar
 3. Justera Rate Limiting-trösklar
@@ -310,18 +339,21 @@ I HTML `<head>`:
 
 ## 📝 Underhåll
 
-### Veckovis:
+### Veckovis
+
 - [ ] Kontrollera Cloudflare Security Events
 - [ ] Granska blockerade IPs
 - [ ] Verifiera att webbplatsen fungerar
 
-### Månadsvis:
+### Månadsvis
+
 - [ ] Uppdatera security.js om nya hot upptäcks
 - [ ] Granska och uppdatera Firewall Rules
 - [ ] Testa alla säkerhetsfunktioner
 - [ ] Kontrollera för false positives
 
-### Kvartalsvis:
+### Kvartalsvis
+
 - [ ] Full säkerhetsaudit
 - [ ] Uppdatera Content Security Policy
 - [ ] Review Cloudflare-konfiguration
@@ -334,13 +366,14 @@ I HTML `<head>`:
 ### Nuvarande nivå: **MAXIMUM** 🔴
 
 Din webbplats har nu:
+
 - ✅ **Fort Knox-nivå**: DevTools-skydd
 - ✅ **Pentagon-nivå**: Bot & scraper-blockering
 - ✅ **Bank-nivå**: Encryption & headers
 - ✅ **Enterprise-nivå**: DDoS-skydd
 - ✅ **Military-grade**: Multi-layer protection
 
-### Skyddsnivåer:
+### Skyddsnivåer
 
 | Skyddad mot | Status |
 |-------------|--------|
@@ -359,13 +392,15 @@ Din webbplats har nu:
 
 ## 🚨 Viktiga Anteckningar
 
-### Begränsningar:
+### Begränsningar
+
 1. **Inget är 100% säkert**: En tillräckligt bestämd angripare kan alltid hitta vägar
 2. **Användarupplevelse**: För hög säkerhet kan påverka legitima användare
 3. **Maintenance**: Säkerhetsskydd kräver kontinuerlig uppdatering
 4. **False positives**: Övervaka för legitima användare som blockeras
 
-### Best Practices:
+### Best Practices
+
 1. **Balansera säkerhet och UX**: Justera vid behov
 2. **Övervaka kontinuerligt**: Använd Analytics
 3. **Uppdatera regelbundet**: Nya hot dyker upp

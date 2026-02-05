@@ -9,20 +9,20 @@ server {
     # ==========================================
     # SSL Configuration
     # ==========================================
-    
+
     ssl_certificate /path/to/your/certificate.crt;
     ssl_certificate_key /path/to/your/private.key;
-    
+
     # SSL protocols and ciphers
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
     ssl_prefer_server_ciphers off;
-    
+
     # SSL session cache
     ssl_session_cache shared:SSL:10m;
     ssl_session_timeout 10m;
     ssl_session_tickets off;
-    
+
     # OCSP Stapling
     ssl_stapling on;
     ssl_stapling_verify on;
@@ -32,28 +32,28 @@ server {
     # ==========================================
     # Security Headers
     # ==========================================
-    
+
     # Content Security Policy
     add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;" always;
-    
+
     # X-Frame-Options
     add_header X-Frame-Options "DENY" always;
-    
+
     # X-Content-Type-Options
     add_header X-Content-Type-Options "nosniff" always;
-    
+
     # X-XSS-Protection
     add_header X-XSS-Protection "1; mode=block" always;
-    
+
     # Referrer-Policy
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    
+
     # Permissions-Policy
     add_header Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()" always;
-    
+
     # Strict-Transport-Security (HSTS)
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
-    
+
     # Remove server tokens
     server_tokens off;
     more_clear_headers Server;
@@ -62,17 +62,17 @@ server {
     # ==========================================
     # Bot and Scraper Protection
     # ==========================================
-    
+
     # Block bad user agents
     if ($http_user_agent ~* (curl|wget|python|scrapy|selenium|phantomjs|headless|bot|spider|crawler)) {
         return 403;
     }
-    
+
     # Block empty user agents
     if ($http_user_agent = "") {
         return 403;
     }
-    
+
     # Block suspicious query strings
     if ($query_string ~* "(<|%3C).*script.*(>|%3E)") {
         return 403;
@@ -87,14 +87,14 @@ server {
     # ==========================================
     # Rate Limiting
     # ==========================================
-    
+
     # Define rate limit zones in http block (add to nginx.conf):
     # limit_req_zone $binary_remote_addr zone=general:10m rate=10r/s;
     # limit_req_zone $binary_remote_addr zone=download:10m rate=5r/m;
-    
+
     # Apply rate limiting
     limit_req zone=general burst=20 nodelay;
-    
+
     # Rate limit for specific paths
     location /download {
         limit_req zone=download burst=2 nodelay;
@@ -104,14 +104,14 @@ server {
     # ==========================================
     # Root and Index
     # ==========================================
-    
+
     root /var/www/sortmeout;
     index index.html index.htm;
 
     # ==========================================
     # Gzip Compression
     # ==========================================
-    
+
     gzip on;
     gzip_vary on;
     gzip_proxied any;
@@ -122,7 +122,7 @@ server {
     # ==========================================
     # Brotli Compression (if available)
     # ==========================================
-    
+
     # brotli on;
     # brotli_comp_level 6;
     # brotli_types text/plain text/css text/xml text/javascript application/json application/javascript application/xml+rss application/rss+xml font/truetype font/opentype application/vnd.ms-fontobject image/svg+xml;
@@ -130,7 +130,7 @@ server {
     # ==========================================
     # Cache Control
     # ==========================================
-    
+
     # HTML files - no cache
     location ~* \.(html|htm)$ {
         add_header Cache-Control "no-cache, no-store, must-revalidate";
@@ -138,13 +138,13 @@ server {
         add_header Expires "0";
         try_files $uri $uri/ =404;
     }
-    
+
     # CSS and JS - cache with versioning
     location ~* \.(css|js)$ {
         add_header Cache-Control "public, max-age=31536000, immutable";
         try_files $uri $uri/ =404;
     }
-    
+
     # Images and fonts - long cache
     location ~* \.(jpg|jpeg|png|gif|svg|ico|webp|woff|woff2|ttf|eot)$ {
         add_header Cache-Control "public, max-age=31536000, immutable";
@@ -154,21 +154,21 @@ server {
     # ==========================================
     # Security File Restrictions
     # ==========================================
-    
+
     # Deny access to hidden files
     location ~ /\. {
         deny all;
         access_log off;
         log_not_found off;
     }
-    
+
     # Deny access to sensitive files
     location ~* (\.htaccess|\.htpasswd|\.env|\.git|\.gitignore|composer\.json|package\.json|README\.md|LICENSE|\.log)$ {
         deny all;
         access_log off;
         log_not_found off;
     }
-    
+
     # Deny access to backup files
     location ~* \.(bak|backup|old|save|swp|tmp)$ {
         deny all;
@@ -179,14 +179,14 @@ server {
     # ==========================================
     # File Upload Security
     # ==========================================
-    
+
     # Deny execution of scripts in upload directories
     location ^~ /uploads/ {
         location ~ \.php$ {
             deny all;
         }
     }
-    
+
     # Client body size limit
     client_max_body_size 10M;
     client_body_buffer_size 128k;
@@ -194,10 +194,10 @@ server {
     # ==========================================
     # Request Limits
     # ==========================================
-    
+
     # Limit request header size
     large_client_header_buffers 4 16k;
-    
+
     # Timeout settings
     client_body_timeout 12;
     client_header_timeout 12;
@@ -207,7 +207,7 @@ server {
     # ==========================================
     # Hotlink Protection
     # ==========================================
-    
+
     location ~* \.(jpg|jpeg|png|gif|svg|webp)$ {
         valid_referers none blocked server_names
                        sortmeout.saidborna.com
@@ -220,7 +220,7 @@ server {
     # ==========================================
     # Main Location Block
     # ==========================================
-    
+
     location / {
         try_files $uri $uri/ =404;
     }
@@ -228,10 +228,10 @@ server {
     # ==========================================
     # Error Pages
     # ==========================================
-    
+
     error_page 400 401 403 404 /error.html;
     error_page 500 502 503 504 /error.html;
-    
+
     location = /error.html {
         internal;
     }
@@ -239,10 +239,10 @@ server {
     # ==========================================
     # Logging
     # ==========================================
-    
+
     access_log /var/log/nginx/sortmeout_access.log;
     error_log /var/log/nginx/sortmeout_error.log warn;
-    
+
     # Log blocked requests
     log_format security '$remote_addr - $remote_user [$time_local] '
                        '"$request" $status $body_bytes_sent '
@@ -252,18 +252,18 @@ server {
     # ==========================================
     # IP Blocking (optional)
     # ==========================================
-    
+
     # Deny specific IPs
     # deny 123.456.789.0;
     # deny 987.654.321.0;
-    
+
     # Allow all other IPs
     # allow all;
 
     # ==========================================
     # GeoIP Blocking (if GeoIP module installed)
     # ==========================================
-    
+
     # Block countries (example)
     # if ($geoip_country_code ~ (CN|RU|KP)) {
     #     return 403;
@@ -278,7 +278,7 @@ server {
     listen 80;
     listen [::]:80;
     server_name sortmeout.saidborna.com;
-    
+
     # Redirect all HTTP to HTTPS
     return 301 https://$server_name$request_uri;
 }

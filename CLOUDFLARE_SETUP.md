@@ -1,6 +1,7 @@
 # SortMeOut - Cloudflare Säkerhetskonfiguration
 
 ## Översikt
+
 Denna guide hjälper dig att konfigurera Cloudflare för maximal säkerhet för SortMeOut-webbplatsen.
 
 ---
@@ -8,6 +9,7 @@ Denna guide hjälper dig att konfigurera Cloudflare för maximal säkerhet för 
 ## 1. Grundläggande SSL/TLS-inställningar
 
 ### Steg 1: SSL/TLS-konfiguration
+
 1. Gå till **SSL/TLS** i Cloudflare Dashboard
 2. Välj **Full (strict)** som krypteringsläge
 3. Aktivera:
@@ -17,6 +19,7 @@ Denna guide hjälper dig att konfigurera Cloudflare för maximal säkerhet för 
    - ✅ TLS 1.3
 
 ### Steg 2: Edge Certificates
+
 1. Under **SSL/TLS** → **Edge Certificates**
 2. Aktivera:
    - ✅ Always Use HTTPS
@@ -30,21 +33,23 @@ Denna guide hjälper dig att konfigurera Cloudflare för maximal säkerhet för 
 ## 2. Firewall Rules (WAF)
 
 ### Regel 1: Blockera kända bottar och scrapers
+
 ```
 Expression Builder:
-(cf.client.bot) or 
-(http.user_agent contains "curl") or 
-(http.user_agent contains "wget") or 
-(http.user_agent contains "python") or 
-(http.user_agent contains "scrapy") or 
-(http.user_agent contains "selenium") or 
-(http.user_agent contains "PhantomJS") or 
+(cf.client.bot) or
+(http.user_agent contains "curl") or
+(http.user_agent contains "wget") or
+(http.user_agent contains "python") or
+(http.user_agent contains "scrapy") or
+(http.user_agent contains "selenium") or
+(http.user_agent contains "PhantomJS") or
 (http.user_agent contains "headless")
 
 Action: Block
 ```
 
 ### Regel 2: Ratebegränsning
+
 ```
 Expression Builder:
 (http.request.uri.path contains "/download")
@@ -54,6 +59,7 @@ Requests: 5 requests per 10 minutes
 ```
 
 ### Regel 3: Geografisk begränsning (valfritt)
+
 ```
 Expression Builder:
 not (ip.geoip.country in {"SE" "NO" "DK" "FI" "DE" "US" "GB"})
@@ -62,10 +68,11 @@ Action: Challenge (Managed Challenge)
 ```
 
 ### Regel 4: Skydda känsliga endpoints
+
 ```
 Expression Builder:
-(http.request.uri.path contains "/admin") or 
-(http.request.uri.path contains "/api") or 
+(http.request.uri.path contains "/admin") or
+(http.request.uri.path contains "/api") or
 (http.request.uri.path contains "/config")
 
 Action: Block
@@ -78,6 +85,7 @@ Action: Block
 Gå till **Rules** → **Transform Rules** → **Modify Response Header**
 
 ### Header 1: Strict Content Security Policy
+
 ```
 Header Name: Content-Security-Policy
 Value: default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;
@@ -85,6 +93,7 @@ Action: Set dynamic
 ```
 
 ### Header 2: X-Frame-Options
+
 ```
 Header Name: X-Frame-Options
 Value: DENY
@@ -92,6 +101,7 @@ Action: Set static
 ```
 
 ### Header 3: X-Content-Type-Options
+
 ```
 Header Name: X-Content-Type-Options
 Value: nosniff
@@ -99,6 +109,7 @@ Action: Set static
 ```
 
 ### Header 4: X-XSS-Protection
+
 ```
 Header Name: X-XSS-Protection
 Value: 1; mode=block
@@ -106,6 +117,7 @@ Action: Set static
 ```
 
 ### Header 5: Referrer-Policy
+
 ```
 Header Name: Referrer-Policy
 Value: strict-origin-when-cross-origin
@@ -113,6 +125,7 @@ Action: Set static
 ```
 
 ### Header 6: Permissions-Policy
+
 ```
 Header Name: Permissions-Policy
 Value: geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()
@@ -120,6 +133,7 @@ Action: Set static
 ```
 
 ### Header 7: Strict-Transport-Security
+
 ```
 Header Name: Strict-Transport-Security
 Value: max-age=31536000; includeSubDomains; preload
@@ -127,6 +141,7 @@ Action: Set static
 ```
 
 ### Header 8: X-Robots-Tag
+
 ```
 Header Name: X-Robots-Tag
 Value: index, follow, max-snippet:-1, max-image-preview:large
@@ -138,6 +153,7 @@ Action: Set static
 ## 4. Page Rules
 
 ### Regel 1: Cache Everything (för statiska resurser)
+
 ```
 URL Match: *sortmeout.saidborna.com/css/*
 Settings:
@@ -163,6 +179,7 @@ Settings:
 ```
 
 ### Regel 2: Säkerhet för nedladdningssidor
+
 ```
 URL Match: *sortmeout.saidborna.com/download*
 Settings:
@@ -206,6 +223,7 @@ Settings:
 ### Under **Security** → **Rate Limiting Rules**
 
 #### Regel 1: Generell rate limiting
+
 ```
 Rule Name: General Rate Limit
 If incoming requests match:
@@ -220,6 +238,7 @@ Then:
 ```
 
 #### Regel 2: API/Download protection
+
 ```
 Rule Name: Download Protection
 If incoming requests match:
@@ -242,7 +261,8 @@ Then:
 3. **Always Online**: ON
 4. **Development Mode**: OFF (i produktion)
 
-### Cache Rules:
+### Cache Rules
+
 ```
 URL Match: *sortmeout.saidborna.com/*.html
 Cache Level: Standard
@@ -299,7 +319,7 @@ Aktivera följande ruleset:
 
 ## 12. Security Analytics & Monitoring
 
-### Rekommenderade alerts under **Notifications**:
+### Rekommenderade alerts under **Notifications**
 
 1. **HTTP DDoS Attack Alerter**
    - Trigger: When attack detected
@@ -351,6 +371,7 @@ Skapa anpassade felsidor för:
 4. **WAF Block (1020)**: "Din begäran har blockerats av säkerhetsskäl"
 
 Exempel HTML:
+
 ```html
 <!DOCTYPE html>
 <html lang="sv">
@@ -396,26 +417,32 @@ Exempel HTML:
 ## 15. Additional Recommendations
 
 ### A. IP Access Rules
+
 Under **Security** → **WAF** → **Tools**:
 
 Blockera kända dåliga IP-ranges:
+
 - VPN-provider (om du vill)
 - Hosting-providers kända för scraping
 - Tor exit nodes
 
 ### B. Zone Lockdown (valfritt)
+
 För kritiska endpoints:
+
 ```
 URL: /admin/*
-Allowed IPs: 
+Allowed IPs:
   - Your office IP
   - Your home IP
 ```
 
 ### C. User Agent Blocking
+
 Skapa custom rules för att blockera specifika user agents:
+
 ```
-(http.user_agent eq "BadBot/1.0") or 
+(http.user_agent eq "BadBot/1.0") or
 (http.user_agent contains "Scraper")
 ```
 
@@ -423,21 +450,22 @@ Skapa custom rules för att blockera specifika user agents:
 
 ## 16. Testing Your Configuration
 
-### Säkerhetstester:
+### Säkerhetstester
 
-1. **SSL Test**: https://www.ssllabs.com/ssltest/
+1. **SSL Test**: <https://www.ssllabs.com/ssltest/>
    - Mål: A+ rating
 
-2. **Security Headers**: https://securityheaders.com/
+2. **Security Headers**: <https://securityheaders.com/>
    - Mål: A+ rating
 
-3. **CSP Validator**: https://csp-evaluator.withgoogle.com/
+3. **CSP Validator**: <https://csp-evaluator.withgoogle.com/>
 
-4. **Try DevTools**: 
+4. **Try DevTools**:
    - Öppna F12 på din webbplats
    - Bekräfta att säkerhetsskyddetet aktiveras
 
 5. **Bot Test**:
+
    ```bash
    curl -A "BadBot/1.0" https://sortmeout.saidborna.com/
    # Ska blockeras
@@ -447,19 +475,22 @@ Skapa custom rules för att blockera specifika user agents:
 
 ## 17. Maintenance Checklist
 
-### Månatligt:
+### Månatligt
+
 - [ ] Kontrollera Firewall Analytics
 - [ ] Granska blocked requests
 - [ ] Uppdatera Rate Limiting om nödvändigt
 - [ ] Kontrollera false positives
 
-### Kvartalsvis:
+### Kvartalsvis
+
 - [ ] Review och uppdatera firewall rules
 - [ ] Testa alla säkerhetsfunktioner
 - [ ] Uppdatera IP whitelist/blacklist
 - [ ] Kontrollera SSL-certifikat
 
-### Årligen:
+### Årligen
+
 - [ ] Full säkerhetsaudit
 - [ ] Uppdatera CSP policy
 - [ ] Review och optimera cache settings
@@ -468,7 +499,7 @@ Skapa custom rules för att blockera specifika user agents:
 
 ## 18. Emergency Response
 
-### Om webbplatsen är under attack:
+### Om webbplatsen är under attack
 
 1. **Aktivera "I'm Under Attack Mode"**:
    - Gå till **Security** → **Settings**
@@ -486,20 +517,23 @@ Skapa custom rules för att blockera specifika user agents:
 
 ## 19. Kostnadsfri vs. Betalplan
 
-### Free Plan inkluderar:
+### Free Plan inkluderar
+
 - ✅ Basic DDoS protection
 - ✅ SSL/TLS
 - ✅ Basic firewall rules
 - ✅ Page rules (3 st)
 - ✅ Bot Fight Mode
 
-### Pro Plan ($20/mån) ger:
+### Pro Plan ($20/mån) ger
+
 - ✅ 20 Page Rules
 - ✅ WAF
 - ✅ Image optimization
 - ✅ Advanced Certificate Manager
 
-### Business Plan ($200/mån) ger:
+### Business Plan ($200/mån) ger
+
 - ✅ 50 Page Rules
 - ✅ Advanced DDoS
 - ✅ Custom SSL
@@ -520,6 +554,7 @@ Med denna konfiguration har du:
 7. ✅ **Övervakning och varningar**
 
 Din SortMeOut-webbplats är nu **maximalt skyddad** mot:
+
 - 🛡️ DevTools scraping
 - 🛡️ Automated bots
 - 🛡️ DDoS-attacker
@@ -531,4 +566,4 @@ Din SortMeOut-webbplats är nu **maximalt skyddad** mot:
 ---
 
 **Frågor?** Kontakta Cloudflare support eller läs deras dokumentation:
-https://developers.cloudflare.com/
+<https://developers.cloudflare.com/>

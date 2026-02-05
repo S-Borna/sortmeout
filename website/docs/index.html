@@ -10,13 +10,16 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
 
     <!-- Security Headers -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
@@ -230,7 +233,8 @@
             margin: 1.5rem 0;
         }
 
-        th, td {
+        th,
+        td {
             text-align: left;
             padding: 0.75rem 1rem;
             border-bottom: 1px solid var(--color-border);
@@ -332,7 +336,8 @@
         }
 
         /* Lists */
-        ul, ol {
+        ul,
+        ol {
             margin: 1rem 0 1rem 1.5rem;
             color: var(--color-text-secondary);
         }
@@ -388,7 +393,7 @@
             background: var(--color-bg-elevated);
             border: 1px solid var(--color-border);
             border-radius: 4px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         /* Print styles for PDF export */
@@ -415,7 +420,8 @@
                 page-break-before: always;
             }
 
-            pre, .card {
+            pre,
+            .card {
                 break-inside: avoid;
             }
         }
@@ -531,8 +537,8 @@
             <section id="introduction">
                 <h1>SortMeOut Documentation</h1>
                 <p class="lead">
-                    Welcome to SortMeOut — the intelligent file automation tool for macOS. 
-                    This documentation will guide you through everything from installation 
+                    Welcome to SortMeOut — the intelligent file automation tool for macOS.
+                    This documentation will guide you through everything from installation
                     to advanced rule configuration.
                 </p>
 
@@ -567,7 +573,7 @@
 
             <section id="installation">
                 <h2>Installation</h2>
-                
+
                 <h3>Download & Install</h3>
                 <ol class="steps">
                     <li>
@@ -594,7 +600,8 @@
 
                 <div class="callout callout-warning">
                     <div class="callout-title">First Launch</div>
-                    <p>On first launch, macOS may show a security warning. Right-click the app and select "Open" to bypass this.</p>
+                    <p>On first launch, macOS may show a security warning. Right-click the app and select "Open" to
+                        bypass this.</p>
                 </div>
             </section>
 
@@ -676,14 +683,19 @@
 
             <section id="ai-assistant">
                 <h2>AI Assistant</h2>
-                <p>SortMeOut includes an intelligent AI assistant powered by Anthropic's Claude to help you organize files more efficiently.</p>
+                <p>SortMeOut includes an intelligent AI assistant powered by Anthropic's Claude to help you organize
+                    files more efficiently.</p>
 
                 <h3>What Can the AI Do?</h3>
                 <ul>
-                    <li><strong>Smart Suggestions:</strong> Get personalized file organization recommendations based on your folder contents</li>
-                    <li><strong>Natural Language Rules:</strong> Describe what you want in plain English, and the AI creates the rule for you</li>
-                    <li><strong>File Analysis:</strong> Ask questions about your files like "What are the largest files in Downloads?"</li>
-                    <li><strong>Cleanup Recommendations:</strong> Identify duplicates, old files, and suggest cleanup actions</li>
+                    <li><strong>Smart Suggestions:</strong> Get personalized file organization recommendations based on
+                        your folder contents</li>
+                    <li><strong>Natural Language Rules:</strong> Describe what you want in plain English, and the AI
+                        creates the rule for you</li>
+                    <li><strong>File Analysis:</strong> Ask questions about your files like "What are the largest files
+                        in Downloads?"</li>
+                    <li><strong>Cleanup Recommendations:</strong> Identify duplicates, old files, and suggest cleanup
+                        actions</li>
                 </ul>
 
                 <h3>How to Use</h3>
@@ -696,7 +708,8 @@
 
                 <div class="callout callout-info">
                     <div class="callout-title">Privacy Note</div>
-                    <p>Only file names and folder structure are shared with the AI—never file contents. See our <a href="../privacy">Privacy Policy</a> for details.</p>
+                    <p>Only file names and folder structure are shared with the AI—never file contents. See our <a
+                            href="../privacy">Privacy Policy</a> for details.</p>
                 </div>
             </section>
 
@@ -726,11 +739,13 @@
                     </tbody>
                 </table>
 
-                <p>You can check your remaining AI requests by clicking the AI Assistant menu item—the remaining count is shown in the chat window.</p>
+                <p>You can check your remaining AI requests by clicking the AI Assistant menu item—the remaining count
+                    is shown in the chat window.</p>
 
                 <div class="callout callout-warning">
                     <div class="callout-title">Note</div>
-                    <p>Unused AI requests do not roll over to the next day. Each day's allocation resets at midnight UTC.</p>
+                    <p>Unused AI requests do not roll over to the next day. Each day's allocation resets at midnight
+                        UTC.</p>
                 </div>
             </section>
 
@@ -792,7 +807,7 @@
 
             <section id="license-activation">
                 <h2>License Activation</h2>
-                
+
                 <h3>Activating Pro</h3>
                 <ol class="steps">
                     <li>Click the menu bar icon → <strong>Upgrade to Pro</strong></li>
@@ -859,7 +874,8 @@
 
             <section id="rules">
                 <h2>Understanding Rules</h2>
-                <p>Rules are the heart of SortMeOut. Each rule defines <strong>when</strong> to act (conditions) and <strong>what</strong> to do (actions).</p>
+                <p>Rules are the heart of SortMeOut. Each rule defines <strong>when</strong> to act (conditions) and
+                    <strong>what</strong> to do (actions).</p>
 
                 <div class="card">
                     <pre><code>Rule: "Organize PDFs"
@@ -961,7 +977,8 @@
                         </tr>
                     </tbody>
                 </table>
-                <p>Supported units: <code>B</code>, <code>KB</code>, <code>MB</code>, <code>GB</code>, <code>TB</code></p>
+                <p>Supported units: <code>B</code>, <code>KB</code>, <code>MB</code>, <code>GB</code>, <code>TB</code>
+                </p>
 
                 <h3>Date Conditions</h3>
                 <table>
@@ -1394,7 +1411,7 @@ Actions: Move to Trash</code></pre>
                 <div class="card">
                     <h4 class="card-title">📸 Process Screenshots</h4>
                     <pre><code>Folder: ~/Desktop
-Conditions: 
+Conditions:
   - Name starts with "Screenshot"
   - Extension is "png"
 Actions:
@@ -1406,7 +1423,7 @@ Actions:
                     <h4 class="card-title">💼 Tag Work Files</h4>
                     <pre><code>Folder: ~/Downloads
 Conditions: Downloaded from "company.sharepoint.com"
-Actions: 
+Actions:
   - Move to ~/Documents/Work/
   - Add tag "Work"</code></pre>
                 </div>
@@ -1422,12 +1439,14 @@ Actions:
 
                 <div class="card">
                     <h4 class="card-title">Can I undo an action?</h4>
-                    <p>Files moved to Trash can be recovered. For other actions, check the activity log for the original location.</p>
+                    <p>Files moved to Trash can be recovered. For other actions, check the activity log for the original
+                        location.</p>
                 </div>
 
                 <div class="card">
                     <h4 class="card-title">How do I backup my rules?</h4>
-                    <p>Export rules from Preferences → Rules → Export, or copy <code>~/.config/sortmeout/rules.json</code></p>
+                    <p>Export rules from Preferences → Rules → Export, or copy
+                        <code>~/.config/sortmeout/rules.json</code></p>
                 </div>
 
                 <div class="card">
@@ -1485,7 +1504,7 @@ Actions:
             });
         });
     </script>
-    
+
     <!-- Security Shield -->
     <script src="../js/security.js"></script>
 </body>
