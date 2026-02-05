@@ -146,7 +146,7 @@ class SortMeOutApp(rumps.App):
     def analyze_file(self, _):
         """Analyze a file with AI."""
         import subprocess
-        
+
         script = '''
             tell application "System Events"
                 activate
@@ -160,16 +160,16 @@ class SortMeOutApp(rumps.App):
                 capture_output=True,
                 text=True,
             )
-            
+
             if result.returncode == 0 and result.stdout.strip():
                 file_path = result.stdout.strip()
-                
+
                 try:
                     from sortmeout.ai.assistant import FileAssistant
-                    
+
                     assistant = FileAssistant()
                     analysis = assistant.analyze_file(file_path)
-                    
+
                     rumps.alert(
                         title=f"Analysis: {os.path.basename(file_path)}",
                         message=analysis.get("summary", "Could not analyze file.")
