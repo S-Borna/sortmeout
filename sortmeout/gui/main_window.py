@@ -112,6 +112,9 @@ class SortMeOutApp(rumps.App):
         self.menu = [
             rumps.MenuItem(f"📋 {self.license.get_status_message()}"),
             None,  # Separator
+            rumps.MenuItem("💬 AI Assistant..."),
+            rumps.MenuItem("📎 Analyze File..."),
+            None,  # Separator
             rumps.MenuItem("▶ Start Watching"),
             rumps.MenuItem("🔄 Organize Now"),
             None,  # Separator
@@ -127,7 +130,64 @@ class SortMeOutApp(rumps.App):
             rumps.MenuItem("❌ Quit"),
         ]
 
-    @rumps.clicked("🔑 Enter Pro License...")
+    @rumps.clicked("� AI Assistant...")
+    def open_ai_assistant(self, _):
+        """Open the AI assistant chat window."""
+        try:
+            from sortmeout.gui.chat_window import show_chat_window
+            show_chat_window()
+        except Exception as e:
+            rumps.alert(
+                title="AI Assistant",
+                message=f"Could not open AI Assistant:\n{e}"
+            )
+
+    @rumps.clicked("📎 Analyze File...")
+    def analyze_file(self, _):
+        """Analyze a file with AI."""
+        import subprocess
+        
+        script = '''
+            tell application "System Events"
+                activate
+                set theFile to choose file with prompt "Select a file to analyze:"
+                return POSIX path of theFile
+            end tell
+        '''
+        try:
+            result = subprocess.run(
+                ["osascript", "-e", script],
+                capture_output=True,
+                text=True,
+            )
+            
+            if result.returncode == 0 and result.stdout.strip():
+                file_path = result.stdout.strip()
+                
+                try:
+                    from sortmeout.ai.assistant import FileAssistant
+                    
+                    assistant = FileAssistant()
+                    analysis = assistant.analyze_file(file_path)
+                    
+                    rumps.alert(
+                        title=f"Analysis: {os.path.basename(file_path)}",
+                        message=analysis.get("summary", "Could not analyze file.")
+                    )
+                except ImportError:
+                    rumps.alert(
+                        title="AI Not Available",
+                        message="AI Assistant requires the anthropic package."
+                    )
+                except Exception as e:
+                    rumps.alert(
+                        title="Analysis Failed",
+                        message=f"Could not analyze file:\n{e}"
+                    )
+        except Exception as e:
+            pass
+
+    @rumps.clicked("�🔑 Enter Pro License...")
     def enter_license(self, _):
         """Show license entry dialog."""
         from sortmeout.core.license import get_license, LicenseState

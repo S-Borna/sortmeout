@@ -417,6 +417,9 @@ class LicenseAuthority:
         state = self.state
 
         if state == LicenseState.PRO_ACTIVE:
+            # Check for creator license
+            if self._pro_license_key and "CREATOR" in self._pro_license_key.upper():
+                return "✨ Creator License"
             return "Pro License Active"
         elif state == LicenseState.TRIAL_ACTIVE:
             days = self.trial_days_remaining
