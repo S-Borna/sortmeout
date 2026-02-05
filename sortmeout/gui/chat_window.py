@@ -95,36 +95,37 @@ ENV_FILE = os.path.join(CONFIG_DIR, ".env")
 # PREMIUM COLOR PALETTE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class Colors:
     """Premium color palette for the chat interface."""
-    
+
     # Background colors
     WINDOW_BG = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.11, 0.11, 0.12, 1.0)
     CHAT_BG = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.08, 0.08, 0.09, 1.0)
     INPUT_BG = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.15, 0.15, 0.16, 1.0)
-    
+
     # Message bubbles
     USER_BUBBLE = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.25, 0.52, 0.96, 1.0)
     USER_BUBBLE_GRADIENT = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.18, 0.42, 0.85, 1.0)
     AI_BUBBLE = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.18, 0.18, 0.20, 1.0)
     AI_BUBBLE_BORDER = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.25, 0.25, 0.28, 1.0)
-    
+
     # Text colors
     TEXT_PRIMARY = NSColor.colorWithCalibratedRed_green_blue_alpha_(1.0, 1.0, 1.0, 1.0)
     TEXT_SECONDARY = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.7, 0.7, 0.75, 1.0)
     TEXT_MUTED = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.5, 0.5, 0.55, 1.0)
-    
+
     # Accent colors
     ACCENT_PRIMARY = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.35, 0.58, 1.0, 1.0)
     ACCENT_SUCCESS = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.30, 0.85, 0.55, 1.0)
     ACCENT_WARNING = NSColor.colorWithCalibratedRed_green_blue_alpha_(1.0, 0.75, 0.25, 1.0)
     ACCENT_ERROR = NSColor.colorWithCalibratedRed_green_blue_alpha_(1.0, 0.40, 0.40, 1.0)
-    
+
     # Button colors
     BUTTON_BG = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.25, 0.52, 0.96, 1.0)
     BUTTON_HOVER = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.35, 0.60, 1.0, 1.0)
     BUTTON_DISABLED = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.25, 0.25, 0.28, 1.0)
-    
+
     # Dividers and borders
     DIVIDER = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.22, 0.22, 0.24, 1.0)
     BORDER_SUBTLE = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.20, 0.20, 0.22, 1.0)
@@ -134,33 +135,34 @@ class Colors:
 # TYPOGRAPHY
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class Typography:
     """Premium typography settings."""
-    
+
     @staticmethod
     def heading():
         return NSFont.systemFontOfSize_weight_(20, NSFontWeightSemibold)
-    
+
     @staticmethod
     def subheading():
         return NSFont.systemFontOfSize_weight_(14, NSFontWeightMedium)
-    
+
     @staticmethod
     def body():
         return NSFont.systemFontOfSize_weight_(14, NSFontWeightMedium)
-    
+
     @staticmethod
     def body_regular():
         return NSFont.systemFontOfSize_(14)
-    
+
     @staticmethod
     def caption():
         return NSFont.systemFontOfSize_(11)
-    
+
     @staticmethod
     def timestamp():
         return NSFont.monospacedDigitSystemFontOfSize_weight_(10, NSFontWeightMedium)
-    
+
     @staticmethod
     def code():
         return NSFont.monospacedSystemFontOfSize_weight_(13, NSFontWeightMedium)
@@ -169,6 +171,7 @@ class Typography:
 # ═══════════════════════════════════════════════════════════════════════════════
 # HELPER FUNCTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def load_api_key():
     """Load API key from config."""
@@ -194,9 +197,10 @@ def format_time(dt=None):
 # CUSTOM VIEWS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class PremiumInputField(NSTextField):
     """Custom styled input field with premium appearance."""
-    
+
     @objc.python_method
     def setup_style(self):
         self.setBezeled_(False)
@@ -205,7 +209,7 @@ class PremiumInputField(NSTextField):
         self.setTextColor_(Colors.TEXT_PRIMARY)
         self.setFont_(Typography.body())
         self.setFocusRingType_(1)  # None
-        
+
         # Rounded corners via layer
         self.setWantsLayer_(True)
         self.layer().setCornerRadius_(12)
@@ -215,26 +219,27 @@ class PremiumInputField(NSTextField):
 
 class PremiumButton(NSButton):
     """Custom styled button with premium appearance."""
-    
-    @objc.python_method  
+
+    @objc.python_method
     def setup_style(self, primary=True):
         self.setWantsLayer_(True)
         self.setBordered_(False)
         self.setFont_(Typography.subheading())
-        
+
         if primary:
             self.layer().setBackgroundColor_(Colors.BUTTON_BG.CGColor())
             self.setContentTintColor_(Colors.TEXT_PRIMARY)
         else:
             self.layer().setBackgroundColor_(Colors.INPUT_BG.CGColor())
             self.setContentTintColor_(Colors.TEXT_SECONDARY)
-        
+
         self.layer().setCornerRadius_(10)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # DELEGATE CLASS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class ChatWindowDelegate(NSObject):
     """Delegate class to handle button actions."""
@@ -270,6 +275,7 @@ class ChatWindowDelegate(NSObject):
 # PREMIUM CHAT WINDOW
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class ChatWindow:
     """Premium chat window for SortMeOut AI."""
 
@@ -297,6 +303,7 @@ class ChatWindow:
         if api_key:
             try:
                 from sortmeout.ai.assistant import FileAssistant
+
                 self.assistant = FileAssistant(api_key=api_key)
             except Exception as e:
                 print(f"Assistant init error: {e}")
@@ -319,7 +326,7 @@ class ChatWindow:
         self.window = NSWindow.alloc().initWithContentRect_styleMask_backing_defer_(
             frame, style, NSBackingStoreBuffered, False
         )
-        
+
         # Premium window setup
         self.window.setTitle_("SortMeOut AI")
         self.window.setTitlebarAppearsTransparent_(True)
@@ -328,16 +335,16 @@ class ChatWindow:
         self.window.setReleasedWhenClosed_(False)
         self.window.setBackgroundColor_(Colors.WINDOW_BG)
         self.window.setMovableByWindowBackground_(True)
-        
+
         # Enable vibrancy for modern look
         self.window.setOpaque_(False)
 
         content = self.window.contentView()
         content.setWantsLayer_(True)
         content.layer().setBackgroundColor_(Colors.WINDOW_BG.CGColor())
-        
+
         content_height = 680
-        
+
         # ─────────────────────────────────────────────────────────────────────
         # HEADER SECTION (60px)
         # ─────────────────────────────────────────────────────────────────────
@@ -347,7 +354,7 @@ class ChatWindow:
         self.header_view.setWantsLayer_(True)
         self.header_view.layer().setBackgroundColor_(Colors.WINDOW_BG.CGColor())
         self.header_view.setAutoresizingMask_(NSViewWidthSizable | NSViewMinYMargin)
-        
+
         # App icon/avatar
         icon_frame = NSMakeRect(20, 12, 36, 36)
         icon_view = NSView.alloc().initWithFrame_(icon_frame)
@@ -355,7 +362,7 @@ class ChatWindow:
         icon_view.layer().setCornerRadius_(18)
         icon_view.layer().setBackgroundColor_(Colors.ACCENT_PRIMARY.CGColor())
         self.header_view.addSubview_(icon_view)
-        
+
         # Icon label (emoji)
         icon_label = NSTextField.alloc().initWithFrame_(NSMakeRect(20, 12, 36, 36))
         icon_label.setStringValue_("🤖")
@@ -366,7 +373,7 @@ class ChatWindow:
         icon_label.setAlignment_(1)  # Center
         icon_label.setFont_(NSFont.systemFontOfSize_(18))
         self.header_view.addSubview_(icon_label)
-        
+
         # Title
         title_frame = NSMakeRect(66, 28, 300, 22)
         title_label = NSTextField.alloc().initWithFrame_(title_frame)
@@ -378,7 +385,7 @@ class ChatWindow:
         title_label.setTextColor_(Colors.TEXT_PRIMARY)
         title_label.setFont_(Typography.heading())
         self.header_view.addSubview_(title_label)
-        
+
         # Subtitle/Status
         subtitle_frame = NSMakeRect(66, 10, 300, 18)
         self.header_status = NSTextField.alloc().initWithFrame_(subtitle_frame)
@@ -390,7 +397,7 @@ class ChatWindow:
         self.header_status.setTextColor_(Colors.TEXT_MUTED)
         self.header_status.setFont_(Typography.caption())
         self.header_view.addSubview_(self.header_status)
-        
+
         # Status indicator dot
         dot_frame = NSMakeRect(450, 26, 10, 10)
         self.status_dot = NSView.alloc().initWithFrame_(dot_frame)
@@ -399,9 +406,9 @@ class ChatWindow:
         self.status_dot.layer().setBackgroundColor_(Colors.ACCENT_SUCCESS.CGColor())
         self.status_dot.setAutoresizingMask_(NSViewMinYMargin)
         self.header_view.addSubview_(self.status_dot)
-        
+
         content.addSubview_(self.header_view)
-        
+
         # Header divider
         divider_frame = NSMakeRect(20, content_height - header_height - 1, 440, 1)
         divider = NSView.alloc().initWithFrame_(divider_frame)
@@ -409,13 +416,13 @@ class ChatWindow:
         divider.layer().setBackgroundColor_(Colors.DIVIDER.CGColor())
         divider.setAutoresizingMask_(NSViewWidthSizable | NSViewMinYMargin)
         content.addSubview_(divider)
-        
+
         # ─────────────────────────────────────────────────────────────────────
         # CHAT AREA
         # ─────────────────────────────────────────────────────────────────────
         chat_top = content_height - header_height - 10
         chat_height = chat_top - 80  # Leave room for input
-        
+
         scroll_frame = NSMakeRect(0, 75, 480, chat_height)
         scroll_view = NSScrollView.alloc().initWithFrame_(scroll_frame)
         scroll_view.setHasVerticalScroller_(True)
@@ -424,11 +431,11 @@ class ChatWindow:
         scroll_view.setAutoresizingMask_(NSViewWidthSizable | NSViewHeightSizable)
         scroll_view.setDrawsBackground_(True)
         scroll_view.setBackgroundColor_(Colors.CHAT_BG)
-        
+
         # Custom scroller appearance
         scroll_view.setScrollerStyle_(1)  # Overlay
         scroll_view.verticalScroller().setKnobStyle_(2)  # Dark
-        
+
         text_frame = NSMakeRect(0, 0, 460, chat_height)
         self.chat_view = NSTextView.alloc().initWithFrame_(text_frame)
         self.chat_view.setEditable_(False)
@@ -444,10 +451,10 @@ class ChatWindow:
         self.chat_view.setHorizontallyResizable_(False)
         self.chat_view.textContainer().setWidthTracksTextView_(True)
         self.chat_view.textContainer().setContainerSize_(NSSize(440, 1e7))
-        
+
         scroll_view.setDocumentView_(self.chat_view)
         content.addSubview_(scroll_view)
-        
+
         # ─────────────────────────────────────────────────────────────────────
         # INPUT SECTION
         # ─────────────────────────────────────────────────────────────────────
@@ -456,7 +463,7 @@ class ChatWindow:
         input_section.setWantsLayer_(True)
         input_section.layer().setBackgroundColor_(Colors.WINDOW_BG.CGColor())
         input_section.setAutoresizingMask_(NSViewWidthSizable | NSViewMaxYMargin)
-        
+
         # Input container with rounded corners
         input_container_frame = NSMakeRect(16, 16, 448, 44)
         input_container = NSView.alloc().initWithFrame_(input_container_frame)
@@ -466,7 +473,7 @@ class ChatWindow:
         input_container.layer().setBorderWidth_(1)
         input_container.layer().setBorderColor_(Colors.BORDER_SUBTLE.CGColor())
         input_container.setAutoresizingMask_(NSViewWidthSizable)
-        
+
         # Input field (inside container)
         input_frame = NSMakeRect(16, 8, 360, 28)
         self.input_field = NSTextField.alloc().initWithFrame_(input_frame)
@@ -480,7 +487,7 @@ class ChatWindow:
         self.input_field.setSelectable_(True)
         self.input_field.setAutoresizingMask_(NSViewWidthSizable)
         input_container.addSubview_(self.input_field)
-        
+
         # Send button (inside container)
         button_frame = NSMakeRect(390, 6, 50, 32)
         self.send_button = NSButton.alloc().initWithFrame_(button_frame)
@@ -495,10 +502,10 @@ class ChatWindow:
         self.send_button.setAction_("sendClicked:")
         self.send_button.setAutoresizingMask_(NSViewMinYMargin)
         input_container.addSubview_(self.send_button)
-        
+
         input_section.addSubview_(input_container)
         content.addSubview_(input_section)
-        
+
         # Set input field action (Enter key)
         self.input_field.setTarget_(self.delegate)
         self.input_field.setAction_("sendClicked:")
@@ -517,14 +524,14 @@ class ChatWindow:
 Jag är din personliga AI-assistent för filorganisation. Jag kan hjälpa dig med:
 
 ✦  Organisera filer automatiskt
-✦  Analysera dokument och föreslå placering  
+✦  Analysera dokument och föreslå placering
 ✦  Skapa smarta mappstrukturer
 ✦  Städa upp i Downloads och Desktop
 ✦  Sortera efter typ, datum eller innehåll
 
 Berätta vad du vill göra så hjälper jag dig!""",
             is_ai=True,
-            show_timestamp=False
+            show_timestamp=False,
         )
 
     def _start_timer(self):
@@ -554,7 +561,7 @@ Berätta vad du vill göra så hjälper jag dig!""",
                     self.send_button.layer().setBackgroundColor_(Colors.BUTTON_BG.CGColor())
         except queue.Empty:
             pass
-        
+
         # Animate status dot when processing
         if self.is_processing:
             self.animation_state = (self.animation_state + 1) % 20
@@ -591,13 +598,13 @@ Berätta vad du vill göra så hjälper jag dig!""",
             NSForegroundColorAttributeName: sender_color,
             NSParagraphStyleAttributeName: para_style,
         }
-        
+
         timestamp = format_time() if show_timestamp else ""
         header_text = f"{sender_icon}  {sender}"
         if timestamp:
             header_text += f"  ·  {timestamp}"
         header_text += "\n"
-        
+
         header_str = NSAttributedString.alloc().initWithString_attributes_(
             header_text, header_attrs
         )
@@ -609,16 +616,14 @@ Berätta vad du vill göra så hjälper jag dig!""",
         body_para.setLineBreakMode_(NSLineBreakByWordWrapping)
         body_para.setFirstLineHeadIndent_(28)  # Indent under icon
         body_para.setHeadIndent_(28)
-        
+
         body_attrs = {
             NSFontAttributeName: Typography.body_regular(),
             NSForegroundColorAttributeName: Colors.TEXT_PRIMARY,
             NSParagraphStyleAttributeName: body_para,
         }
-        
-        body_str = NSAttributedString.alloc().initWithString_attributes_(
-            text, body_attrs
-        )
+
+        body_str = NSAttributedString.alloc().initWithString_attributes_(text, body_attrs)
         storage.appendAttributedString_(body_str)
 
         # Scroll to bottom with smooth animation
@@ -627,7 +632,7 @@ Berätta vad du vill göra så hjälper jag dig!""",
     def _set_status(self, text, processing=False):
         """Set status in header."""
         self.header_status.setStringValue_(text)
-        
+
         if processing:
             self.header_status.setTextColor_(Colors.ACCENT_WARNING)
             self.status_dot.layer().setBackgroundColor_(Colors.ACCENT_WARNING.CGColor())
@@ -665,10 +670,9 @@ Berätta vad du vill göra så hjälper jag dig!""",
             self.response_queue.put(("status", "Analyserar din förfrågan..."))
 
             if not self.assistant:
-                self.response_queue.put((
-                    "error",
-                    "AI-assistenten kunde inte initieras. Kontrollera din API-nyckel."
-                ))
+                self.response_queue.put(
+                    ("error", "AI-assistenten kunde inte initieras. Kontrollera din API-nyckel.")
+                )
                 return
 
             self.response_queue.put(("status", "Tänker..."))
@@ -691,7 +695,7 @@ Berätta vad du vill göra så hjälper jag dig!""",
         self.window.makeKeyAndOrderFront_(None)
         self.input_field.becomeFirstResponder()
         NSApp.activateIgnoringOtherApps_(True)
-        
+
         # Subtle fade-in effect
         self.window.setAlphaValue_(0.0)
         self.window.setAlphaValue_(1.0)
@@ -736,7 +740,9 @@ def main():
     app_menu_item = NSMenuItem.alloc().init()
     menubar.addItem_(app_menu_item)
     app_menu = NSMenu.alloc().init()
-    app_menu.addItemWithTitle_action_keyEquivalent_("About SortMeOut AI", "orderFrontStandardAboutPanel:", "")
+    app_menu.addItemWithTitle_action_keyEquivalent_(
+        "About SortMeOut AI", "orderFrontStandardAboutPanel:", ""
+    )
     app_menu.addItem_(NSMenuItem.separatorItem())
     app_menu.addItemWithTitle_action_keyEquivalent_("Quit", "terminate:", "q")
     app_menu_item.setSubmenu_(app_menu)

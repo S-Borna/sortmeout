@@ -11,11 +11,18 @@ from typing import Optional, Dict, List, Any
 from datetime import datetime
 
 # License gate import - SINGLE AI GATE
-from sortmeout.core.license import can_execute_ai, record_ai_execution, get_ai_blocked_message, get_license, LicenseState
+from sortmeout.core.license import (
+    can_execute_ai,
+    record_ai_execution,
+    get_ai_blocked_message,
+    get_license,
+    LicenseState,
+)
 
 # Model selection - Haiku for all users, Sonnet only for Creator
-MODEL_HAIKU = "claude-3-5-haiku-20241022"   # All users
-MODEL_SONNET = "claude-sonnet-4-5-20250929" # Creator only
+MODEL_HAIKU = "claude-3-5-haiku-20241022"  # All users
+MODEL_SONNET = "claude-sonnet-4-5-20250929"  # Creator only
+
 
 def get_model() -> str:
     """Get appropriate model based on license state."""
@@ -24,6 +31,7 @@ def get_model() -> str:
     if license._pro_license_key and "CREATOR" in license._pro_license_key:
         return MODEL_SONNET
     return MODEL_HAIKU  # Everyone else gets Haiku
+
 
 try:
     import anthropic

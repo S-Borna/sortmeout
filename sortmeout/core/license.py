@@ -24,8 +24,8 @@ import hashlib
 # ========================================
 
 # Rate limits per license tier
-TRIAL_AI_DAILY_LIMIT = 10   # Trial: 10/day (Haiku)
-PRO_AI_DAILY_LIMIT = 30     # Pro: 30/day (Haiku)
+TRIAL_AI_DAILY_LIMIT = 10  # Trial: 10/day (Haiku)
+PRO_AI_DAILY_LIMIT = 30  # Pro: 30/day (Haiku)
 
 # ========================================
 # PRICING
@@ -93,12 +93,12 @@ class LicenseAuthority:
     def _get_machine_fingerprint(self) -> str:
         """
         Generate a unique machine fingerprint.
-        
+
         Uses macOS hardware UUID which persists across:
         - Config folder deletion
         - App reinstall
         - macOS updates
-        
+
         Only changes if user gets new hardware.
         """
         try:
@@ -107,7 +107,7 @@ class LicenseAuthority:
                 ["ioreg", "-rd1", "-c", "IOPlatformExpertDevice"],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
             )
             if result.returncode == 0:
                 for line in result.stdout.split("\n"):
@@ -118,7 +118,7 @@ class LicenseAuthority:
                         return hashlib.sha256(uuid.encode()).hexdigest()[:32]
         except Exception:
             pass
-        
+
         # Fallback: use hostname + username hash
         fallback = f"{os.uname().nodename}-{os.getenv('USER', 'unknown')}"
         return hashlib.sha256(fallback.encode()).hexdigest()[:32]
@@ -126,25 +126,25 @@ class LicenseAuthority:
     def _check_fingerprint_fraud(self) -> bool:
         """
         Check if this machine has already used a trial.
-        
+
         Returns True if fraud detected (trial already used on this machine).
         """
         if not self._fingerprint_file.exists():
             return False
-        
+
         try:
             with open(self._fingerprint_file, "r") as f:
                 data = json.load(f)
-            
+
             stored_id = data.get("machine_id")
             trial_used = data.get("trial_used", False)
-            
+
             # If same machine and trial was used, it's fraud attempt
             if stored_id == self._machine_id and trial_used:
                 return True
         except Exception:
             pass
-        
+
         return False
 
     def _mark_trial_used(self):
@@ -152,7 +152,7 @@ class LicenseAuthority:
         data = {
             "machine_id": self._machine_id,
             "trial_used": True,
-            "first_trial": datetime.now().isoformat()
+            "first_trial": datetime.now().isoformat(),
         }
         try:
             with open(self._fingerprint_file, "w") as f:
@@ -171,7 +171,7 @@ class LicenseAuthority:
     def _initialize_trial(self):
         """
         Initialize trial on first application launch.
-        
+
         Fraud protection: Checks machine fingerprint to prevent
         users from deleting config to get infinite trials.
         """
@@ -182,7 +182,7 @@ class LicenseAuthority:
             self._trial_consumed = True
             self._save_license()
             return
-        
+
         # Legitimate first launch
         self._trial_start = datetime.now()
         self._state = LicenseState.TRIAL_ACTIVE
