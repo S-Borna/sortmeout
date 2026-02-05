@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 from datetime import datetime, timedelta, date
 from enum import Enum
 from pathlib import Path
@@ -22,8 +23,14 @@ import hashlib
 # AI EXECUTION GATE CONSTANTS
 # ========================================
 
-# Trial rate limit: max AI executions per day during TRIAL_ACTIVE
-TRIAL_AI_DAILY_LIMIT = 25
+# Rate limits per license tier
+TRIAL_AI_DAILY_LIMIT = 10   # Trial: 10/day (Haiku)
+PRO_AI_DAILY_LIMIT = 30     # Pro: 30/day (Haiku)
+
+# ========================================
+# PRICING
+# ========================================
+PRO_PRICE_USD = 9.99  # Monthly subscription price
 
 # The ONLY error message for blocked AI. No variations.
 AI_BLOCKED_MESSAGE = "AI Assistant requires an active Pro license."
@@ -64,21 +71,94 @@ class LicenseAuthority:
         self._initialized = True
         self._license_dir = Path(os.path.expanduser("~/.config/sortmeout"))
         self._license_file = self._license_dir / self.LICENSE_FILE
+        self._fingerprint_file = self._license_dir / ".fingerprint"  # Hidden file
         self._state: LicenseState = LicenseState.TRIAL_EXPIRED
         self._trial_start: Optional[datetime] = None
         self._pro_license_key: Optional[str] = None
         self._trial_consumed: bool = False  # True if trial was used and Pro was later deactivated
+        self._machine_id: Optional[str] = None  # Hardware fingerprint
 
         # Rate limit tracking (trial only)
         self._ai_usage_date: Optional[str] = None  # ISO date string
         self._ai_usage_count: int = 0
 
         self._ensure_license_dir()
+        self._machine_id = self._get_machine_fingerprint()
         self._load_or_initialize()
 
     def _ensure_license_dir(self):
         """Ensure license directory exists."""
         self._license_dir.mkdir(parents=True, exist_ok=True)
+
+    def _get_machine_fingerprint(self) -> str:
+        """
+        Generate a unique machine fingerprint.
+        
+        Uses macOS hardware UUID which persists across:
+        - Config folder deletion
+        - App reinstall
+        - macOS updates
+        
+        Only changes if user gets new hardware.
+        """
+        try:
+            # Get macOS Hardware UUID (unique per machine)
+            result = subprocess.run(
+                ["ioreg", "-rd1", "-c", "IOPlatformExpertDevice"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.returncode == 0:
+                for line in result.stdout.split("\n"):
+                    if "IOPlatformUUID" in line:
+                        # Extract UUID from line like: "IOPlatformUUID" = "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+                        uuid = line.split('"')[-2]
+                        # Hash it for privacy
+                        return hashlib.sha256(uuid.encode()).hexdigest()[:32]
+        except Exception:
+            pass
+        
+        # Fallback: use hostname + username hash
+        fallback = f"{os.uname().nodename}-{os.getenv('USER', 'unknown')}"
+        return hashlib.sha256(fallback.encode()).hexdigest()[:32]
+
+    def _check_fingerprint_fraud(self) -> bool:
+        """
+        Check if this machine has already used a trial.
+        
+        Returns True if fraud detected (trial already used on this machine).
+        """
+        if not self._fingerprint_file.exists():
+            return False
+        
+        try:
+            with open(self._fingerprint_file, "r") as f:
+                data = json.load(f)
+            
+            stored_id = data.get("machine_id")
+            trial_used = data.get("trial_used", False)
+            
+            # If same machine and trial was used, it's fraud attempt
+            if stored_id == self._machine_id and trial_used:
+                return True
+        except Exception:
+            pass
+        
+        return False
+
+    def _mark_trial_used(self):
+        """Mark that this machine has used its trial."""
+        data = {
+            "machine_id": self._machine_id,
+            "trial_used": True,
+            "first_trial": datetime.now().isoformat()
+        }
+        try:
+            with open(self._fingerprint_file, "w") as f:
+                json.dump(data, f)
+        except Exception:
+            pass
 
     def _load_or_initialize(self):
         """Load existing license or initialize trial on first launch."""
@@ -89,9 +169,24 @@ class LicenseAuthority:
             self._initialize_trial()
 
     def _initialize_trial(self):
-        """Initialize trial on first application launch."""
+        """
+        Initialize trial on first application launch.
+        
+        Fraud protection: Checks machine fingerprint to prevent
+        users from deleting config to get infinite trials.
+        """
+        # Check for fraud (config deleted but same machine)
+        if self._check_fingerprint_fraud():
+            # This machine already had a trial - no new trial
+            self._state = LicenseState.TRIAL_EXPIRED
+            self._trial_consumed = True
+            self._save_license()
+            return
+        
+        # Legitimate first launch
         self._trial_start = datetime.now()
         self._state = LicenseState.TRIAL_ACTIVE
+        self._mark_trial_used()  # Record fingerprint
         self._save_license()
 
     def _load_license(self):
@@ -299,9 +394,10 @@ class LicenseAuthority:
             - If blocked: (False, AI_BLOCKED_MESSAGE)
 
         Rules:
-        - TRIAL_ACTIVE: allowed if under daily limit
-        - PRO_ACTIVE: always allowed (unlimited)
+        - TRIAL_ACTIVE: allowed if under daily limit (10/day)
+        - PRO_ACTIVE: allowed if under daily limit (30/day)
         - TRIAL_EXPIRED: never allowed
+        - CREATOR: unlimited
 
         This function does NOT:
         - Send prompts
@@ -312,24 +408,34 @@ class LicenseAuthority:
         """
         state = self.state
 
-        # PRO_ACTIVE: unlimited, always allowed
-        if state == LicenseState.PRO_ACTIVE:
+        # Check for Creator (unlimited)
+        if self._pro_license_key and "CREATOR" in self._pro_license_key:
             return (True, "")
+
+        # PRO_ACTIVE: allowed if under daily limit
+        if state == LicenseState.PRO_ACTIVE:
+            if self._check_rate_limit(PRO_AI_DAILY_LIMIT):
+                return (True, "")
+            else:
+                return (False, "Daily AI limit reached (30/day). Resets at midnight.")
 
         # TRIAL_ACTIVE: allowed if under daily limit
         if state == LicenseState.TRIAL_ACTIVE:
-            if self._check_trial_rate_limit():
+            if self._check_rate_limit(TRIAL_AI_DAILY_LIMIT):
                 return (True, "")
             else:
-                return (False, AI_BLOCKED_MESSAGE)
+                return (False, "Daily AI limit reached (10/day). Upgrade to Pro for 30/day!")
 
         # TRIAL_EXPIRED or any other state: blocked
         return (False, AI_BLOCKED_MESSAGE)
 
-    def _check_trial_rate_limit(self) -> bool:
+    def _check_rate_limit(self, limit: int) -> bool:
         """
-        Check if trial user is under daily AI limit.
+        Check if user is under daily AI limit.
         Resets counter if date has changed.
+
+        Args:
+            limit: Daily limit to check against
 
         Returns:
             True if under limit, False if limit reached.
@@ -342,16 +448,14 @@ class LicenseAuthority:
             self._ai_usage_count = 0
             self._save_license()
 
-        return self._ai_usage_count < TRIAL_AI_DAILY_LIMIT
+        return self._ai_usage_count < limit
 
     def record_ai_execution(self) -> None:
         """
         Record an AI execution for rate limiting.
-        Call this AFTER successful AI execution during trial.
+        Call this AFTER successful AI execution.
         """
-        if self.state != LicenseState.TRIAL_ACTIVE:
-            return  # Only track during trial
-
+        # Creator has no limit, but still track for stats
         today = date.today().isoformat()
 
         if self._ai_usage_date != today:
@@ -361,43 +465,55 @@ class LicenseAuthority:
         self._ai_usage_count += 1
         self._save_license()
 
-    def get_trial_ai_remaining(self) -> int:
+    def get_ai_remaining(self) -> int:
         """
-        Get remaining AI executions for today during trial.
-        Returns 0 if not in trial or limit reached.
+        Get remaining AI executions for today.
         """
-        if self.state != LicenseState.TRIAL_ACTIVE:
-            return 0
+        # Creator = unlimited
+        if self._pro_license_key and "CREATOR" in self._pro_license_key:
+            return 999
 
         today = date.today().isoformat()
         if self._ai_usage_date != today:
-            return TRIAL_AI_DAILY_LIMIT
+            # New day, return full limit
+            if self.state == LicenseState.PRO_ACTIVE:
+                return PRO_AI_DAILY_LIMIT
+            elif self.state == LicenseState.TRIAL_ACTIVE:
+                return TRIAL_AI_DAILY_LIMIT
+            return 0
 
-        return max(0, TRIAL_AI_DAILY_LIMIT - self._ai_usage_count)
+        # Return remaining based on tier
+        if self.state == LicenseState.PRO_ACTIVE:
+            return max(0, PRO_AI_DAILY_LIMIT - self._ai_usage_count)
+        elif self.state == LicenseState.TRIAL_ACTIVE:
+            return max(0, TRIAL_AI_DAILY_LIMIT - self._ai_usage_count)
+        return 0
 
     def can_execute_automation(self) -> bool:
         """
         Check if automation execution is allowed.
 
-        When license is not active, automation is COMPLETELY disabled.
+        FREEMIUM MODEL: Automation is ALWAYS allowed.
+        This keeps users engaged even after trial expires.
+        Revenue comes from AI features (Pro).
         """
-        return self.is_active
+        return True  # Always allowed - freemium
 
     def can_read_file_contents(self) -> bool:
         """
         Check if reading file contents is allowed.
 
-        When license is not active, file content reading is COMPLETELY disabled.
+        FREEMIUM MODEL: Basic file operations always allowed.
         """
-        return self.is_active
+        return True  # Always allowed - freemium
 
     def can_watch_filesystem(self) -> bool:
         """
         Check if filesystem watching is allowed.
 
-        When license is not active, filesystem watching is COMPLETELY disabled.
+        FREEMIUM MODEL: Watching is always allowed.
         """
-        return self.is_active
+        return True  # Always allowed - freemium
 
     # ========================================
     # SHELL MODE MESSAGE

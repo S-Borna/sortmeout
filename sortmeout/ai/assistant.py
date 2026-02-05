@@ -11,7 +11,19 @@ from typing import Optional, Dict, List, Any
 from datetime import datetime
 
 # License gate import - SINGLE AI GATE
-from sortmeout.core.license import can_execute_ai, record_ai_execution, get_ai_blocked_message
+from sortmeout.core.license import can_execute_ai, record_ai_execution, get_ai_blocked_message, get_license, LicenseState
+
+# Model selection - Haiku for all users, Sonnet only for Creator
+MODEL_HAIKU = "claude-3-5-haiku-20241022"   # All users
+MODEL_SONNET = "claude-sonnet-4-5-20250929" # Creator only
+
+def get_model() -> str:
+    """Get appropriate model based on license state."""
+    license = get_license()
+    # Only Creator gets Sonnet
+    if license._pro_license_key and "CREATOR" in license._pro_license_key:
+        return MODEL_SONNET
+    return MODEL_HAIKU  # Everyone else gets Haiku
 
 try:
     import anthropic
@@ -260,7 +272,7 @@ Svara på SVENSKA i detta JSON-format:
 
         try:
             response = self.client.messages.create(
-                model="claude-sonnet-4-5-20250929",
+                model=get_model(),
                 max_tokens=1000,
                 messages=[{"role": "user", "content": prompt}],
             )
@@ -482,7 +494,7 @@ VIKTIGT:
 
         try:
             response = self.client.messages.create(
-                model="claude-sonnet-4-5-20250929",
+                model=get_model(),
                 max_tokens=8000,  # Ökat för att kunna köra alla kommandon i ett svep
                 system=system_prompt,
                 messages=self.conversation_history,
