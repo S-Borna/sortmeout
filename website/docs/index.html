@@ -17,13 +17,14 @@
 
     <style>
         :root {
-            --color-bg: #0a0a0f;
-            --color-bg-elevated: #12121a;
-            --color-bg-hover: #1a1a25;
-            --color-border: rgba(255, 255, 255, 0.08);
-            --color-text: #ffffff;
-            --color-text-secondary: rgba(255, 255, 255, 0.7);
-            --color-text-muted: rgba(255, 255, 255, 0.5);
+            /* Light theme matching landing page */
+            --color-bg: #ffffff;
+            --color-bg-elevated: #f9fafb;
+            --color-bg-hover: #f3f4f6;
+            --color-border: #e5e7eb;
+            --color-text: #111827;
+            --color-text-secondary: #4b5563;
+            --color-text-muted: #6b7280;
             --color-primary: #6366f1;
             --color-primary-light: #818cf8;
             --color-success: #10b981;
@@ -461,6 +462,22 @@
                 </div>
 
                 <div class="nav-section">
+                    <h4 class="nav-section-title">AI Assistant</h4>
+                    <ul>
+                        <li><a href="#ai-assistant">Overview</a></li>
+                        <li><a href="#ai-usage">Usage & Limits</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h4 class="nav-section-title">Pricing & License</h4>
+                    <ul>
+                        <li><a href="#pricing">Plans & Pricing</a></li>
+                        <li><a href="#license-activation">Activation</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
                     <h4 class="nav-section-title">Core Concepts</h4>
                     <ul>
                         <li><a href="#watched-folders">Watched Folders</a></li>
@@ -645,6 +662,146 @@
                 <div class="callout callout-success">
                     <div class="callout-title">🎉 That's it!</div>
                     <p>Any PDF file added to Downloads will now automatically move to your PDFs folder.</p>
+                </div>
+            </section>
+
+            <section id="ai-assistant">
+                <h2>AI Assistant</h2>
+                <p>SortMeOut includes an intelligent AI assistant powered by Anthropic's Claude to help you organize files more efficiently.</p>
+
+                <h3>What Can the AI Do?</h3>
+                <ul>
+                    <li><strong>Smart Suggestions:</strong> Get personalized file organization recommendations based on your folder contents</li>
+                    <li><strong>Natural Language Rules:</strong> Describe what you want in plain English, and the AI creates the rule for you</li>
+                    <li><strong>File Analysis:</strong> Ask questions about your files like "What are the largest files in Downloads?"</li>
+                    <li><strong>Cleanup Recommendations:</strong> Identify duplicates, old files, and suggest cleanup actions</li>
+                </ul>
+
+                <h3>How to Use</h3>
+                <ol class="steps">
+                    <li>Click the menu bar icon and select <strong>AI Assistant</strong></li>
+                    <li>Type your question or request in natural language</li>
+                    <li>Review the AI's suggestions</li>
+                    <li>Click to apply recommended actions or create suggested rules</li>
+                </ol>
+
+                <div class="callout callout-info">
+                    <div class="callout-title">Privacy Note</div>
+                    <p>Only file names and folder structure are shared with the AI—never file contents. See our <a href="../privacy">Privacy Policy</a> for details.</p>
+                </div>
+            </section>
+
+            <section id="ai-usage">
+                <h2>AI Usage & Limits</h2>
+                <p>AI requests are subject to daily limits based on your subscription plan.</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Plan</th>
+                            <th>AI Requests</th>
+                            <th>Reset</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Trial</strong></td>
+                            <td>10 per day</td>
+                            <td>Midnight UTC</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Pro</strong></td>
+                            <td>30 per day</td>
+                            <td>Midnight UTC</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>You can check your remaining AI requests by clicking the AI Assistant menu item—the remaining count is shown in the chat window.</p>
+
+                <div class="callout callout-warning">
+                    <div class="callout-title">Note</div>
+                    <p>Unused AI requests do not roll over to the next day. Each day's allocation resets at midnight UTC.</p>
+                </div>
+            </section>
+
+            <section id="pricing">
+                <h2>Plans & Pricing</h2>
+                <p>SortMeOut offers a generous trial and an affordable Pro subscription.</p>
+
+                <div class="card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Feature</th>
+                                <th>Trial (Free)</th>
+                                <th>Pro ($9.99/mo)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Duration</td>
+                                <td>14 days</td>
+                                <td>Unlimited</td>
+                            </tr>
+                            <tr>
+                                <td>File Automation</td>
+                                <td>✓ Unlimited</td>
+                                <td>✓ Unlimited</td>
+                            </tr>
+                            <tr>
+                                <td>Rules & Conditions</td>
+                                <td>✓ All features</td>
+                                <td>✓ All features</td>
+                            </tr>
+                            <tr>
+                                <td>AI Assistant (Claude)</td>
+                                <td>✓ 10/day</td>
+                                <td>✓ 30/day</td>
+                            </tr>
+                            <tr>
+                                <td>Priority Support</td>
+                                <td>—</td>
+                                <td>✓</td>
+                            </tr>
+                            <tr>
+                                <td>Future Updates</td>
+                                <td>—</td>
+                                <td>✓ Included</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>After Trial Expires</h3>
+                <p>When your 14-day trial ends:</p>
+                <ul>
+                    <li><strong>Automation continues:</strong> Your rules and file watching keep working</li>
+                    <li><strong>AI becomes limited:</strong> AI Assistant features require Pro subscription</li>
+                </ul>
+            </section>
+
+            <section id="license-activation">
+                <h2>License Activation</h2>
+                
+                <h3>Activating Pro</h3>
+                <ol class="steps">
+                    <li>Click the menu bar icon → <strong>Upgrade to Pro</strong></li>
+                    <li>Complete the purchase on our secure checkout</li>
+                    <li>Enter the license key you receive via email</li>
+                    <li>Click <strong>Activate</strong>—your Pro features unlock instantly</li>
+                </ol>
+
+                <h3>Managing Your License</h3>
+                <ul>
+                    <li><strong>View status:</strong> Menu bar → About shows your current plan</li>
+                    <li><strong>Cancel subscription:</strong> Manage through your payment provider account</li>
+                    <li><strong>Transfer license:</strong> Contact support to move your license to a new Mac</li>
+                </ul>
+
+                <div class="callout callout-info">
+                    <div class="callout-title">One License, One Mac</div>
+                    <p>Each Pro license is valid for one machine. Contact support if you need to change devices.</p>
                 </div>
             </section>
 
