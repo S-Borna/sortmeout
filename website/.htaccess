@@ -1,0 +1,219 @@
+# SortMeOut - Apache Security Configuration
+# Place this file in your website root directory
+
+# ==========================================
+# Security Headers
+# ==========================================
+
+<IfModule mod_headers.c>
+    # Content Security Policy
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
+    
+    # X-Frame-Options
+    Header always set X-Frame-Options "DENY"
+    
+    # X-Content-Type-Options
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # X-XSS-Protection
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Permissions Policy
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
+    
+    # Strict Transport Security (HSTS)
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    
+    # Remove server information
+    Header unset Server
+    Header unset X-Powered-By
+    
+    # Cache-Control for security
+    <FilesMatch "\.(html|htm|php)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires 0
+    </FilesMatch>
+    
+    # Cache static resources
+    <FilesMatch "\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
+# ==========================================
+# Block Bad Bots and Scrapers
+# ==========================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Block bad user agents
+    RewriteCond %{HTTP_USER_AGENT} ^$ [OR]
+    RewriteCond %{HTTP_USER_AGENT} (curl|wget|python|scrapy|selenium|phantomjs|headless|bot|spider|crawler) [NC]
+    RewriteRule ^(.*)$ - [F,L]
+    
+    # Block by request method
+    RewriteCond %{REQUEST_METHOD} ^(TRACE|DELETE|TRACK|DEBUG) [NC]
+    RewriteRule ^(.*)$ - [F,L]
+    
+    # Block suspicious query strings
+    RewriteCond %{QUERY_STRING} (<|%3C).*script.*(>|%3E) [NC,OR]
+    RewriteCond %{QUERY_STRING} GLOBALS(=|[|%[0-9A-Z]{0,2}) [OR]
+    RewriteCond %{QUERY_STRING} _REQUEST(=|[|%[0-9A-Z]{0,2})
+    RewriteRule ^(.*)$ - [F,L]
+    
+    # Force HTTPS
+    RewriteCond %{HTTPS} !=on
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# ==========================================
+# Disable Directory Browsing
+# ==========================================
+
+Options -Indexes
+
+# ==========================================
+# Protect Sensitive Files
+# ==========================================
+
+<FilesMatch "^(\.htaccess|\.htpasswd|\.env|\.git|\.gitignore|composer\.json|package\.json|README\.md|LICENSE)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# ==========================================
+# Prevent Access to Hidden Files
+# ==========================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_URI} "!(^|/)\.well-known/([^./]+./?)+$" [NC]
+    RewriteCond %{SCRIPT_FILENAME} -d [OR]
+    RewriteCond %{SCRIPT_FILENAME} -f
+    RewriteRule "(^|/)\." - [F]
+</IfModule>
+
+# ==========================================
+# File Upload Protection
+# ==========================================
+
+<FilesMatch "\.(php|phtml|php3|php4|php5|php7|phps|cgi|pl|exe|sh)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Except for legitimate PHP files in root
+<FilesMatch "^(index|contact)\.php$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
+
+# ==========================================
+# Rate Limiting (if mod_ratelimit available)
+# ==========================================
+
+<IfModule mod_ratelimit.c>
+    <Location />
+        SetOutputFilter RATE_LIMIT
+        SetEnv rate-limit 400
+    </Location>
+</IfModule>
+
+# ==========================================
+# ETags
+# ==========================================
+
+<IfModule mod_headers.c>
+    Header unset ETag
+</IfModule>
+FileETag None
+
+# ==========================================
+# MIME Type Security
+# ==========================================
+
+<IfModule mod_mime.c>
+    # Force download for certain file types
+    AddType application/octet-stream .dmg
+    AddType application/octet-stream .pkg
+    AddType application/octet-stream .exe
+    
+    # Proper MIME types
+    AddType text/html .html .htm
+    AddType text/css .css
+    AddType application/javascript .js
+    AddType image/svg+xml .svg
+    AddType image/webp .webp
+</IfModule>
+
+# ==========================================
+# Compression
+# ==========================================
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# ==========================================
+# Character Encoding
+# ==========================================
+
+AddDefaultCharset UTF-8
+
+# ==========================================
+# Error Pages
+# ==========================================
+
+ErrorDocument 400 /error.html
+ErrorDocument 401 /error.html
+ErrorDocument 403 /error.html
+ErrorDocument 404 /error.html
+ErrorDocument 500 /error.html
+
+# ==========================================
+# Additional Security
+# ==========================================
+
+# Disable server signature
+ServerSignature Off
+
+# Limit request body size (10MB)
+LimitRequestBody 10485760
+
+# Limit request fields
+LimitRequestFields 50
+LimitRequestFieldsize 500
+LimitRequestLine 1000
+
+# ==========================================
+# IP Blocking (add IPs to block)
+# ==========================================
+
+# <RequireAll>
+#     Require all granted
+#     Require not ip 123.456.789.0
+#     Require not ip 987.654.321.0
+# </RequireAll>
+
+# ==========================================
+# Hotlink Protection
+# ==========================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTP_REFERER} !^$
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?sortmeout\.saidborna\.com [NC]
+    RewriteRule \.(jpg|jpeg|png|gif|svg|webp)$ - [F,NC,L]
+</IfModule>
+
+# ==========================================
+# Copyright Notice
+# ==========================================
+
+# © 2026 SortMeOut - All Rights Reserved
+# Unauthorized access is prohibited and will be prosecuted

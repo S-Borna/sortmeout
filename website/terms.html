@@ -18,6 +18,15 @@
     <!-- Styles -->
     <link rel="stylesheet" href="css/styles.css">
 
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=(), payment=()">
+    <meta name="copyright" content="© 2026 SortMeOut - All Rights Reserved. Proprietary Software.">
+
     <style>
         .legal-page {
             padding: calc(80px + var(--space-16)) 0 var(--space-24);
@@ -314,6 +323,9 @@
         </div>
     </footer>
 
+    <!-- Security Shield -->
+    <script src="js/security.js"></script>
+    
     <script src="js/main.js" defer></script>
 </body>
 
