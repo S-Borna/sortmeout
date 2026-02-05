@@ -102,7 +102,7 @@ class SortMeOutApp(rumps.App):
 
         self.license = get_license()
 
-        super().__init__("SortMeOut", title="📂", quit_button=None)
+        super().__init__("SortMeOut", title="○", quit_button=None)
 
         self.config = load_config()
         self.watching = False
@@ -110,27 +110,27 @@ class SortMeOutApp(rumps.App):
 
         # Build menu with license status
         self.menu = [
-            rumps.MenuItem(f"📋 {self.license.get_status_message()}"),
+            rumps.MenuItem(f"{self.license.get_status_message()}"),
             None,  # Separator
-            rumps.MenuItem("💬 AI Assistant..."),
-            rumps.MenuItem("📎 Analyze File..."),
+            rumps.MenuItem("AI Assistant..."),
+            rumps.MenuItem("Analyze File..."),
             None,  # Separator
-            rumps.MenuItem("▶ Start Watching"),
-            rumps.MenuItem("🔄 Organize Now"),
+            rumps.MenuItem("Start Watching"),
+            rumps.MenuItem("Organize Now"),
             None,  # Separator
-            rumps.MenuItem("📁 Manage Folders & Rules..."),
-            rumps.MenuItem("➕ Quick Add Rule..."),
-            rumps.MenuItem("✨ Advanced Rule Editor..."),
+            rumps.MenuItem("Manage Folders & Rules..."),
+            rumps.MenuItem("Quick Add Rule..."),
+            rumps.MenuItem("Advanced Rule Editor..."),
             None,
-            rumps.MenuItem("🔑 Enter Pro License..."),
-            rumps.MenuItem("📂 Open Config Folder"),
-            rumps.MenuItem("📖 Documentation"),
+            rumps.MenuItem("Enter Pro License..."),
+            rumps.MenuItem("Open Config Folder"),
+            rumps.MenuItem("Documentation"),
             None,
-            rumps.MenuItem("ℹ️ About SortMeOut"),
-            rumps.MenuItem("❌ Quit"),
+            rumps.MenuItem("About SortMeOut"),
+            rumps.MenuItem("Quit"),
         ]
 
-    @rumps.clicked("� AI Assistant...")
+    @rumps.clicked("AI Assistant...")
     def open_ai_assistant(self, _):
         """Open the AI assistant chat window."""
         try:
@@ -142,7 +142,7 @@ class SortMeOutApp(rumps.App):
                 message=f"Could not open AI Assistant:\n{e}"
             )
 
-    @rumps.clicked("📎 Analyze File...")
+    @rumps.clicked("Analyze File...")
     def analyze_file(self, _):
         """Analyze a file with AI."""
         import subprocess
@@ -187,7 +187,7 @@ class SortMeOutApp(rumps.App):
         except Exception as e:
             pass
 
-    @rumps.clicked("�🔑 Enter Pro License...")
+    @rumps.clicked("Enter Pro License...")
     def enter_license(self, _):
         """Show license entry dialog."""
         from sortmeout.core.license import get_license, LicenseState
@@ -212,7 +212,7 @@ class SortMeOutApp(rumps.App):
             ),
         )
 
-    @rumps.clicked("▶ Start Watching")
+    @rumps.clicked("Start Watching")
     def toggle_watching(self, sender):
         """Toggle file watching."""
         if not self.watching:
@@ -220,7 +220,7 @@ class SortMeOutApp(rumps.App):
         else:
             self.stop_watching(sender)
 
-    @rumps.clicked("⏹ Stop Watching")
+    @rumps.clicked("Stop Watching")
     def stop_watching_menu(self, sender):
         """Stop watching (alternate menu title)."""
         self.stop_watching(sender)
@@ -254,8 +254,8 @@ class SortMeOutApp(rumps.App):
 
             self.watcher.start()
             self.watching = True
-            sender.title = "⏹ Stop Watching"
-            self.title = "📂✓"
+            sender.title = "Stop Watching"
+            self.title = "●"
 
             folder_count = len(self.config.get("folders", []))
             rule_count = len(self.config.get("rules", []))
@@ -278,8 +278,8 @@ class SortMeOutApp(rumps.App):
             self.watcher = None
 
         self.watching = False
-        sender.title = "▶ Start Watching"
-        self.title = "📂"
+        sender.title = "Start Watching"
+        self.title = "○"
 
         rumps.notification(
             title="SortMeOut",
@@ -287,7 +287,7 @@ class SortMeOutApp(rumps.App):
             message="File monitoring has been stopped.",
         )
 
-    @rumps.clicked("🔄 Organize Now")
+    @rumps.clicked("Organize Now")
     def organize_now(self, _):
         """Organize all existing files based on rules."""
         # LICENSE GATE: Check if automation is allowed
@@ -302,7 +302,7 @@ class SortMeOutApp(rumps.App):
         if not self.config.get("rules"):
             rumps.alert(
                 title="No Rules Configured",
-                message="Please add rules first.\n\nClick '➕ Quick Add Rule...' to get started.",
+                message="Please add rules first.\n\nClick 'Quick Add Rule...' to get started.",
             )
             return
 
@@ -512,7 +512,7 @@ class SortMeOutApp(rumps.App):
 
         return False
 
-    @rumps.clicked("�📁 Manage Folders & Rules...")
+    @rumps.clicked("Manage Folders & Rules...")
     def manage_rules(self, _):
         """Open the rule management window."""
         if HAS_APPKIT:
@@ -521,12 +521,12 @@ class SortMeOutApp(rumps.App):
             # Fallback: open config file
             os.system(f'open "{CONFIG_FILE}"')
 
-    @rumps.clicked("➕ Quick Add Rule...")
+    @rumps.clicked("Quick Add Rule...")
     def quick_add_rule(self, _):
         """Quick add a simple rule."""
         show_quick_rule_dialog(self.config, self.reload_config)
 
-    @rumps.clicked("✨ Advanced Rule Editor...")
+    @rumps.clicked("Advanced Rule Editor...")
     def advanced_rule_editor(self, _):
         """Open the advanced rule editor window."""
         if HAS_RULE_EDITOR:
@@ -551,18 +551,18 @@ class SortMeOutApp(rumps.App):
                 message="Advanced Rule Editor requires PyObjC.\nPlease use Quick Add Rule instead.",
             )
 
-    @rumps.clicked("📂 Open Config Folder")
+    @rumps.clicked("Open Config Folder")
     def open_config(self, _):
         """Open config folder in Finder."""
         ensure_config_dir()
         os.system(f'open "{CONFIG_DIR}"')
 
-    @rumps.clicked("📖 Documentation")
+    @rumps.clicked("Documentation")
     def open_docs(self, _):
         """Open documentation website."""
         os.system('open "https://sortmeout.saidborna.com"')
 
-    @rumps.clicked("ℹ️ About SortMeOut")
+    @rumps.clicked("About SortMeOut")
     def show_about(self, _):
         """Show about dialog."""
         rumps.alert(
@@ -570,7 +570,7 @@ class SortMeOutApp(rumps.App):
             message="SortMeOut v1.0.1\n\nIntelligent file automation for macOS.\nAutomatically organize your files with powerful rules.\n\n© 2026 Said Borna\nProprietary License\n\nhttps://sortmeout.saidborna.com",
         )
 
-    @rumps.clicked("❌ Quit")
+    @rumps.clicked("Quit")
     def quit_app(self, _):
         """Quit the application."""
         if self.watcher:
