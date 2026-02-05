@@ -440,8 +440,8 @@
     ║                                           ║
     ║   🗂️  SortMeOut - File Automation          ║
     ║                                           ║
-    ║   Open Source • MIT License               ║
-    ║   github.com/sortmeout/sortmeout          ║
+    ║   Proprietary • macOS Only               ║
+    ║   sortmeout.saidborna.com          ║
     ║                                           ║
     ║   Interested in contributing?             ║
     ║   We'd love your help! 💜                 ║
