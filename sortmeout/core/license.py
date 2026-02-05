@@ -52,7 +52,7 @@ class LicenseAuthority:
     All feature gates MUST go through this class.
     """
 
-    TRIAL_DURATION_DAYS = 14
+    TRIAL_DURATION_DAYS = 7
     LICENSE_FILE = "license.json"
 
     _instance: Optional["LicenseAuthority"] = None
