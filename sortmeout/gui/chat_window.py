@@ -1,14 +1,15 @@
 """
-SortMeOut AI Chat Window - Premium Edition
-A beautifully crafted chat interface with modern design.
+SortMeOut AI Chat Window — Premium Edition v2
+Polished native macOS chat interface with animated thinking,
+AI personality, user identity, and website-matched design system.
 """
 
 import os
+import re
 import sys
-import json
+import subprocess
 import threading
 import queue
-from pathlib import Path
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -31,55 +32,36 @@ try:
         NSFont,
         NSColor,
         NSView,
-        NSBox,
-        NSBoxCustom,
-        NSBezelStyleRounded,
         NSMutableAttributedString,
         NSFontAttributeName,
         NSForegroundColorAttributeName,
         NSParagraphStyleAttributeName,
+        NSBackgroundColorAttributeName,
         NSAttributedString,
         NSViewWidthSizable,
         NSViewHeightSizable,
         NSViewMinYMargin,
+        NSViewMinXMargin,
+        NSViewMaxXMargin,
         NSViewMaxYMargin,
         NSApplicationActivationPolicyRegular,
-        NSFloatingWindowLevel,
         NSTimer,
-        NSRunLoop,
-        NSDefaultRunLoopMode,
         NSMenu,
         NSMenuItem,
-        NSImage,
-        NSImageNameComputer,
+        NSFontWeightRegular,
         NSFontWeightMedium,
         NSFontWeightSemibold,
         NSFontWeightBold,
-        NSTextAlignmentLeft,
-        NSTextAlignmentRight,
+        NSTextAlignmentCenter,
         NSLineBreakByWordWrapping,
         NSMutableParagraphStyle,
-        NSVisualEffectView,
-        NSVisualEffectMaterialSidebar,
-        NSVisualEffectMaterialHUDWindow,
-        NSVisualEffectMaterialPopover,
-        NSVisualEffectBlendingModeBehindWindow,
         NSWindowTitleHidden,
-        NSWindowCollectionBehaviorFullScreenPrimary,
-        NSBezierPath,
-        NSShadow,
-        NSGraphicsContext,
-        NSCompositingOperationSourceOver,
     )
     from Foundation import (
         NSObject,
         NSMakeRect,
         NSSize,
-        NSDate,
-        NSMakePoint,
-        NSMutableDictionary,
     )
-    from Quartz import CGColorCreateGenericRGB
     import objc
 
     HAS_APPKIT = True
@@ -92,157 +74,385 @@ ENV_FILE = os.path.join(CONFIG_DIR, ".env")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PREMIUM COLOR PALETTE
+# DESIGN SYSTEM — mirrors website/css/styles.css :root tokens
+# Website: https://sortmeout.pages.dev
+#
+#   --color-primary:       #6366F1
+#   --color-primary-dark:  #4F46E5
+#   --color-primary-light: #818CF8
+#   --color-secondary:     #8B5CF6
+#   --color-gray-950:      #030712
+#   --color-gray-900:      #111827
+#   --color-gray-800:      #1F2937
+#   --color-gray-700:      #374151
+#   --color-gray-400:      #9CA3AF
+#   --color-gray-500:      #6B7280
+#   --color-success:       #10B981
+#   --color-warning:       #F59E0B
+#   --color-error:         #EF4444
 # ═══════════════════════════════════════════════════════════════════════════════
+
+
+def _c(r, g, b, a=1.0):
+    """Shorthand color constructor."""
+    return NSColor.colorWithCalibratedRed_green_blue_alpha_(r, g, b, a)
 
 
 class Colors:
-    """Premium color palette for the chat interface."""
+    """Website-matched color palette (dark theme for native macOS app)."""
 
-    # Background colors
-    WINDOW_BG = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.11, 0.11, 0.12, 1.0)
-    CHAT_BG = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.08, 0.08, 0.09, 1.0)
-    INPUT_BG = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.15, 0.15, 0.16, 1.0)
+    # Backgrounds — based on gray-950 / gray-900 / gray-800
+    WINDOW_BG   = _c(0.012, 0.027, 0.071)   # #030712  gray-950
+    CHAT_BG     = _c(0.047, 0.063, 0.110)    # between 950/900
+    INPUT_BG    = _c(0.122, 0.161, 0.216)    # #1F2937  gray-800
+    HEADER_BG   = _c(0.030, 0.043, 0.090)    # between 950/900
 
-    # Message bubbles
-    USER_BUBBLE = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.25, 0.52, 0.96, 1.0)
-    USER_BUBBLE_GRADIENT = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.18, 0.42, 0.85, 1.0)
-    AI_BUBBLE = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.18, 0.18, 0.20, 1.0)
-    AI_BUBBLE_BORDER = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.25, 0.25, 0.28, 1.0)
+    # Text — gray-50 / gray-400 / gray-500
+    TEXT_PRIMARY   = _c(0.969, 0.976, 0.984)  # #F8FAFC
+    TEXT_SECONDARY = _c(0.612, 0.639, 0.690)  # #9CA3AF  gray-400
+    TEXT_MUTED     = _c(0.420, 0.459, 0.514)  # #6B7280  gray-500
+    TEXT_ON_INDIGO = _c(1.0, 1.0, 1.0)
 
-    # Text colors
-    TEXT_PRIMARY = NSColor.colorWithCalibratedRed_green_blue_alpha_(1.0, 1.0, 1.0, 1.0)
-    TEXT_SECONDARY = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.7, 0.7, 0.75, 1.0)
-    TEXT_MUTED = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.5, 0.5, 0.55, 1.0)
+    # Accents — primary / primary-light / secondary
+    ACCENT        = _c(0.389, 0.400, 0.945)  # #6366F1  primary
+    ACCENT_DARK   = _c(0.310, 0.275, 0.898)  # #4F46E5  primary-dark
+    ACCENT_LIGHT  = _c(0.506, 0.549, 0.973)  # #818CF8  primary-light
+    ACCENT_VIOLET = _c(0.545, 0.361, 0.965)  # #8B5CF6  secondary
 
-    # Accent colors
-    ACCENT_PRIMARY = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.35, 0.58, 1.0, 1.0)
-    ACCENT_SUCCESS = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.30, 0.85, 0.55, 1.0)
-    ACCENT_WARNING = NSColor.colorWithCalibratedRed_green_blue_alpha_(1.0, 0.75, 0.25, 1.0)
-    ACCENT_ERROR = NSColor.colorWithCalibratedRed_green_blue_alpha_(1.0, 0.40, 0.40, 1.0)
+    # Semantic
+    SUCCESS = _c(0.063, 0.725, 0.506)  # #10B981
+    WARNING = _c(0.961, 0.620, 0.043)  # #F59E0B
+    ERROR   = _c(0.937, 0.267, 0.267)  # #EF4444
 
-    # Button colors
-    BUTTON_BG = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.25, 0.52, 0.96, 1.0)
-    BUTTON_HOVER = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.35, 0.60, 1.0, 1.0)
-    BUTTON_DISABLED = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.25, 0.25, 0.28, 1.0)
+    # Buttons
+    BTN_PRIMARY  = _c(0.389, 0.400, 0.945)   # primary
+    BTN_DISABLED = _c(0.216, 0.255, 0.318)    # gray-700
 
-    # Dividers and borders
-    DIVIDER = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.22, 0.22, 0.24, 1.0)
-    BORDER_SUBTLE = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.20, 0.20, 0.22, 1.0)
+    # Structure
+    DIVIDER       = _c(0.160, 0.195, 0.260)
+    BORDER_SUBTLE = _c(0.130, 0.165, 0.225)
+    CODE_BG       = _c(0.067, 0.094, 0.153)   # #111827  gray-900
+
+    # Markdown
+    HEADING_COLOR = _c(0.85, 0.87, 0.92)
+    BULLET_COLOR  = _c(0.506, 0.549, 0.973)   # primary-light
+    HR_COLOR      = _c(0.216, 0.255, 0.318)
+
+    # Thinking indicator
+    DOT_DIM    = _c(0.25, 0.28, 0.45, 0.35)
+    DOT_BRIGHT = _c(0.506, 0.549, 0.973, 1.0)  # primary-light
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# TYPOGRAPHY
-# ═══════════════════════════════════════════════════════════════════════════════
-
-
-class Typography:
-    """Premium typography settings."""
+class Fonts:
+    """Typography scale."""
 
     @staticmethod
-    def heading():
-        return NSFont.systemFontOfSize_weight_(20, NSFontWeightSemibold)
+    def h1():
+        return NSFont.systemFontOfSize_weight_(20, NSFontWeightBold)
 
     @staticmethod
-    def subheading():
-        return NSFont.systemFontOfSize_weight_(14, NSFontWeightMedium)
+    def h2():
+        return NSFont.systemFontOfSize_weight_(17, NSFontWeightSemibold)
+
+    @staticmethod
+    def h3():
+        return NSFont.systemFontOfSize_weight_(15, NSFontWeightSemibold)
 
     @staticmethod
     def body():
-        return NSFont.systemFontOfSize_weight_(14, NSFontWeightMedium)
+        return NSFont.systemFontOfSize_weight_(13.5, NSFontWeightRegular)
 
     @staticmethod
-    def body_regular():
-        return NSFont.systemFontOfSize_(14)
+    def body_medium():
+        return NSFont.systemFontOfSize_weight_(13.5, NSFontWeightMedium)
+
+    @staticmethod
+    def bold():
+        return NSFont.systemFontOfSize_weight_(13.5, NSFontWeightSemibold)
 
     @staticmethod
     def caption():
+        return NSFont.systemFontOfSize_weight_(11, NSFontWeightMedium)
+
+    @staticmethod
+    def caption_regular():
         return NSFont.systemFontOfSize_(11)
 
     @staticmethod
-    def timestamp():
-        return NSFont.monospacedDigitSystemFontOfSize_weight_(10, NSFontWeightMedium)
+    def code():
+        return NSFont.monospacedSystemFontOfSize_weight_(12.5, NSFontWeightMedium)
 
     @staticmethod
-    def code():
-        return NSFont.monospacedSystemFontOfSize_weight_(13, NSFontWeightMedium)
+    def title():
+        return NSFont.systemFontOfSize_weight_(16, NSFontWeightSemibold)
+
+    @staticmethod
+    def sender():
+        return NSFont.systemFontOfSize_weight_(12, NSFontWeightSemibold)
+
+    @staticmethod
+    def timestamp():
+        return NSFont.monospacedDigitSystemFontOfSize_weight_(10.5, NSFontWeightRegular)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# HELPER FUNCTIONS
+# MARKDOWN RENDERER
 # ═══════════════════════════════════════════════════════════════════════════════
+
+
+class MarkdownRenderer:
+    """Convert markdown text to richly styled NSAttributedString."""
+
+    def __init__(self, base_indent=0.0, text_color=None):
+        self.base_indent = base_indent
+        self.text_color = text_color or Colors.TEXT_PRIMARY
+
+    def render(self, text):
+        result = NSMutableAttributedString.alloc().init()
+        lines = text.split("\n")
+        i = 0
+
+        while i < len(lines):
+            line = lines[i]
+
+            if not line.strip():
+                self._spacing(result, 6)
+                i += 1
+                continue
+
+            if line.strip() in ("---", "***", "___"):
+                self._hr(result)
+                i += 1
+                continue
+
+            hm = re.match(r'^(#{1,3})\s+(.+)$', line)
+            if hm:
+                self._header(result, hm.group(2), len(hm.group(1)))
+                i += 1
+                continue
+
+            bm = re.match(r'^(\s*)[-*]\s+(.+)$', line)
+            if bm:
+                self._bullet(result, bm.group(2), len(bm.group(1)) // 2)
+                i += 1
+                continue
+
+            nm = re.match(r'^(\s*)(\d+)\.\s+(.+)$', line)
+            if nm:
+                self._numbered(result, nm.group(3), nm.group(2), len(nm.group(1)) // 2)
+                i += 1
+                continue
+
+            self._paragraph(result, line)
+            i += 1
+
+        return result
+
+    def _spacing(self, result, pts):
+        p = NSMutableParagraphStyle.alloc().init()
+        p.setParagraphSpacingBefore_(pts)
+        p.setLineBreakMode_(NSLineBreakByWordWrapping)
+        a = {NSFontAttributeName: NSFont.systemFontOfSize_(4), NSParagraphStyleAttributeName: p}
+        result.appendAttributedString_(NSAttributedString.alloc().initWithString_attributes_("\n", a))
+
+    def _hr(self, result):
+        p = NSMutableParagraphStyle.alloc().init()
+        p.setParagraphSpacingBefore_(8)
+        p.setParagraphSpacing_(8)
+        p.setFirstLineHeadIndent_(self.base_indent)
+        p.setHeadIndent_(self.base_indent)
+        p.setLineBreakMode_(NSLineBreakByWordWrapping)
+        a = {
+            NSFontAttributeName: NSFont.systemFontOfSize_(6),
+            NSForegroundColorAttributeName: Colors.HR_COLOR,
+            NSParagraphStyleAttributeName: p,
+        }
+        result.appendAttributedString_(
+            NSAttributedString.alloc().initWithString_attributes_("\u2500" * 40 + "\n", a)
+        )
+
+    def _header(self, result, text, level):
+        fmap = {1: Fonts.h1(), 2: Fonts.h2(), 3: Fonts.h3()}
+        smap = {1: 14, 2: 10, 3: 8}
+        p = NSMutableParagraphStyle.alloc().init()
+        p.setParagraphSpacingBefore_(smap.get(level, 8))
+        p.setParagraphSpacing_(4)
+        p.setFirstLineHeadIndent_(self.base_indent)
+        p.setHeadIndent_(self.base_indent)
+        p.setLineBreakMode_(NSLineBreakByWordWrapping)
+        a = {
+            NSFontAttributeName: fmap.get(level, Fonts.h3()),
+            NSForegroundColorAttributeName: Colors.HEADING_COLOR,
+            NSParagraphStyleAttributeName: p,
+        }
+        hs = self._inline(text, a)
+        hs.appendAttributedString_(NSAttributedString.alloc().initWithString_attributes_("\n", a))
+        result.appendAttributedString_(hs)
+
+    def _bullet(self, result, text, indent_level=0):
+        extra = indent_level * 16
+        bi = self.base_indent + 8 + extra
+        ti = self.base_indent + 22 + extra
+        p = NSMutableParagraphStyle.alloc().init()
+        p.setParagraphSpacingBefore_(3)
+        p.setParagraphSpacing_(2)
+        p.setFirstLineHeadIndent_(bi)
+        p.setHeadIndent_(ti)
+        p.setLineBreakMode_(NSLineBreakByWordWrapping)
+
+        da = {
+            NSFontAttributeName: NSFont.systemFontOfSize_(8),
+            NSForegroundColorAttributeName: Colors.BULLET_COLOR,
+            NSParagraphStyleAttributeName: p,
+        }
+        result.appendAttributedString_(
+            NSAttributedString.alloc().initWithString_attributes_("\u25CF  ", da)
+        )
+
+        ta = {
+            NSFontAttributeName: Fonts.body(),
+            NSForegroundColorAttributeName: self.text_color,
+            NSParagraphStyleAttributeName: p,
+        }
+        result.appendAttributedString_(self._inline(text, ta))
+        result.appendAttributedString_(NSAttributedString.alloc().initWithString_attributes_("\n", ta))
+
+    def _numbered(self, result, text, number, indent_level=0):
+        extra = indent_level * 16
+        ni = self.base_indent + 8 + extra
+        ti = self.base_indent + 26 + extra
+        p = NSMutableParagraphStyle.alloc().init()
+        p.setParagraphSpacingBefore_(3)
+        p.setParagraphSpacing_(2)
+        p.setFirstLineHeadIndent_(ni)
+        p.setHeadIndent_(ti)
+        p.setLineBreakMode_(NSLineBreakByWordWrapping)
+
+        na = {
+            NSFontAttributeName: Fonts.body_medium(),
+            NSForegroundColorAttributeName: Colors.ACCENT_LIGHT,
+            NSParagraphStyleAttributeName: p,
+        }
+        result.appendAttributedString_(
+            NSAttributedString.alloc().initWithString_attributes_(f"{number}.  ", na)
+        )
+
+        ta = {
+            NSFontAttributeName: Fonts.body(),
+            NSForegroundColorAttributeName: self.text_color,
+            NSParagraphStyleAttributeName: p,
+        }
+        result.appendAttributedString_(self._inline(text, ta))
+        result.appendAttributedString_(NSAttributedString.alloc().initWithString_attributes_("\n", ta))
+
+    def _paragraph(self, result, text):
+        p = NSMutableParagraphStyle.alloc().init()
+        p.setLineSpacing_(3)
+        p.setParagraphSpacingBefore_(2)
+        p.setParagraphSpacing_(2)
+        p.setFirstLineHeadIndent_(self.base_indent)
+        p.setHeadIndent_(self.base_indent)
+        p.setLineBreakMode_(NSLineBreakByWordWrapping)
+        a = {
+            NSFontAttributeName: Fonts.body(),
+            NSForegroundColorAttributeName: self.text_color,
+            NSParagraphStyleAttributeName: p,
+        }
+        s = self._inline(text, a)
+        s.appendAttributedString_(NSAttributedString.alloc().initWithString_attributes_("\n", a))
+        result.appendAttributedString_(s)
+
+    def _inline(self, text, base_attrs):
+        """Parse **bold**, *italic*, `code`, and plain text."""
+        result = NSMutableAttributedString.alloc().init()
+        pattern = r'(\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|([^*`]+))'
+        for m in re.finditer(pattern, text):
+            bold_t = m.group(2)
+            italic_t = m.group(3)
+            code_t = m.group(4)
+            plain_t = m.group(5)
+            if bold_t is not None:
+                a = dict(base_attrs)
+                a[NSFontAttributeName] = Fonts.bold()
+                a[NSForegroundColorAttributeName] = Colors.TEXT_PRIMARY
+                result.appendAttributedString_(
+                    NSAttributedString.alloc().initWithString_attributes_(bold_t, a)
+                )
+            elif italic_t is not None:
+                a = dict(base_attrs)
+                a[NSForegroundColorAttributeName] = Colors.TEXT_SECONDARY
+                result.appendAttributedString_(
+                    NSAttributedString.alloc().initWithString_attributes_(italic_t, a)
+                )
+            elif code_t is not None:
+                a = dict(base_attrs)
+                a[NSFontAttributeName] = Fonts.code()
+                a[NSForegroundColorAttributeName] = Colors.ACCENT_LIGHT
+                a[NSBackgroundColorAttributeName] = Colors.CODE_BG
+                result.appendAttributedString_(
+                    NSAttributedString.alloc().initWithString_attributes_(f" {code_t} ", a)
+                )
+            elif plain_t is not None:
+                result.appendAttributedString_(
+                    NSAttributedString.alloc().initWithString_attributes_(plain_t, base_attrs)
+                )
+        return result
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# HELPERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def _get_user_name():
+    """Get the user's first name from config, macOS, or fallback."""
+    # 1. Check SortMeOut config
+    config_path = os.path.join(CONFIG_DIR, "config.json")
+    if os.path.exists(config_path):
+        try:
+            import json
+            with open(config_path, "r") as f:
+                cfg = json.load(f)
+            name = cfg.get("user_name", "").strip()
+            if name:
+                return name.split()[0]
+        except Exception:
+            pass
+    # 2. macOS full name
+    try:
+        r = subprocess.run(["id", "-F"], capture_output=True, text=True, timeout=2)
+        name = r.stdout.strip()
+        if name:
+            return name.split()[0]
+    except Exception:
+        pass
+    return os.environ.get("USER", "You").capitalize()
 
 
 def load_api_key():
-    """Load API key from config."""
     if os.path.exists(ENV_FILE):
         try:
             with open(ENV_FILE, "r") as f:
                 for line in f:
                     if line.startswith("ANTHROPIC_API_KEY="):
                         return line.split("=", 1)[1].strip()
-        except:
+        except Exception:
             pass
     return os.environ.get("ANTHROPIC_API_KEY")
 
 
 def format_time(dt=None):
-    """Format timestamp elegantly."""
     if dt is None:
         dt = datetime.now()
     return dt.strftime("%H:%M")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# CUSTOM VIEWS
-# ═══════════════════════════════════════════════════════════════════════════════
-
-
-class PremiumInputField(NSTextField):
-    """Custom styled input field with premium appearance."""
-
-    @objc.python_method
-    def setup_style(self):
-        self.setBezeled_(False)
-        self.setDrawsBackground_(True)
-        self.setBackgroundColor_(Colors.INPUT_BG)
-        self.setTextColor_(Colors.TEXT_PRIMARY)
-        self.setFont_(Typography.body())
-        self.setFocusRingType_(1)  # None
-
-        # Rounded corners via layer
-        self.setWantsLayer_(True)
-        self.layer().setCornerRadius_(12)
-        self.layer().setBorderWidth_(1)
-        self.layer().setBorderColor_(Colors.BORDER_SUBTLE.CGColor())
-
-
-class PremiumButton(NSButton):
-    """Custom styled button with premium appearance."""
-
-    @objc.python_method
-    def setup_style(self, primary=True):
-        self.setWantsLayer_(True)
-        self.setBordered_(False)
-        self.setFont_(Typography.subheading())
-
-        if primary:
-            self.layer().setBackgroundColor_(Colors.BUTTON_BG.CGColor())
-            self.setContentTintColor_(Colors.TEXT_PRIMARY)
-        else:
-            self.layer().setBackgroundColor_(Colors.INPUT_BG.CGColor())
-            self.setContentTintColor_(Colors.TEXT_SECONDARY)
-
-        self.layer().setCornerRadius_(10)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# DELEGATE CLASS
+# DELEGATE
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
 class ChatWindowDelegate(NSObject):
-    """Delegate class to handle button actions."""
 
     def init(self):
         self = objc.super(ChatWindowDelegate, self).init()
@@ -256,37 +466,37 @@ class ChatWindowDelegate(NSObject):
         self.chat_window = chat_window
 
     def sendClicked_(self, sender):
-        """Handle send button click or Enter key."""
         if self.chat_window:
             self.chat_window.do_send()
 
     def checkQueue_(self, timer):
-        """Check for responses from AI thread."""
         if self.chat_window:
             self.chat_window.check_queue()
 
     def clearChat_(self, sender):
-        """Clear chat history."""
         if self.chat_window:
             self.chat_window.clear_chat()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PREMIUM CHAT WINDOW
+# PREMIUM CHAT WINDOW v2
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
 class ChatWindow:
-    """Premium chat window for SortMeOut AI."""
+    """Premium AI chat window with animated thinking, AI personality, and
+    user identity — design-matched to the SortMeOut website."""
+
+    # AI avatar
+    AI_EMOJI = "\U0001F916"  # 🤖
 
     def __init__(self):
         self.window = None
         self.chat_view = None
         self.input_field = None
         self.send_button = None
-        self.status_label = None
-        self.status_indicator = None
-        self.header_view = None
+        self.header_status = None
+        self.status_dot = None
         self.assistant = None
         self.is_processing = False
         self.response_queue = queue.Queue()
@@ -294,16 +504,20 @@ class ChatWindow:
         self.message_count = 0
         self.animation_state = 0
 
-        # Create delegate for button actions
+        # Thinking indicator tracking
+        self.thinking_range_start = None
+
+        # User identity
+        self.user_name = _get_user_name()
+        self.user_initial = self.user_name[0].upper() if self.user_name else "U"
+
         self.delegate = ChatWindowDelegate.alloc().init()
         self.delegate.set_chat_window(self)
 
-        # Initialize assistant
         api_key = load_api_key()
         if api_key:
             try:
                 from sortmeout.ai.assistant import FileAssistant
-
                 self.assistant = FileAssistant(api_key=api_key)
             except Exception as e:
                 print(f"Assistant init error: {e}")
@@ -311,10 +525,11 @@ class ChatWindow:
         self._create_window()
         self._start_timer()
 
+    # ──────────────────────────────────────────────────────────────────
+
     def _create_window(self):
-        """Create the premium chat window."""
-        # Window frame - elegant proportions
-        frame = NSMakeRect(150, 150, 480, 680)
+        W, H = 520, 740
+        frame = NSMakeRect(200, 100, W, H)
         style = (
             NSWindowStyleMaskTitled
             | NSWindowStyleMaskClosable
@@ -322,368 +537,560 @@ class ChatWindow:
             | NSWindowStyleMaskMiniaturizable
             | NSWindowStyleMaskFullSizeContentView
         )
-
         self.window = NSWindow.alloc().initWithContentRect_styleMask_backing_defer_(
             frame, style, NSBackingStoreBuffered, False
         )
-
-        # Premium window setup
         self.window.setTitle_("SortMeOut AI")
         self.window.setTitlebarAppearsTransparent_(True)
         self.window.setTitleVisibility_(NSWindowTitleHidden)
-        self.window.setMinSize_(NSSize(400, 500))
+        self.window.setMinSize_(NSSize(440, 520))
         self.window.setReleasedWhenClosed_(False)
         self.window.setBackgroundColor_(Colors.WINDOW_BG)
         self.window.setMovableByWindowBackground_(True)
-
-        # Enable vibrancy for modern look
         self.window.setOpaque_(False)
 
         content = self.window.contentView()
         content.setWantsLayer_(True)
         content.layer().setBackgroundColor_(Colors.WINDOW_BG.CGColor())
 
-        content_height = 680
+        self._build_header(content, W, H)
+        self._build_chat_area(content, W, H)
+        self._build_input_bar(content, W)
+        self._add_welcome_message()
 
-        # ─────────────────────────────────────────────────────────────────────
-        # HEADER SECTION (60px)
-        # ─────────────────────────────────────────────────────────────────────
-        header_height = 60
-        header_frame = NSMakeRect(0, content_height - header_height, 480, header_height)
-        self.header_view = NSView.alloc().initWithFrame_(header_frame)
-        self.header_view.setWantsLayer_(True)
-        self.header_view.layer().setBackgroundColor_(Colors.WINDOW_BG.CGColor())
-        self.header_view.setAutoresizingMask_(NSViewWidthSizable | NSViewMinYMargin)
+    # ──────────────────────────────────────────────────────────────────
+    # HEADER — centered to avoid macOS traffic-light collision
+    # ──────────────────────────────────────────────────────────────────
 
-        # App icon/avatar
-        icon_frame = NSMakeRect(20, 12, 36, 36)
-        icon_view = NSView.alloc().initWithFrame_(icon_frame)
-        icon_view.setWantsLayer_(True)
-        icon_view.layer().setCornerRadius_(18)
-        icon_view.layer().setBackgroundColor_(Colors.ACCENT_PRIMARY.CGColor())
-        self.header_view.addSubview_(icon_view)
+    def _build_header(self, content, W, H):
+        HH = 64
+        header = NSView.alloc().initWithFrame_(NSMakeRect(0, H - HH, W, HH))
+        header.setWantsLayer_(True)
+        header.layer().setBackgroundColor_(Colors.HEADER_BG.CGColor())
+        header.setAutoresizingMask_(NSViewWidthSizable | NSViewMinYMargin)
 
-        # Icon label (emoji)
-        icon_label = NSTextField.alloc().initWithFrame_(NSMakeRect(20, 12, 36, 36))
-        icon_label.setStringValue_("🤖")
-        icon_label.setBezeled_(False)
-        icon_label.setDrawsBackground_(False)
-        icon_label.setEditable_(False)
-        icon_label.setSelectable_(False)
-        icon_label.setAlignment_(1)  # Center
-        icon_label.setFont_(NSFont.systemFontOfSize_(18))
-        self.header_view.addSubview_(icon_label)
+        # Accent line at bottom
+        accent = NSView.alloc().initWithFrame_(NSMakeRect(0, 0, W, 2))
+        accent.setWantsLayer_(True)
+        accent.layer().setBackgroundColor_(Colors.ACCENT.CGColor())
+        accent.setAutoresizingMask_(NSViewWidthSizable)
+        header.addSubview_(accent)
+
+        # ─── Centered content container ───
+        # Keeps icon + title group clear of macOS traffic-light buttons
+        grp_w = 220
+        grp_x = (W - grp_w) / 2
+        container = NSView.alloc().initWithFrame_(NSMakeRect(grp_x, 0, grp_w, HH))
+        container.setAutoresizingMask_(NSViewMinXMargin | NSViewMaxXMargin)
+
+        # AI avatar circle with sparkle
+        icon_size = 34
+        icon_y = (HH - icon_size) / 2
+        icon_bg = NSView.alloc().initWithFrame_(NSMakeRect(0, icon_y, icon_size, icon_size))
+        icon_bg.setWantsLayer_(True)
+        icon_bg.layer().setCornerRadius_(icon_size / 2)
+        icon_bg.layer().setBackgroundColor_(Colors.ACCENT.CGColor())
+        container.addSubview_(icon_bg)
+
+        icon_lbl = NSTextField.alloc().initWithFrame_(NSMakeRect(0, icon_y, icon_size, icon_size))
+        icon_lbl.setStringValue_("\u2726")  # ✦
+        icon_lbl.setBezeled_(False)
+        icon_lbl.setDrawsBackground_(False)
+        icon_lbl.setEditable_(False)
+        icon_lbl.setSelectable_(False)
+        icon_lbl.setAlignment_(NSTextAlignmentCenter)
+        icon_lbl.setTextColor_(Colors.TEXT_ON_INDIGO)
+        icon_lbl.setFont_(NSFont.systemFontOfSize_weight_(16, NSFontWeightMedium))
+        container.addSubview_(icon_lbl)
 
         # Title
-        title_frame = NSMakeRect(66, 28, 300, 22)
-        title_label = NSTextField.alloc().initWithFrame_(title_frame)
-        title_label.setStringValue_("SortMeOut AI")
-        title_label.setBezeled_(False)
-        title_label.setDrawsBackground_(False)
-        title_label.setEditable_(False)
-        title_label.setSelectable_(False)
-        title_label.setTextColor_(Colors.TEXT_PRIMARY)
-        title_label.setFont_(Typography.heading())
-        self.header_view.addSubview_(title_label)
+        tx = icon_size + 10
+        title = NSTextField.alloc().initWithFrame_(NSMakeRect(tx, 34, grp_w - tx, 20))
+        title.setStringValue_("SortMeOut AI")
+        title.setBezeled_(False)
+        title.setDrawsBackground_(False)
+        title.setEditable_(False)
+        title.setSelectable_(False)
+        title.setTextColor_(Colors.TEXT_PRIMARY)
+        title.setFont_(Fonts.title())
+        container.addSubview_(title)
 
-        # Subtitle/Status
-        subtitle_frame = NSMakeRect(66, 10, 300, 18)
-        self.header_status = NSTextField.alloc().initWithFrame_(subtitle_frame)
+        # Status subtitle
+        self.header_status = NSTextField.alloc().initWithFrame_(NSMakeRect(tx, 16, grp_w - tx, 16))
         self.header_status.setStringValue_("Ready to help")
         self.header_status.setBezeled_(False)
         self.header_status.setDrawsBackground_(False)
         self.header_status.setEditable_(False)
         self.header_status.setSelectable_(False)
         self.header_status.setTextColor_(Colors.TEXT_MUTED)
-        self.header_status.setFont_(Typography.caption())
-        self.header_view.addSubview_(self.header_status)
+        self.header_status.setFont_(Fonts.caption_regular())
+        container.addSubview_(self.header_status)
 
-        # Status indicator dot
-        dot_frame = NSMakeRect(450, 26, 10, 10)
-        self.status_dot = NSView.alloc().initWithFrame_(dot_frame)
+        header.addSubview_(container)
+
+        # Status dot (stays at right edge)
+        self.status_dot = NSView.alloc().initWithFrame_(NSMakeRect(W - 28, 28, 8, 8))
         self.status_dot.setWantsLayer_(True)
-        self.status_dot.layer().setCornerRadius_(5)
-        self.status_dot.layer().setBackgroundColor_(Colors.ACCENT_SUCCESS.CGColor())
-        self.status_dot.setAutoresizingMask_(NSViewMinYMargin)
-        self.header_view.addSubview_(self.status_dot)
+        self.status_dot.layer().setCornerRadius_(4)
+        self.status_dot.layer().setBackgroundColor_(Colors.SUCCESS.CGColor())
+        self.status_dot.setAutoresizingMask_(NSViewMinXMargin | NSViewMinYMargin)
+        header.addSubview_(self.status_dot)
 
-        content.addSubview_(self.header_view)
+        content.addSubview_(header)
 
-        # Header divider
-        divider_frame = NSMakeRect(20, content_height - header_height - 1, 440, 1)
-        divider = NSView.alloc().initWithFrame_(divider_frame)
-        divider.setWantsLayer_(True)
-        divider.layer().setBackgroundColor_(Colors.DIVIDER.CGColor())
-        divider.setAutoresizingMask_(NSViewWidthSizable | NSViewMinYMargin)
-        content.addSubview_(divider)
+    # ──────────────────────────────────────────────────────────────────
+    # CHAT AREA
+    # ──────────────────────────────────────────────────────────────────
 
-        # ─────────────────────────────────────────────────────────────────────
-        # CHAT AREA
-        # ─────────────────────────────────────────────────────────────────────
-        chat_top = content_height - header_height - 10
-        chat_height = chat_top - 80  # Leave room for input
+    def _build_chat_area(self, content, W, H):
+        HH = 66
+        IH = 68
+        ch = H - HH - IH
 
-        scroll_frame = NSMakeRect(0, 75, 480, chat_height)
-        scroll_view = NSScrollView.alloc().initWithFrame_(scroll_frame)
-        scroll_view.setHasVerticalScroller_(True)
-        scroll_view.setHasHorizontalScroller_(False)
-        scroll_view.setBorderType_(0)  # No border
-        scroll_view.setAutoresizingMask_(NSViewWidthSizable | NSViewHeightSizable)
-        scroll_view.setDrawsBackground_(True)
-        scroll_view.setBackgroundColor_(Colors.CHAT_BG)
+        scroll = NSScrollView.alloc().initWithFrame_(NSMakeRect(0, IH, W, ch))
+        scroll.setHasVerticalScroller_(True)
+        scroll.setHasHorizontalScroller_(False)
+        scroll.setBorderType_(0)
+        scroll.setAutoresizingMask_(NSViewWidthSizable | NSViewHeightSizable)
+        scroll.setDrawsBackground_(True)
+        scroll.setBackgroundColor_(Colors.CHAT_BG)
+        scroll.setScrollerStyle_(1)
+        scroll.verticalScroller().setKnobStyle_(2)
 
-        # Custom scroller appearance
-        scroll_view.setScrollerStyle_(1)  # Overlay
-        scroll_view.verticalScroller().setKnobStyle_(2)  # Dark
-
-        text_frame = NSMakeRect(0, 0, 460, chat_height)
-        self.chat_view = NSTextView.alloc().initWithFrame_(text_frame)
+        tw = W - 40
+        self.chat_view = NSTextView.alloc().initWithFrame_(NSMakeRect(0, 0, tw, ch))
         self.chat_view.setEditable_(False)
         self.chat_view.setSelectable_(True)
         self.chat_view.setRichText_(True)
-        self.chat_view.setFont_(Typography.body_regular())
+        self.chat_view.setFont_(Fonts.body())
         self.chat_view.setBackgroundColor_(Colors.CHAT_BG)
         self.chat_view.setTextColor_(Colors.TEXT_PRIMARY)
-        self.chat_view.setTextContainerInset_(NSSize(20, 20))
+        self.chat_view.setTextContainerInset_(NSSize(16, 16))
         self.chat_view.setAllowsUndo_(True)
         self.chat_view.setUsesFontPanel_(False)
         self.chat_view.setVerticallyResizable_(True)
         self.chat_view.setHorizontallyResizable_(False)
         self.chat_view.textContainer().setWidthTracksTextView_(True)
-        self.chat_view.textContainer().setContainerSize_(NSSize(440, 1e7))
+        self.chat_view.textContainer().setContainerSize_(NSSize(tw, 1e7))
 
-        scroll_view.setDocumentView_(self.chat_view)
-        content.addSubview_(scroll_view)
+        scroll.setDocumentView_(self.chat_view)
+        content.addSubview_(scroll)
 
-        # ─────────────────────────────────────────────────────────────────────
-        # INPUT SECTION
-        # ─────────────────────────────────────────────────────────────────────
-        input_section_frame = NSMakeRect(0, 0, 480, 75)
-        input_section = NSView.alloc().initWithFrame_(input_section_frame)
-        input_section.setWantsLayer_(True)
-        input_section.layer().setBackgroundColor_(Colors.WINDOW_BG.CGColor())
-        input_section.setAutoresizingMask_(NSViewWidthSizable | NSViewMaxYMargin)
+    # ──────────────────────────────────────────────────────────────────
+    # INPUT BAR
+    # ──────────────────────────────────────────────────────────────────
 
-        # Input container with rounded corners
-        input_container_frame = NSMakeRect(16, 16, 448, 44)
-        input_container = NSView.alloc().initWithFrame_(input_container_frame)
-        input_container.setWantsLayer_(True)
-        input_container.layer().setCornerRadius_(22)
-        input_container.layer().setBackgroundColor_(Colors.INPUT_BG.CGColor())
-        input_container.layer().setBorderWidth_(1)
-        input_container.layer().setBorderColor_(Colors.BORDER_SUBTLE.CGColor())
-        input_container.setAutoresizingMask_(NSViewWidthSizable)
+    def _build_input_bar(self, content, W):
+        IH = 68
+        bar = NSView.alloc().initWithFrame_(NSMakeRect(0, 0, W, IH))
+        bar.setWantsLayer_(True)
+        bar.layer().setBackgroundColor_(Colors.WINDOW_BG.CGColor())
+        bar.setAutoresizingMask_(NSViewWidthSizable | NSViewMaxYMargin)
 
-        # Input field (inside container)
-        input_frame = NSMakeRect(16, 8, 360, 28)
-        self.input_field = NSTextField.alloc().initWithFrame_(input_frame)
-        self.input_field.setPlaceholderString_("Type a message...")
+        top = NSView.alloc().initWithFrame_(NSMakeRect(0, IH - 1, W, 1))
+        top.setWantsLayer_(True)
+        top.layer().setBackgroundColor_(Colors.DIVIDER.CGColor())
+        top.setAutoresizingMask_(NSViewWidthSizable)
+        bar.addSubview_(top)
+
+        pill = NSView.alloc().initWithFrame_(NSMakeRect(14, 14, W - 28, 40))
+        pill.setWantsLayer_(True)
+        pill.layer().setCornerRadius_(20)
+        pill.layer().setBackgroundColor_(Colors.INPUT_BG.CGColor())
+        pill.layer().setBorderWidth_(1)
+        pill.layer().setBorderColor_(Colors.BORDER_SUBTLE.CGColor())
+        pill.setAutoresizingMask_(NSViewWidthSizable)
+        bar.addSubview_(pill)
+
+        self.input_field = NSTextField.alloc().initWithFrame_(NSMakeRect(16, 6, W - 100, 28))
+        self.input_field.setPlaceholderString_("Ask me anything about your files\u2026")
         self.input_field.setBezeled_(False)
         self.input_field.setDrawsBackground_(False)
         self.input_field.setTextColor_(Colors.TEXT_PRIMARY)
-        self.input_field.setFont_(Typography.body())
-        self.input_field.setFocusRingType_(1)  # None
+        self.input_field.setFont_(Fonts.body())
+        self.input_field.setFocusRingType_(1)
         self.input_field.setEditable_(True)
         self.input_field.setSelectable_(True)
         self.input_field.setAutoresizingMask_(NSViewWidthSizable)
-        input_container.addSubview_(self.input_field)
+        pill.addSubview_(self.input_field)
 
-        # Send button (inside container)
-        button_frame = NSMakeRect(390, 6, 50, 32)
-        self.send_button = NSButton.alloc().initWithFrame_(button_frame)
-        self.send_button.setTitle_("➤")
+        bs = 30
+        bx = W - 28 - bs - 6
+        self.send_button = NSButton.alloc().initWithFrame_(NSMakeRect(bx, 5, bs, bs))
+        self.send_button.setTitle_("\u2191")  # ↑
         self.send_button.setBordered_(False)
         self.send_button.setWantsLayer_(True)
-        self.send_button.layer().setCornerRadius_(16)
-        self.send_button.layer().setBackgroundColor_(Colors.BUTTON_BG.CGColor())
-        self.send_button.setFont_(NSFont.systemFontOfSize_(16))
-        self.send_button.setContentTintColor_(Colors.TEXT_PRIMARY)
+        self.send_button.layer().setCornerRadius_(bs / 2)
+        self.send_button.layer().setBackgroundColor_(Colors.BTN_PRIMARY.CGColor())
+        self.send_button.setFont_(NSFont.systemFontOfSize_weight_(16, NSFontWeightBold))
+        self.send_button.setContentTintColor_(Colors.TEXT_ON_INDIGO)
         self.send_button.setTarget_(self.delegate)
         self.send_button.setAction_("sendClicked:")
-        self.send_button.setAutoresizingMask_(NSViewMinYMargin)
-        input_container.addSubview_(self.send_button)
+        self.send_button.setAutoresizingMask_(NSViewMinXMargin)
+        pill.addSubview_(self.send_button)
 
-        input_section.addSubview_(input_container)
-        content.addSubview_(input_section)
+        content.addSubview_(bar)
 
-        # Set input field action (Enter key)
         self.input_field.setTarget_(self.delegate)
         self.input_field.setAction_("sendClicked:")
 
-        # ─────────────────────────────────────────────────────────────────────
-        # WELCOME MESSAGE
-        # ─────────────────────────────────────────────────────────────────────
-        self._add_welcome_message()
+    # ──────────────────────────────────────────────────────────────────
+    # THINKING INDICATOR — animated dots in the chat area
+    # ──────────────────────────────────────────────────────────────────
 
-    def _add_welcome_message(self):
-        """Add styled welcome message."""
-        self._add_message(
-            "SortMeOut AI",
-            """Welcome! 👋
+    def _show_thinking(self):
+        """Insert an animated thinking block below the user's message."""
+        storage = self.chat_view.textStorage()
+        self.thinking_range_start = storage.length()
+        self._render_thinking_frame()
 
-I'm your personal AI assistant for file organization. I can help you with:
+    def _render_thinking_frame(self):
+        """Build (or rebuild) the thinking indicator with animated dots."""
+        if self.thinking_range_start is None:
+            return
 
-✦  Organize files automatically
-✦  Analyze documents and suggest placement
-✦  Create smart folder structures
-✦  Clean up Downloads and Desktop
-✦  Sort by type, date, or content
+        storage = self.chat_view.textStorage()
+        storage.beginEditing()
 
-Tell me what you'd like to do and I'll help!""",
-            is_ai=True,
-            show_timestamp=False,
+        # Remove previous frame
+        current_end = storage.length()
+        if current_end > self.thinking_range_start:
+            storage.deleteCharactersInRange_((self.thinking_range_start, current_end - self.thinking_range_start))
+
+        block = NSMutableAttributedString.alloc().init()
+        phase = self.animation_state % 30
+
+        # ── Spacing ──
+        sp = NSMutableParagraphStyle.alloc().init()
+        sp.setParagraphSpacingBefore_(14)
+        block.appendAttributedString_(
+            NSAttributedString.alloc().initWithString_attributes_(
+                "\n", {NSFontAttributeName: NSFont.systemFontOfSize_(2), NSParagraphStyleAttributeName: sp}
+            )
         )
 
+        # ── AI sender line with face ──
+        lp = NSMutableParagraphStyle.alloc().init()
+        lp.setLineBreakMode_(NSLineBreakByWordWrapping)
+        lp.setParagraphSpacing_(6)
+
+        # AI emoji avatar
+        block.appendAttributedString_(
+            NSAttributedString.alloc().initWithString_attributes_(
+                f"{self.AI_EMOJI}  ",
+                {
+                    NSFontAttributeName: NSFont.systemFontOfSize_(14),
+                    NSForegroundColorAttributeName: Colors.ACCENT_LIGHT,
+                    NSParagraphStyleAttributeName: lp,
+                },
+            )
+        )
+        # Name
+        block.appendAttributedString_(
+            NSAttributedString.alloc().initWithString_attributes_(
+                "SortMeOut AI",
+                {
+                    NSFontAttributeName: Fonts.sender(),
+                    NSForegroundColorAttributeName: Colors.ACCENT_LIGHT,
+                    NSParagraphStyleAttributeName: lp,
+                },
+            )
+        )
+        block.appendAttributedString_(
+            NSAttributedString.alloc().initWithString_attributes_(
+                "\n",
+                {NSFontAttributeName: Fonts.sender(), NSParagraphStyleAttributeName: lp},
+            )
+        )
+
+        # ── Animated dots ──
+        dp = NSMutableParagraphStyle.alloc().init()
+        dp.setLineBreakMode_(NSLineBreakByWordWrapping)
+        dp.setFirstLineHeadIndent_(10)
+        dp.setHeadIndent_(10)
+        dp.setParagraphSpacing_(4)
+
+        for i in range(3):
+            # Wave animation: each dot peaks at a different phase
+            dot_phase = (phase - i * 8) % 30
+            if 0 <= dot_phase < 12:
+                t = dot_phase / 12.0
+                brightness = 0.3 + 0.7 * (1.0 - abs(t * 2.0 - 1.0))
+            else:
+                brightness = 0.2
+
+            r = 0.20 + 0.35 * brightness
+            g = 0.20 + 0.40 * brightness
+            b = 0.40 + 0.57 * brightness
+            a = 0.35 + 0.65 * brightness
+
+            dot_color = _c(r, g, b, a)
+            block.appendAttributedString_(
+                NSAttributedString.alloc().initWithString_attributes_(
+                    "\u25CF",
+                    {
+                        NSFontAttributeName: NSFont.systemFontOfSize_(16),
+                        NSForegroundColorAttributeName: dot_color,
+                        NSParagraphStyleAttributeName: dp,
+                    },
+                )
+            )
+            if i < 2:
+                block.appendAttributedString_(
+                    NSAttributedString.alloc().initWithString_attributes_(
+                        "  ",
+                        {
+                            NSFontAttributeName: NSFont.systemFontOfSize_(10),
+                            NSParagraphStyleAttributeName: dp,
+                        },
+                    )
+                )
+
+        # Status text after dots
+        status_texts = ["Analyzing", "Thinking", "Processing", "Reasoning"]
+        idx = (phase // 8) % len(status_texts)
+        block.appendAttributedString_(
+            NSAttributedString.alloc().initWithString_attributes_(
+                f"   {status_texts[idx]}\u2026\n",
+                {
+                    NSFontAttributeName: Fonts.caption_regular(),
+                    NSForegroundColorAttributeName: Colors.TEXT_MUTED,
+                    NSParagraphStyleAttributeName: dp,
+                },
+            )
+        )
+
+        storage.appendAttributedString_(block)
+        storage.endEditing()
+        self.chat_view.scrollToEndOfDocument_(None)
+
+    def _hide_thinking(self):
+        """Remove the thinking indicator from the chat area."""
+        if self.thinking_range_start is not None:
+            storage = self.chat_view.textStorage()
+            end = storage.length()
+            length = end - self.thinking_range_start
+            if length > 0:
+                storage.beginEditing()
+                storage.deleteCharactersInRange_((self.thinking_range_start, length))
+                storage.endEditing()
+            self.thinking_range_start = None
+
+    # ──────────────────────────────────────────────────────────────────
+    # WELCOME
+    # ──────────────────────────────────────────────────────────────────
+
+    def _add_welcome_message(self):
+        greeting = f"Hey {self.user_name}! " if self.user_name != "You" else "Hey! "
+        welcome = (
+            f"{greeting}I'm your AI file assistant.  {self.AI_EMOJI}\n\n"
+            "Here's what I can help with:\n\n"
+            "- **Organize files** \u2014 sort Downloads, Desktop, and more\n"
+            "- **Analyze documents** \u2014 suggest the best location\n"
+            "- **Create folder structures** \u2014 smart categories\n"
+            "- **Clean up duplicates** \u2014 find and resolve clutter\n"
+            "- **Sort by type, date, or content** \u2014 powerful filtering\n\n"
+            "Just tell me what you'd like to do."
+        )
+        self._add_message("SortMeOut AI", welcome, is_ai=True, show_timestamp=False)
+
+    # ──────────────────────────────────────────────────────────────────
+    # TIMER
+    # ──────────────────────────────────────────────────────────────────
+
     def _start_timer(self):
-        """Start timer to check for responses."""
         self.timer = NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
             0.1, self.delegate, "checkQueue:", None, True
         )
 
     def check_queue(self):
-        """Check for responses from AI thread."""
         try:
             while True:
-                msg_type, data = self.response_queue.get_nowait()
-                if msg_type == "response":
+                mt, data = self.response_queue.get_nowait()
+                if mt == "response":
+                    self._hide_thinking()
                     self._add_message("SortMeOut AI", data, is_ai=True)
-                    self._set_status("Ready to help", processing=False)
+                    self._set_status("Ready to help", False)
                     self.is_processing = False
                     self.send_button.setEnabled_(True)
-                    self.send_button.layer().setBackgroundColor_(Colors.BUTTON_BG.CGColor())
-                elif msg_type == "status":
-                    self._set_status(data, processing=True)
-                elif msg_type == "error":
-                    self._add_message("System", f"⚠️ {data}", is_ai=True, is_error=True)
-                    self._set_status("An error occurred", processing=False)
+                    self.send_button.layer().setBackgroundColor_(Colors.BTN_PRIMARY.CGColor())
+                elif mt == "status":
+                    self._set_status(data, True)
+                elif mt == "error":
+                    self._hide_thinking()
+                    self._add_message(
+                        "SortMeOut AI", f"Something went wrong: {data}", is_ai=True, is_error=True
+                    )
+                    self._set_status("Error occurred", False)
                     self.is_processing = False
                     self.send_button.setEnabled_(True)
-                    self.send_button.layer().setBackgroundColor_(Colors.BUTTON_BG.CGColor())
+                    self.send_button.layer().setBackgroundColor_(Colors.BTN_PRIMARY.CGColor())
         except queue.Empty:
             pass
 
-        # Animate status dot when processing
+        # Animate thinking dots + status dot
         if self.is_processing:
-            self.animation_state = (self.animation_state + 1) % 20
-            alpha = 0.5 + 0.5 * abs((self.animation_state - 10) / 10.0)
-            pulse_color = NSColor.colorWithCalibratedRed_green_blue_alpha_(1.0, 0.75, 0.25, alpha)
-            self.status_dot.layer().setBackgroundColor_(pulse_color.CGColor())
+            self.animation_state = (self.animation_state + 1) % 300
+
+            # Pulse the status dot (indigo ↔ violet)
+            t = abs(((self.animation_state % 20) - 10) / 10.0)
+            r = 0.389 + (0.545 - 0.389) * t
+            g = 0.400 + (0.361 - 0.400) * t
+            b = 0.945 + (0.965 - 0.945) * t
+            self.status_dot.layer().setBackgroundColor_(_c(r, g, b, 0.5 + 0.5 * t).CGColor())
+
+            # Rebuild thinking indicator frame with updated animation
+            self._render_thinking_frame()
+
+    # ──────────────────────────────────────────────────────────────────
+    # MESSAGE RENDERING — with avatars and identity
+    # ──────────────────────────────────────────────────────────────────
 
     def _add_message(self, sender, text, is_ai=False, show_timestamp=True, is_error=False):
-        """Add a beautifully styled message to the chat."""
         storage = self.chat_view.textStorage()
         self.message_count += 1
 
-        # Add spacing between messages
+        # Spacing between messages
         if storage.length() > 0:
-            spacing = NSAttributedString.alloc().initWithString_("\n\n")
-            storage.appendAttributedString_(spacing)
+            sp = NSMutableParagraphStyle.alloc().init()
+            sp.setParagraphSpacingBefore_(14)
+            sa = {NSFontAttributeName: NSFont.systemFontOfSize_(2), NSParagraphStyleAttributeName: sp}
+            storage.appendAttributedString_(
+                NSAttributedString.alloc().initWithString_attributes_("\n", sa)
+            )
 
-        # Paragraph style for message
-        para_style = NSMutableParagraphStyle.alloc().init()
-        para_style.setLineSpacing_(4)
-        para_style.setParagraphSpacing_(8)
-        para_style.setLineBreakMode_(NSLineBreakByWordWrapping)
+        # ── Sender line with avatar ──
+        lp = NSMutableParagraphStyle.alloc().init()
+        lp.setLineBreakMode_(NSLineBreakByWordWrapping)
+        lp.setParagraphSpacing_(4)
 
-        # ── Message Header ──
         if is_ai:
-            sender_icon = "🤖" if not is_error else "⚠️"
-            sender_color = Colors.ACCENT_PRIMARY if not is_error else Colors.ACCENT_WARNING
+            avatar_char = self.AI_EMOJI  # 🤖
+            avatar_color = Colors.ACCENT_LIGHT if not is_error else Colors.ERROR
+            avatar_font = NSFont.systemFontOfSize_(14)
+            display_name = sender
         else:
-            sender_icon = "👤"
-            sender_color = Colors.USER_BUBBLE
+            avatar_char = self.user_initial
+            avatar_color = Colors.ACCENT_VIOLET
+            avatar_font = NSFont.systemFontOfSize_weight_(12, NSFontWeightBold)
+            display_name = self.user_name
 
-        header_attrs = {
-            NSFontAttributeName: Typography.subheading(),
-            NSForegroundColorAttributeName: sender_color,
-            NSParagraphStyleAttributeName: para_style,
-        }
-
-        timestamp = format_time() if show_timestamp else ""
-        header_text = f"{sender_icon}  {sender}"
-        if timestamp:
-            header_text += f"  ·  {timestamp}"
-        header_text += "\n"
-
-        header_str = NSAttributedString.alloc().initWithString_attributes_(
-            header_text, header_attrs
+        # Avatar
+        storage.appendAttributedString_(
+            NSAttributedString.alloc().initWithString_attributes_(
+                f"{avatar_char}  ",
+                {
+                    NSFontAttributeName: avatar_font,
+                    NSForegroundColorAttributeName: avatar_color,
+                    NSParagraphStyleAttributeName: lp,
+                },
+            )
         )
-        storage.appendAttributedString_(header_str)
 
-        # ── Message Body ──
-        body_para = NSMutableParagraphStyle.alloc().init()
-        body_para.setLineSpacing_(3)
-        body_para.setLineBreakMode_(NSLineBreakByWordWrapping)
-        body_para.setFirstLineHeadIndent_(28)  # Indent under icon
-        body_para.setHeadIndent_(28)
+        # Name
+        storage.appendAttributedString_(
+            NSAttributedString.alloc().initWithString_attributes_(
+                display_name,
+                {
+                    NSFontAttributeName: Fonts.sender(),
+                    NSForegroundColorAttributeName: avatar_color,
+                    NSParagraphStyleAttributeName: lp,
+                },
+            )
+        )
 
-        body_attrs = {
-            NSFontAttributeName: Typography.body_regular(),
-            NSForegroundColorAttributeName: Colors.TEXT_PRIMARY,
-            NSParagraphStyleAttributeName: body_para,
-        }
+        # Timestamp
+        if show_timestamp:
+            storage.appendAttributedString_(
+                NSAttributedString.alloc().initWithString_attributes_(
+                    f"  \u00B7  {format_time()}",
+                    {
+                        NSFontAttributeName: Fonts.timestamp(),
+                        NSForegroundColorAttributeName: Colors.TEXT_MUTED,
+                        NSParagraphStyleAttributeName: lp,
+                    },
+                )
+            )
 
-        body_str = NSAttributedString.alloc().initWithString_attributes_(text, body_attrs)
-        storage.appendAttributedString_(body_str)
+        storage.appendAttributedString_(
+            NSAttributedString.alloc().initWithString_attributes_(
+                "\n",
+                {NSFontAttributeName: Fonts.sender(), NSParagraphStyleAttributeName: lp},
+            )
+        )
 
-        # Scroll to bottom with smooth animation
+        # ── Body — render markdown ──
+        tc = Colors.TEXT_PRIMARY
+        if is_error:
+            tc = Colors.TEXT_SECONDARY
+
+        renderer = MarkdownRenderer(base_indent=4, text_color=tc)
+
+        # Strip EXECUTE command artifacts
+        clean = re.sub(
+            r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash)\s+"[^"]*"(?:\s+"[^"]*")?\]', "", text
+        )
+        clean = re.sub(r"\n{3,}", "\n\n", clean).strip()
+
+        storage.appendAttributedString_(renderer.render(clean))
         self.chat_view.scrollToEndOfDocument_(None)
 
-    def _set_status(self, text, processing=False):
-        """Set status in header."""
-        self.header_status.setStringValue_(text)
+    # ──────────────────────────────────────────────────────────────────
+    # STATUS
+    # ──────────────────────────────────────────────────────────────────
 
+    def _set_status(self, text, processing):
         if processing:
-            self.header_status.setTextColor_(Colors.ACCENT_WARNING)
-            self.status_dot.layer().setBackgroundColor_(Colors.ACCENT_WARNING.CGColor())
+            self.header_status.setStringValue_(f"{text}")
+            self.header_status.setTextColor_(Colors.ACCENT_LIGHT)
+            self.status_dot.layer().setBackgroundColor_(Colors.WARNING.CGColor())
         else:
+            self.header_status.setStringValue_(text)
             self.header_status.setTextColor_(Colors.TEXT_MUTED)
-            self.status_dot.layer().setBackgroundColor_(Colors.ACCENT_SUCCESS.CGColor())
+            self.status_dot.layer().setBackgroundColor_(Colors.SUCCESS.CGColor())
+
+    # ──────────────────────────────────────────────────────────────────
+    # SEND / PROCESS
+    # ──────────────────────────────────────────────────────────────────
 
     def do_send(self):
-        """Handle send button click or Enter key."""
-        message = self.input_field.stringValue()
-        if not message or not message.strip():
+        msg = self.input_field.stringValue()
+        if not msg or not msg.strip():
             return
-
         if self.is_processing:
             return
 
-        # Clear input and add user message
         self.input_field.setStringValue_("")
-        self._add_message("You", message.strip(), is_ai=False)
+        self._add_message(self.user_name, msg.strip(), is_ai=False)
 
-        # Start processing
+        # Show animated thinking indicator
         self.is_processing = True
-        self.send_button.setEnabled_(False)
-        self.send_button.layer().setBackgroundColor_(Colors.BUTTON_DISABLED.CGColor())
-        self._set_status("Thinking...", processing=True)
+        self.animation_state = 0
+        self._show_thinking()
 
-        # Process in background
-        thread = threading.Thread(target=self._process_ai, args=(message,))
-        thread.daemon = True
-        thread.start()
+        self.send_button.setEnabled_(False)
+        self.send_button.layer().setBackgroundColor_(Colors.BTN_DISABLED.CGColor())
+        self._set_status("Thinking\u2026", True)
+
+        t = threading.Thread(target=self._process_ai, args=(msg,))
+        t.daemon = True
+        t.start()
 
     def _process_ai(self, message):
-        """Process message with AI (background thread)."""
         try:
-            self.response_queue.put(("status", "Analyzing your request..."))
-
+            self.response_queue.put(("status", "Analyzing\u2026"))
             if not self.assistant:
                 self.response_queue.put(
-                    ("error", "AI assistant could not be initialized. Check your API key.")
+                    ("error", "AI not initialized. Check your API key in ~/.config/sortmeout/.env")
                 )
                 return
-
-            self.response_queue.put(("status", "Thinking..."))
+            self.response_queue.put(("status", "Thinking\u2026"))
             response = self.assistant.chat(message)
             self.response_queue.put(("response", response))
-
         except Exception as e:
-            self.response_queue.put(("error", f"An error occurred: {str(e)}"))
+            self.response_queue.put(("error", str(e)))
 
     def clear_chat(self):
-        """Clear chat history."""
         self.chat_view.textStorage().setAttributedString_(
             NSAttributedString.alloc().initWithString_("")
         )
@@ -691,12 +1098,9 @@ Tell me what you'd like to do and I'll help!""",
         self._add_welcome_message()
 
     def show(self):
-        """Show the window with elegant animation."""
         self.window.makeKeyAndOrderFront_(None)
         self.input_field.becomeFirstResponder()
         NSApp.activateIgnoringOtherApps_(True)
-
-        # Subtle fade-in effect
         self.window.setAlphaValue_(0.0)
         self.window.setAlphaValue_(1.0)
 
@@ -709,22 +1113,17 @@ _chat_window = None
 
 
 def show_chat_window():
-    """Show the persistent chat window."""
     global _chat_window
-
     if not HAS_APPKIT:
         print("AppKit not available")
         return False
-
     if _chat_window is None:
         _chat_window = ChatWindow()
-
     _chat_window.show()
     return True
 
 
 def main():
-    """Run as standalone application."""
     if not HAS_APPKIT:
         print("AppKit not available")
         return
@@ -732,42 +1131,33 @@ def main():
     app = NSApplication.sharedApplication()
     app.setActivationPolicy_(NSApplicationActivationPolicyRegular)
 
-    # Create menubar
     menubar = NSMenu.alloc().init()
     app.setMainMenu_(menubar)
 
-    # App menu
-    app_menu_item = NSMenuItem.alloc().init()
-    menubar.addItem_(app_menu_item)
-    app_menu = NSMenu.alloc().init()
-    app_menu.addItemWithTitle_action_keyEquivalent_(
-        "About SortMeOut AI", "orderFrontStandardAboutPanel:", ""
-    )
-    app_menu.addItem_(NSMenuItem.separatorItem())
-    app_menu.addItemWithTitle_action_keyEquivalent_("Quit", "terminate:", "q")
-    app_menu_item.setSubmenu_(app_menu)
+    ami = NSMenuItem.alloc().init()
+    menubar.addItem_(ami)
+    am = NSMenu.alloc().init()
+    am.addItemWithTitle_action_keyEquivalent_("About SortMeOut AI", "orderFrontStandardAboutPanel:", "")
+    am.addItem_(NSMenuItem.separatorItem())
+    am.addItemWithTitle_action_keyEquivalent_("Quit", "terminate:", "q")
+    ami.setSubmenu_(am)
 
-    # Edit menu (for Cmd+C, Cmd+V, etc.)
-    edit_menu_item = NSMenuItem.alloc().init()
-    menubar.addItem_(edit_menu_item)
-    edit_menu = NSMenu.alloc().initWithTitle_("Edit")
-    edit_menu.addItemWithTitle_action_keyEquivalent_("Undo", "undo:", "z")
-    edit_menu.addItemWithTitle_action_keyEquivalent_("Redo", "redo:", "Z")
-    edit_menu.addItem_(NSMenuItem.separatorItem())
-    edit_menu.addItemWithTitle_action_keyEquivalent_("Cut", "cut:", "x")
-    edit_menu.addItemWithTitle_action_keyEquivalent_("Copy", "copy:", "c")
-    edit_menu.addItemWithTitle_action_keyEquivalent_("Paste", "paste:", "v")
-    edit_menu.addItemWithTitle_action_keyEquivalent_("Select All", "selectAll:", "a")
-    edit_menu_item.setSubmenu_(edit_menu)
+    emi = NSMenuItem.alloc().init()
+    menubar.addItem_(emi)
+    em = NSMenu.alloc().initWithTitle_("Edit")
+    em.addItemWithTitle_action_keyEquivalent_("Undo", "undo:", "z")
+    em.addItemWithTitle_action_keyEquivalent_("Redo", "redo:", "Z")
+    em.addItem_(NSMenuItem.separatorItem())
+    em.addItemWithTitle_action_keyEquivalent_("Cut", "cut:", "x")
+    em.addItemWithTitle_action_keyEquivalent_("Copy", "copy:", "c")
+    em.addItemWithTitle_action_keyEquivalent_("Paste", "paste:", "v")
+    em.addItemWithTitle_action_keyEquivalent_("Select All", "selectAll:", "a")
+    emi.setSubmenu_(em)
 
-    # Create and show window
     window = ChatWindow()
     window.show()
-
-    # Ensure app is active
     app.activateIgnoringOtherApps_(True)
     window.window.makeFirstResponder_(window.input_field)
-
     app.run()
 
 

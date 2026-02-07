@@ -74,8 +74,9 @@ class MenuBarApp:
         from sortmeout.core.license import get_license
         self._license = get_license()
 
-        # Check first-run
-        self._first_run = not self._config_manager.config_path.exists()
+        # Check first-run — use onboarding_completed flag, not file existence
+        config_data = self._config_manager.load_config()
+        self._first_run = not config_data.get("onboarding_completed", False)
 
         # Build menu
         self._build_menu()

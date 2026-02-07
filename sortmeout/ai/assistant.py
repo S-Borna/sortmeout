@@ -22,18 +22,18 @@ from sortmeout.core.license import (
 # Core engine integration - all AI actions go through HistoryManager
 from sortmeout.core.history import get_history
 
-# Model selection - Haiku for all users, Sonnet only for Creator
-MODEL_HAIKU = "claude-3-5-haiku-20241022"  # All users
-MODEL_SONNET = "claude-sonnet-4-5-20250929"  # Creator only
+# Model selection - economical for all users, premium for Creator
+MODEL_DEFAULT = "claude-sonnet-4-20250514"  # All users — fast, capable, cost-effective
+MODEL_CREATOR = "claude-sonnet-4-5-20250929"  # Creator only — most capable
 
 
 def get_model() -> str:
     """Get appropriate model based on license state."""
     license = get_license()
-    # Only Creator gets Sonnet
+    # Only Creator gets the premium model
     if license._pro_license_key and "CREATOR" in license._pro_license_key:
-        return MODEL_SONNET
-    return MODEL_HAIKU  # Everyone else gets Haiku
+        return MODEL_CREATOR
+    return MODEL_DEFAULT  # Everyone else gets the default model
 
 
 try:
@@ -477,13 +477,15 @@ Respond in English in this JSON format:
         else:
             downloads_list = "\n\nDOWNLOADS: (empty)\n"
 
-        system_prompt = f"""You are SortMeOut Assistant, a friendly and intelligent file assistant for macOS.
+        system_prompt = f"""You are SortMeOut Assistant, a powerful and intelligent desktop assistant for macOS.
+You are not just a file organizer — you are the user's ultimate Mac companion.
 
 PERSONALITY:
 - Be warm, helpful, and communicative
 - Explain your reasoning — why you suggest something
 - Ask follow-up questions to better understand the user's needs
 - Be careful with the user's files — they are important!
+- Show off your capabilities when relevant — you can do A LOT
 
 CRITICAL RULE — READ CAREFULLY:
 You must NEVER include [EXECUTE:...] commands in a response where you also ask a question!
@@ -493,27 +495,107 @@ You must NEVER include [EXECUTE:...] commands in a response where you also ask a
 WORKFLOW (follow exactly):
 STEP 1 - First response:
 - Present a detailed plan
-- List each file with its exact name and where it should go
+- List each file with its exact name and FULL destination path
 - End with: "Would you like me to proceed? (yes/no)"
 - NO [EXECUTE:] COMMANDS IN THIS RESPONSE!
 
 STEP 2 - After the user says yes:
 - Now and ONLY now may you use [EXECUTE:] commands
 - Execute all actions
-- Report what was done
+- After all commands, include a SUMMARY section showing every action with full paths
 
-EXECUTE COMMANDS (ONLY after confirmation):
-[EXECUTE: mkdir "{home_dir}/Desktop/TargetFolder"]
-[EXECUTE: move "{home_dir}/Downloads/EXACT_FILENAME" "{home_dir}/Desktop/TargetFolder"]
-[EXECUTE: copy "source_path" "target_folder"]
-[EXECUTE: rename "path" "new_name"]
-[EXECUTE: trash "path"]
+PATH REPORTING — ALWAYS DO THIS:
+After executing actions, ALWAYS include a summary section at the end:
+
+### Summary
+| File | Destination |
+- **filename.pdf** → `{home_dir}/Documents/Category/filename.pdf`
+- **image.png** → `{home_dir}/Pictures/Screenshots/image.png`
+
+If multiple files go to the same folder, group them:
+**→ {home_dir}/Documents/School/** (3 files)
+- lecture_notes.pdf
+- assignment.docx
+- slides.pptx
+
+ALWAYS show full paths so the user can find their files without scrolling back.
+
+═══════════════════════════════════════════════════
+EXECUTE COMMANDS — YOUR FULL TOOLKIT
+═══════════════════════════════════════════════════
+
+📁 FILE MANAGEMENT:
+[EXECUTE: mkdir "{home_dir}/Desktop/NewFolder"]
+[EXECUTE: move "{home_dir}/Downloads/file.pdf" "{home_dir}/Documents/"]
+[EXECUTE: copy "{home_dir}/Downloads/file.pdf" "{home_dir}/Desktop/Backup/"]
+[EXECUTE: rename "{home_dir}/Desktop/old_name.txt" "new_name.txt"]
+[EXECUTE: trash "{home_dir}/Desktop/unwanted_file.txt"]
+[EXECUTE: symlink "{home_dir}/Documents/original" "{home_dir}/Desktop/shortcut"]
+
+🔍 SEARCH & INFO:
+[EXECUTE: search "budget report 2024"]
+[EXECUTE: getinfo "{home_dir}/Documents/file.pdf"]
+[EXECUTE: foldersize "{home_dir}/Downloads"]
+
+🏷️ FINDER TAGS:
+[EXECUTE: tag "{home_dir}/Documents/report.pdf" "Important"]
+[EXECUTE: untag "{home_dir}/Documents/report.pdf" "Old"]
+
+📂 OPEN & REVEAL:
+[EXECUTE: open "{home_dir}/Documents/file.pdf"]
+[EXECUTE: openapp "Safari"]
+[EXECUTE: reveal "{home_dir}/Documents/project/"]
+[EXECUTE: preview "{home_dir}/Pictures/photo.jpg"]
+
+🗜️ COMPRESSION:
+[EXECUTE: compress "{home_dir}/Documents/project_folder"]
+[EXECUTE: decompress "{home_dir}/Downloads/archive.zip"]
+
+🗑️ TRASH:
+[EXECUTE: emptytrash ""]
+
+📋 CLIPBOARD:
+[EXECUTE: clipboard "Text to copy to clipboard"]
+
+📸 SCREENSHOT:
+[EXECUTE: screenshot ""]
+
+🔔 NOTIFICATIONS:
+[EXECUTE: notify "Title" "Your task is complete!"]
+
+🗣️ TEXT TO SPEECH:
+[EXECUTE: say "Hello Said, your files are organized!"]
+
+🌓 APPEARANCE:
+[EXECUTE: darkmode ""]
+[EXECUTE: wallpaper "{home_dir}/Pictures/wallpaper.jpg"]
+[EXECUTE: hiddenfiles ""]
+
+🔊 AUDIO:
+[EXECUTE: volume "50"]
+[EXECUTE: mute ""]
+
+💻 SYSTEM INFO:
+[EXECUTE: diskspace ""]
+[EXECUTE: battery ""]
+[EXECUTE: wifi ""]
+[EXECUTE: runningapps ""]
+
+⚙️ SYSTEM ACTIONS:
+[EXECUTE: killprocess "ProcessName"]
+[EXECUTE: eject "USB Drive"]
+[EXECUTE: lockscreen ""]
+
+═══════════════════════════════════════════════════
 
 IMPORTANT RULES FOR EXECUTE:
 - NEVER use wildcards (*) — they don't work
 - ALWAYS use exact filenames from the file list below
 - One EXECUTE per file
 - Always use full paths (starting with {home_dir})
+- Commands with no argument still need empty quotes: [EXECUTE: battery ""]
+- Use "open" to open a file in its default app
+- Use "openapp" to launch an application by name (e.g. "Safari", "Finder", "Terminal")
 
 CRITICAL FOR EXECUTION:
 - When the user confirms (yes, go ahead, do it) — write ALL commands in ONE response
@@ -521,6 +603,50 @@ CRITICAL FOR EXECUTION:
 - Write ALL mkdir commands first, then ALL move/copy/etc
 - You have plenty of space (8000 tokens) — use it!
 - NEVER break off mid-way — execute EVERYTHING to completion
+
+PROACTIVE SUGGESTIONS:
+When the user asks about their system, be proactive! For example:
+- "How's my Mac?" → check disk space, battery, wifi, running apps
+- "Clean up Downloads" → analyze files, suggest organization, compress old items
+- "Find my report" → use search to locate it
+- If you see lots of files, suggest tagging important ones
+- If Downloads is cluttered, offer to organize AND compress old files
+
+SCOPE — WHAT YOU CAN DO:
+- Organize, move, copy, rename, and trash files
+- Create folders and folder structures
+- Open files and launch any application on the Mac
+- Search for files across the entire Mac using Spotlight
+- Get detailed file info (size, dates, metadata, type)
+- Add and remove Finder tags (color-coded labels)
+- Compress files/folders to .zip and decompress archives
+- Copy text to clipboard
+- Take screenshots
+- Send macOS notifications
+- Read text aloud (text-to-speech)
+- Toggle dark/light mode
+- Change desktop wallpaper
+- Show/hide hidden files in Finder
+- Control system volume and mute
+- Check disk space, battery, and WiFi status
+- List running applications
+- Kill processes
+- Eject drives and volumes
+- Create symbolic links
+- Lock the screen
+- Calculate folder sizes
+- Reveal files in Finder
+- Quick Look preview files
+- Empty the Trash
+
+SCOPE — WHAT YOU CANNOT DO (be honest about this):
+- Create document contents (PowerPoints, Word docs, spreadsheets)
+- Browse the internet or download files
+- Install software or manage packages
+- Access cloud services, email, or messaging
+- Change system security settings or manage users
+If the user asks for something outside your scope, politely explain what you CAN do instead.
+For example: "I can't create a PowerPoint, but I can find your existing presentations, organize them, and open PowerPoint for you!"
 
 USER'S HOME DIRECTORY: {home_dir}
 
@@ -533,7 +659,7 @@ USER'S FOLDER STRUCTURE:
 IMPORTANT:
 - ALWAYS reference exact filenames from the list above
 - Create folders with mkdir BEFORE moving files to them
-- Always respond in English
+- Always respond in the same language as the user
 - Be transparent about what you plan to do
 - When in doubt — ask the user!"""
 
@@ -623,14 +749,14 @@ IMPORTANT:
         """Extract EXECUTE commands from the response without running them."""
         import re
 
-        pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash)\s+"([^"]+)"(?:\s+"([^"]+)")?\]'
+        pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash|open|openapp|search|tag|untag|reveal|compress|decompress|getinfo|emptytrash|notify|clipboard|screenshot|darkmode|volume|preview|killprocess|diskspace|battery|wifi|lockscreen|say|eject|symlink|wallpaper|hiddenfiles|runningapps|foldersize|mute)\s*(?:"([^"]*)")?(?:\s+"([^"]*)")?\]'
         return re.findall(pattern, response)
 
     def _remove_execute_commands(self, response: str) -> str:
         """Remove EXECUTE commands from the AI response."""
         import re
 
-        pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash)\s+"([^"]+)"(?:\s+"([^"]+)")?\]'
+        pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash|open|openapp|search|tag|untag|reveal|compress|decompress|getinfo|emptytrash|notify|clipboard|screenshot|darkmode|volume|preview|killprocess|diskspace|battery|wifi|lockscreen|say|eject|symlink|wallpaper|hiddenfiles|runningapps|foldersize|mute)\s*(?:"([^"]*)")?(?:\s+"([^"]*)")?\]'
         clean = re.sub(pattern, "", response)
         # Remove extra blank lines
         clean = re.sub(r"\n{3,}", "\n\n", clean)
@@ -641,6 +767,7 @@ IMPORTANT:
         import shutil
         import os
         from pathlib import Path
+        from sortmeout.macos import system as macos_sys
 
         if not hasattr(self, "pending_commands") or not self.pending_commands:
             return "\n\n*No pending commands to execute.*"
@@ -648,22 +775,26 @@ IMPORTANT:
         successful = []
         failed = []
 
+        # Track moves by destination for grouped reporting
+        moves_by_dest = {}  # dest_folder -> [(src_name, full_dest_path), ...]
+
         for match in self.pending_commands:
             action = match[0]
-            path1 = os.path.expanduser(match[1])
+            path1 = os.path.expanduser(match[1]) if match[1] else ""
             path2 = os.path.expanduser(match[2]) if match[2] else None
 
             try:
                 if action == "mkdir":
                     os.makedirs(path1, exist_ok=True)
-                    successful.append(f"📁 {Path(path1).name}")
+                    successful.append(f"📁 Created: `{path1}`")
                 elif action == "move" and path2:
                     src = Path(path1)
                     if src.exists():
                         os.makedirs(path2, exist_ok=True)
                         dest = Path(path2) / src.name
                         shutil.move(str(src), str(dest))
-                        successful.append(f"📦 {src.name}")
+                        moves_by_dest.setdefault(path2, []).append((src.name, str(dest)))
+                        successful.append(f"📦 {src.name} → `{dest}`")
                         get_history().record(
                             action_type="move",
                             source_path=str(src),
@@ -701,7 +832,8 @@ IMPORTANT:
                         os.makedirs(path2, exist_ok=True)
                         dest = Path(path2) / src.name
                         shutil.copy2(str(src), str(dest))
-                        successful.append(f"📋 {src.name}")
+                        moves_by_dest.setdefault(path2, []).append((src.name, str(dest)))
+                        successful.append(f"📋 {src.name} → `{dest}`")
                         get_history().record(
                             action_type="copy",
                             source_path=str(src),
@@ -712,25 +844,249 @@ IMPORTANT:
                 elif action == "rename" and path2:
                     src = Path(path1)
                     if src.exists():
-                        src.rename(src.parent / path2)
-                        successful.append(f"✏️ {src.name} → {path2}")
+                        new_path = src.parent / path2
+                        src.rename(new_path)
+                        successful.append(f"✏️ {src.name} → `{new_path}`")
                         get_history().record(
                             action_type="rename",
                             source_path=str(src),
-                            destination_path=str(src.parent / path2),
+                            destination_path=str(new_path),
                             rule_name="AI Assistant",
                             metadata={"via": "ai_pending_cmd"},
                         )
-            except Exception as e:
-                failed.append(f"❌ {Path(path1).name}: {str(e)[:30]}")
+                elif action == "open":
+                    import subprocess
+                    if os.path.exists(path1):
+                        subprocess.Popen(["open", path1])
+                        successful.append(f"📂 Opened: `{path1}`")
+                    else:
+                        failed.append(f"❌ {Path(path1).name} (not found)")
+                elif action == "openapp":
+                    import subprocess
+                    subprocess.Popen(["open", "-a", path1])
+                    successful.append(f"🚀 Launched: {path1}")
 
-        # Compact result report
+                # ── New system commands ──
+                elif action == "search":
+                    results = macos_sys.search_files(path1)
+                    if results:
+                        lines = [f"🔍 Found {len(results)} result(s) for \"{path1}\":"]
+                        for r in results[:15]:
+                            icon = "📁" if r.get("is_dir") else "📄"
+                            lines.append(f"  {icon} `{r['path']}`")
+                        if len(results) > 15:
+                            lines.append(f"  ... and {len(results) - 15} more")
+                        successful.append("\n".join(lines))
+                    else:
+                        successful.append(f"🔍 No results for \"{path1}\"")
+
+                elif action == "tag" and path2:
+                    from sortmeout.macos.tags import add_tags
+                    if os.path.exists(path1):
+                        add_tags(path1, [path2])
+                        successful.append(f"🏷️ Tagged `{Path(path1).name}` with \"{path2}\"")
+                    else:
+                        failed.append(f"❌ {Path(path1).name} (not found)")
+
+                elif action == "untag" and path2:
+                    from sortmeout.macos.tags import remove_tags
+                    if os.path.exists(path1):
+                        remove_tags(path1, [path2])
+                        successful.append(f"🏷️ Removed tag \"{path2}\" from `{Path(path1).name}`")
+                    else:
+                        failed.append(f"❌ {Path(path1).name} (not found)")
+
+                elif action == "reveal":
+                    if macos_sys.reveal_in_finder(path1):
+                        successful.append(f"📂 Revealed in Finder: `{path1}`")
+                    else:
+                        failed.append(f"❌ Could not reveal: `{path1}`")
+
+                elif action == "compress":
+                    archive = macos_sys.compress(path1)
+                    if archive:
+                        successful.append(f"🗜️ Compressed → `{archive}`")
+                    else:
+                        failed.append(f"❌ Could not compress: `{path1}`")
+
+                elif action == "decompress":
+                    dest = macos_sys.decompress(path1, path2)
+                    if dest:
+                        successful.append(f"📦 Extracted → `{dest}`")
+                    else:
+                        failed.append(f"❌ Could not decompress: `{path1}`")
+
+                elif action == "getinfo":
+                    info = macos_sys.get_file_info_detailed(path1)
+                    if "error" not in info:
+                        lines = [f"ℹ️ **{info.get('name', path1)}**"]
+                        for k, v in info.items():
+                            if k not in ("name", "path") and v is not None:
+                                lines.append(f"  {k}: {v}")
+                        successful.append("\n".join(lines))
+                    else:
+                        failed.append(f"❌ {info['error']}")
+
+                elif action == "emptytrash":
+                    if macos_sys.empty_trash_system():
+                        successful.append("🗑️ Trash emptied!")
+                    else:
+                        failed.append("❌ Could not empty trash")
+
+                elif action == "notify":
+                    title = path1 or "SortMeOut"
+                    msg = path2 or ""
+                    macos_sys.send_notification(title, msg)
+                    successful.append(f"🔔 Notification sent: \"{title}\"")
+
+                elif action == "clipboard":
+                    if macos_sys.clipboard_copy(path1):
+                        preview = path1[:50] + "..." if len(path1) > 50 else path1
+                        successful.append(f"📋 Copied to clipboard: \"{preview}\"")
+                    else:
+                        failed.append("❌ Could not copy to clipboard")
+
+                elif action == "screenshot":
+                    shot = macos_sys.take_screenshot()
+                    if shot:
+                        successful.append(f"📸 Screenshot saved: `{shot}`")
+                    else:
+                        failed.append("❌ Screenshot failed")
+
+                elif action == "darkmode":
+                    new_mode = macos_sys.toggle_dark_mode()
+                    successful.append(f"🌓 Switched to **{new_mode} mode**")
+
+                elif action == "volume":
+                    try:
+                        level = int(path1)
+                        macos_sys.set_volume(level)
+                        successful.append(f"🔊 Volume set to {level}%")
+                    except ValueError:
+                        failed.append(f"❌ Invalid volume level: {path1}")
+
+                elif action == "mute":
+                    if macos_sys.toggle_mute():
+                        successful.append("🔇 Mute toggled")
+                    else:
+                        failed.append("❌ Could not toggle mute")
+
+                elif action == "preview":
+                    if macos_sys.quick_look(path1):
+                        successful.append(f"👁️ Quick Look: `{Path(path1).name}`")
+                    else:
+                        failed.append(f"❌ Could not preview: `{path1}`")
+
+                elif action == "killprocess":
+                    macos_sys.kill_process(path1)
+                    successful.append(f"💀 Killed process: {path1}")
+
+                elif action == "diskspace":
+                    info = macos_sys.get_disk_space()
+                    if info:
+                        successful.append(
+                            f"💾 Disk: {info.get('used', '?')} used / "
+                            f"{info.get('available', '?')} free "
+                            f"({info.get('percent_used', '?')})"
+                        )
+                    else:
+                        failed.append("❌ Could not get disk info")
+
+                elif action == "battery":
+                    info = macos_sys.get_battery_info()
+                    if info:
+                        pct = info.get('percentage', '?')
+                        src = info.get('power_source', '?')
+                        remaining = info.get('time_remaining', '')
+                        icon = "🔌" if src == "AC Power" else "🔋"
+                        msg = f"{icon} Battery: {pct}% ({src})"
+                        if remaining:
+                            msg += f" — {remaining} remaining"
+                        successful.append(msg)
+                    else:
+                        failed.append("❌ Could not get battery info")
+
+                elif action == "wifi":
+                    info = macos_sys.get_wifi_info()
+                    if info.get("connected"):
+                        successful.append(f"📶 WiFi: Connected to **{info['network']}**")
+                    else:
+                        successful.append("📶 WiFi: Not connected")
+
+                elif action == "lockscreen":
+                    macos_sys.lock_screen()
+                    successful.append("🔒 Screen locked")
+
+                elif action == "say":
+                    macos_sys.text_to_speech(path1)
+                    successful.append(f"🗣️ Speaking: \"{path1[:50]}\"")
+
+                elif action == "eject":
+                    if macos_sys.eject_volume(path1):
+                        successful.append(f"⏏️ Ejected: {path1}")
+                    else:
+                        failed.append(f"❌ Could not eject: {path1}")
+
+                elif action == "symlink" and path2:
+                    if macos_sys.create_symlink(path1, path2):
+                        successful.append(f"🔗 Symlink: `{path2}` → `{path1}`")
+                    else:
+                        failed.append(f"❌ Could not create symlink")
+
+                elif action == "wallpaper":
+                    if macos_sys.set_wallpaper(path1):
+                        successful.append(f"🖼️ Wallpaper set: `{path1}`")
+                    else:
+                        failed.append(f"❌ Could not set wallpaper: `{path1}`")
+
+                elif action == "hiddenfiles":
+                    state = macos_sys.toggle_hidden_files()
+                    successful.append(f"👻 Hidden files are now **{state}**")
+
+                elif action == "runningapps":
+                    apps = macos_sys.get_running_apps()
+                    if apps:
+                        lines = [f"📱 Running apps ({len(apps)}):"]
+                        for a in apps:
+                            lines.append(f"  • {a}")
+                        successful.append("\n".join(lines))
+                    else:
+                        successful.append("📱 No running apps found")
+
+                elif action == "foldersize":
+                    size = macos_sys.get_folder_size(path1)
+                    if size:
+                        successful.append(f"📊 `{path1}`: {size}")
+                    else:
+                        failed.append(f"❌ Could not get size for: `{path1}`")
+
+            except Exception as e:
+                failed.append(f"❌ {action} {Path(path1).name if path1 else ''}: {str(e)[:50]}")
+
+        # Build result report with full paths
         result = "\n\n---\n"
         if successful:
-            result += f"✅ **{len(successful)} succeeded**\n"
+            result += f"\n✅ **{len(successful)} action(s) completed**\n\n"
+
+        # Grouped path summary for moves/copies
+        if moves_by_dest:
+            for dest_folder, files in moves_by_dest.items():
+                if len(files) == 1:
+                    name, full_path = files[0]
+                    result += f"- **{name}** → `{full_path}`\n"
+                else:
+                    result += f"\n**→ `{dest_folder}`** ({len(files)} files)\n"
+                    for name, full_path in files:
+                        result += f"  - {name}\n"
+
+        # Non-move results (system commands, etc.)
+        non_move = [s for s in successful if not s.startswith("📦 ") and not s.startswith("📋 ")]
+        for item in non_move:
+            result += f"\n{item}\n"
+
         if failed:
-            result += f"⚠️ **{len(failed)} failed**\n"
-            for f in failed[:5]:  # Show max 5 errors
+            result += f"\n⚠️ **{len(failed)} failed**\n"
+            for f in failed[:5]:
                 result += f"  {f}\n"
 
         # Refresh folder structure
@@ -743,9 +1099,10 @@ IMPORTANT:
         """Parse and execute [EXECUTE: ...] commands in the response."""
         import re
         import shutil
+        from sortmeout.macos import system as macos_sys
 
         # Find all EXECUTE commands
-        pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash)\s+"([^"]+)"(?:\s+"([^"]+)")?\]'
+        pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash|open|openapp|search|tag|untag|reveal|compress|decompress|getinfo|emptytrash|notify|clipboard|screenshot|darkmode|volume|preview|killprocess|diskspace|battery|wifi|lockscreen|say|eject|symlink|wallpaper|hiddenfiles|runningapps|foldersize|mute)\s*(?:"([^"]*)")?(?:\s+"([^"]*)")?\]'
         matches = re.findall(pattern, response)
 
         if not matches:
@@ -753,16 +1110,17 @@ IMPORTANT:
 
         successful = []
         failed = []
+        moves_by_dest = {}  # dest_folder -> [(src_name, full_dest_path), ...]
 
         for match in matches:
             action = match[0]
-            path1 = os.path.expanduser(match[1])
+            path1 = os.path.expanduser(match[1]) if match[1] else ""
             path2 = os.path.expanduser(match[2]) if match[2] else None
 
             try:
                 if action == "mkdir":
                     os.makedirs(path1, exist_ok=True)
-                    successful.append(f"✅ Created folder: {Path(path1).name}")
+                    successful.append(f"📁 Created: `{path1}`")
 
                 elif action == "move":
                     if path2:
@@ -771,7 +1129,8 @@ IMPORTANT:
                             os.makedirs(path2, exist_ok=True)
                             dest = Path(path2) / src.name
                             shutil.move(str(src), str(dest))
-                            successful.append(f"✅ Moved: {src.name} → {Path(path2).name}/")
+                            moves_by_dest.setdefault(path2, []).append((src.name, str(dest)))
+                            successful.append(f"✅ {src.name} → `{dest}`")
                             get_history().record(
                                 action_type="move",
                                 source_path=str(src),
@@ -780,9 +1139,9 @@ IMPORTANT:
                                 metadata={"via": "ai_chat_cmd"},
                             )
                         else:
-                            failed.append(f"❌ Could not move — not found: {Path(path1).name}")
+                            failed.append(f"❌ Not found: `{path1}`")
                     else:
-                        failed.append(f"❌ No destination specified for: {Path(path1).name}")
+                        failed.append(f"❌ No destination for: {Path(path1).name}")
 
                 elif action == "copy":
                     if path2:
@@ -794,7 +1153,8 @@ IMPORTANT:
                                 shutil.copytree(str(src), str(dest))
                             else:
                                 shutil.copy2(str(src), str(dest))
-                            successful.append(f"✅ Copied: {src.name} → {Path(path2).name}/")
+                            moves_by_dest.setdefault(path2, []).append((src.name, str(dest)))
+                            successful.append(f"📋 {src.name} → `{dest}`")
                             get_history().record(
                                 action_type="copy",
                                 source_path=str(src),
@@ -803,7 +1163,7 @@ IMPORTANT:
                                 metadata={"via": "ai_chat_cmd"},
                             )
                         else:
-                            failed.append(f"❌ Could not copy — not found: {Path(path1).name}")
+                            failed.append(f"❌ Not found: `{path1}`")
 
                 elif action == "rename":
                     if path2:
@@ -811,7 +1171,7 @@ IMPORTANT:
                         if src.exists():
                             new_path = src.parent / path2
                             src.rename(new_path)
-                            successful.append(f"✅ Renamed: {src.name} → {path2}")
+                            successful.append(f"✏️ {src.name} → `{new_path}`")
                             get_history().record(
                                 action_type="rename",
                                 source_path=str(src),
@@ -820,7 +1180,7 @@ IMPORTANT:
                                 metadata={"via": "ai_chat_cmd"},
                             )
                         else:
-                            failed.append(f"❌ Could not rename — not found: {Path(path1).name}")
+                            failed.append(f"❌ Not found: `{path1}`")
 
                 elif action == "trash":
                     import subprocess
@@ -835,7 +1195,7 @@ IMPORTANT:
                             check=True,
                             capture_output=True,
                         )
-                        successful.append(f"✅ Moved to Trash: {Path(path1).name}")
+                        successful.append(f"🗑️ Trashed: `{path1}`")
                         get_history().record(
                             action_type="trash",
                             source_path=path1,
@@ -843,41 +1203,258 @@ IMPORTANT:
                             metadata={"via": "ai_chat_cmd"},
                         )
                     else:
-                        failed.append(f"❌ Could not trash — not found: {Path(path1).name}")
+                        failed.append(f"❌ Not found: `{path1}`")
+
+                elif action == "open":
+                    import subprocess
+                    if os.path.exists(path1):
+                        subprocess.Popen(["open", path1])
+                        successful.append(f"📂 Opened: `{path1}`")
+                    else:
+                        failed.append(f"❌ Not found: `{path1}`")
+
+                elif action == "openapp":
+                    import subprocess
+                    subprocess.Popen(["open", "-a", path1])
+                    successful.append(f"🚀 Launched: {path1}")
+
+                # ── New system commands ──
+                elif action == "search":
+                    results = macos_sys.search_files(path1)
+                    if results:
+                        lines = [f"🔍 Found {len(results)} result(s) for \"{path1}\":"]
+                        for r in results[:15]:
+                            icon = "📁" if r.get("is_dir") else "📄"
+                            lines.append(f"  {icon} `{r['path']}`")
+                        if len(results) > 15:
+                            lines.append(f"  ... and {len(results) - 15} more")
+                        successful.append("\n".join(lines))
+                    else:
+                        successful.append(f"🔍 No results for \"{path1}\"")
+
+                elif action == "tag" and path2:
+                    from sortmeout.macos.tags import add_tags
+                    if os.path.exists(path1):
+                        add_tags(path1, [path2])
+                        successful.append(f"🏷️ Tagged `{Path(path1).name}` with \"{path2}\"")
+                    else:
+                        failed.append(f"❌ {Path(path1).name} (not found)")
+
+                elif action == "untag" and path2:
+                    from sortmeout.macos.tags import remove_tags
+                    if os.path.exists(path1):
+                        remove_tags(path1, [path2])
+                        successful.append(f"🏷️ Removed tag \"{path2}\" from `{Path(path1).name}`")
+                    else:
+                        failed.append(f"❌ {Path(path1).name} (not found)")
+
+                elif action == "reveal":
+                    if macos_sys.reveal_in_finder(path1):
+                        successful.append(f"📂 Revealed in Finder: `{path1}`")
+                    else:
+                        failed.append(f"❌ Could not reveal: `{path1}`")
+
+                elif action == "compress":
+                    archive = macos_sys.compress(path1)
+                    if archive:
+                        successful.append(f"🗜️ Compressed → `{archive}`")
+                    else:
+                        failed.append(f"❌ Could not compress: `{path1}`")
+
+                elif action == "decompress":
+                    dest = macos_sys.decompress(path1, path2)
+                    if dest:
+                        successful.append(f"📦 Extracted → `{dest}`")
+                    else:
+                        failed.append(f"❌ Could not decompress: `{path1}`")
+
+                elif action == "getinfo":
+                    info = macos_sys.get_file_info_detailed(path1)
+                    if "error" not in info:
+                        lines = [f"ℹ️ **{info.get('name', path1)}**"]
+                        for k, v in info.items():
+                            if k not in ("name", "path") and v is not None:
+                                lines.append(f"  {k}: {v}")
+                        successful.append("\n".join(lines))
+                    else:
+                        failed.append(f"❌ {info['error']}")
+
+                elif action == "emptytrash":
+                    if macos_sys.empty_trash_system():
+                        successful.append("🗑️ Trash emptied!")
+                    else:
+                        failed.append("❌ Could not empty trash")
+
+                elif action == "notify":
+                    title = path1 or "SortMeOut"
+                    msg = path2 or ""
+                    macos_sys.send_notification(title, msg)
+                    successful.append(f"🔔 Notification sent: \"{title}\"")
+
+                elif action == "clipboard":
+                    if macos_sys.clipboard_copy(path1):
+                        preview = path1[:50] + "..." if len(path1) > 50 else path1
+                        successful.append(f"📋 Copied to clipboard: \"{preview}\"")
+                    else:
+                        failed.append("❌ Could not copy to clipboard")
+
+                elif action == "screenshot":
+                    shot = macos_sys.take_screenshot()
+                    if shot:
+                        successful.append(f"📸 Screenshot saved: `{shot}`")
+                    else:
+                        failed.append("❌ Screenshot failed")
+
+                elif action == "darkmode":
+                    new_mode = macos_sys.toggle_dark_mode()
+                    successful.append(f"🌓 Switched to **{new_mode} mode**")
+
+                elif action == "volume":
+                    try:
+                        level = int(path1)
+                        macos_sys.set_volume(level)
+                        successful.append(f"🔊 Volume set to {level}%")
+                    except ValueError:
+                        failed.append(f"❌ Invalid volume level: {path1}")
+
+                elif action == "mute":
+                    if macos_sys.toggle_mute():
+                        successful.append("🔇 Mute toggled")
+                    else:
+                        failed.append("❌ Could not toggle mute")
+
+                elif action == "preview":
+                    if macos_sys.quick_look(path1):
+                        successful.append(f"👁️ Quick Look: `{Path(path1).name}`")
+                    else:
+                        failed.append(f"❌ Could not preview: `{path1}`")
+
+                elif action == "killprocess":
+                    macos_sys.kill_process(path1)
+                    successful.append(f"💀 Killed process: {path1}")
+
+                elif action == "diskspace":
+                    info = macos_sys.get_disk_space()
+                    if info:
+                        successful.append(
+                            f"💾 Disk: {info.get('used', '?')} used / "
+                            f"{info.get('available', '?')} free "
+                            f"({info.get('percent_used', '?')})"
+                        )
+                    else:
+                        failed.append("❌ Could not get disk info")
+
+                elif action == "battery":
+                    info = macos_sys.get_battery_info()
+                    if info:
+                        pct = info.get('percentage', '?')
+                        src = info.get('power_source', '?')
+                        remaining = info.get('time_remaining', '')
+                        icon = "🔌" if src == "AC Power" else "🔋"
+                        msg = f"{icon} Battery: {pct}% ({src})"
+                        if remaining:
+                            msg += f" — {remaining} remaining"
+                        successful.append(msg)
+                    else:
+                        failed.append("❌ Could not get battery info")
+
+                elif action == "wifi":
+                    info = macos_sys.get_wifi_info()
+                    if info.get("connected"):
+                        successful.append(f"📶 WiFi: Connected to **{info['network']}**")
+                    else:
+                        successful.append("📶 WiFi: Not connected")
+
+                elif action == "lockscreen":
+                    macos_sys.lock_screen()
+                    successful.append("🔒 Screen locked")
+
+                elif action == "say":
+                    macos_sys.text_to_speech(path1)
+                    successful.append(f"🗣️ Speaking: \"{path1[:50]}\"")
+
+                elif action == "eject":
+                    if macos_sys.eject_volume(path1):
+                        successful.append(f"⏏️ Ejected: {path1}")
+                    else:
+                        failed.append(f"❌ Could not eject: {path1}")
+
+                elif action == "symlink" and path2:
+                    if macos_sys.create_symlink(path1, path2):
+                        successful.append(f"🔗 Symlink: `{path2}` → `{path1}`")
+                    else:
+                        failed.append(f"❌ Could not create symlink")
+
+                elif action == "wallpaper":
+                    if macos_sys.set_wallpaper(path1):
+                        successful.append(f"🖼️ Wallpaper set: `{path1}`")
+                    else:
+                        failed.append(f"❌ Could not set wallpaper: `{path1}`")
+
+                elif action == "hiddenfiles":
+                    state = macos_sys.toggle_hidden_files()
+                    successful.append(f"👻 Hidden files are now **{state}**")
+
+                elif action == "runningapps":
+                    apps = macos_sys.get_running_apps()
+                    if apps:
+                        lines = [f"📱 Running apps ({len(apps)}):"]
+                        for a in apps:
+                            lines.append(f"  • {a}")
+                        successful.append("\n".join(lines))
+                    else:
+                        successful.append("📱 No running apps found")
+
+                elif action == "foldersize":
+                    size = macos_sys.get_folder_size(path1)
+                    if size:
+                        successful.append(f"📊 `{path1}`: {size}")
+                    else:
+                        failed.append(f"❌ Could not get size for: `{path1}`")
 
             except Exception as e:
-                failed.append(f"❌ Error during {action} on {Path(path1).name}: {str(e)}")
+                failed.append(f"❌ {action} {Path(path1).name if path1 else ''}: {str(e)[:50]}")
 
         # Remove EXECUTE commands from the AI response
         clean_response = re.sub(pattern, "", response).strip()
         # Remove leftover blank lines
         clean_response = re.sub(r"\n{3,}", "\n\n", clean_response)
 
-        # Build result report
+        # Build result report with full paths
         result_lines = []
 
         if successful or failed:
             result_lines.append("\n\n---")
 
             if successful:
-                result_lines.append(f"📋 **Actions completed ({len(successful)}):**")
-                result_lines.extend(successful)
+                result_lines.append(f"\n✅ **{len(successful)} action(s) completed**\n")
+
+            # Grouped path summary for moves/copies
+            if moves_by_dest:
+                for dest_folder, files in moves_by_dest.items():
+                    if len(files) == 1:
+                        name, full_path = files[0]
+                        result_lines.append(f"- **{name}** → `{full_path}`")
+                    else:
+                        result_lines.append(f"")
+                        result_lines.append(f"**→ `{dest_folder}`** ({len(files)} files)")
+                        for name, full_path in files:
+                            result_lines.append(f"  - {name}")
+
+            # Non-move actions (system commands, search results, etc.)
+            non_move = [s for s in successful if not s.startswith("✅ ") and not s.startswith("📋 ")]
+            for item in non_move:
+                result_lines.append(f"\n{item}")
 
             if failed:
-                if successful:
-                    result_lines.append("")  # Blank line
-                result_lines.append(f"⚠️ **Failed ({len(failed)}):**")
-                result_lines.extend(failed)
-                result_lines.append("")
-                result_lines.append(
-                    "*Tip: Check that the files/folders exist and try again.*"
-                )
+                result_lines.append(f"")
+                result_lines.append(f"⚠️ **{len(failed)} failed:**")
+                for f in failed[:5]:
+                    result_lines.append(f"  {f}")
 
-            # If EVERYTHING failed, add a warning
             if failed and not successful:
-                clean_response = "**NOTE: No actions could be completed.**\n\n" + clean_response
+                clean_response = "**No actions could be completed.**\n\n" + clean_response
 
-            # Refresh folder structure after changes
             if successful:
                 self._load_folder_structure()
 

@@ -58,7 +58,16 @@ class ConfigManager:
         if config_path:
             self.config_path = Path(config_path)
         else:
-            self.config_path = get_config_directory() / "config.yaml"
+            config_dir = get_config_directory()
+            yaml_path = config_dir / "config.yaml"
+            json_path = config_dir / "config.json"
+            # Prefer YAML; fall back to existing JSON for backward-compat
+            if yaml_path.exists():
+                self.config_path = yaml_path
+            elif json_path.exists():
+                self.config_path = json_path
+            else:
+                self.config_path = yaml_path  # new installs default to YAML
 
         self.config_dir = self.config_path.parent
         self.config_dir.mkdir(parents=True, exist_ok=True)

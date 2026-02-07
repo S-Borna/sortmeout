@@ -705,15 +705,6 @@
                         <span class="logo-text">SortMeOut</span>
                     </a>
                     <p class="footer-tagline">Intelligent file automation for macOS</p>
-                    <div class="footer-social">
-                        <a href="https://github.com/S-Borna/sortmeout" aria-label="GitHub" target="_blank"
-                            rel="noopener">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                <path
-                                    d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-                            </svg>
-                        </a>
-                    </div>
                 </div>
 
                 <nav class="footer-nav" aria-label="Footer navigation">
@@ -722,18 +713,18 @@
                         <ul class="footer-links">
                             <li><a href="#features">Features</a></li>
                             <li><a href="#screenshots">Screenshots</a></li>
+                            <li><a href="#pricing">Pricing</a></li>
                             <li><a href="#download">Download</a></li>
-                            <li><a href="https://github.com/S-Borna/sortmeout/releases">Changelog</a></li>
                         </ul>
                     </div>
 
                     <div class="footer-column">
                         <h3 class="footer-heading">Resources</h3>
                         <ul class="footer-links">
-                            <li><a href="/docs">Documentation</a></li>
-                            <li><a href="/docs/user-manual">User Manual</a></li>
-                            <li><a href="/docs/rules-guide">Rules Guide</a></li>
-                            <li><a href="/docs/faq">FAQ</a></li>
+                            <li><a href="/docs/">Documentation</a></li>
+                            <li><a href="/docs/#quick-start">User Manual</a></li>
+                            <li><a href="/docs/#rules">Rules Guide</a></li>
+                            <li><a href="/docs/#faq">FAQ</a></li>
                         </ul>
                     </div>
 
@@ -741,7 +732,7 @@
                         <h3 class="footer-heading">Support</h3>
                         <ul class="footer-links">
                             <li><a href="mailto:said@saidborna.com">Contact Support</a></li>
-                            <li><a href="/docs/faq">FAQ</a></li>
+                            <li><a href="/docs/#faq">FAQ</a></li>
                         </ul>
                     </div>
 
@@ -750,6 +741,7 @@
                         <ul class="footer-links">
                             <li><a href="/privacy.html">Privacy Policy</a></li>
                             <li><a href="/terms.html">Terms of Service</a></li>
+                            <li><a href="/cookies.html">Cookie Policy</a></li>
                         </ul>
                     </div>
                 </nav>
@@ -763,11 +755,35 @@
         </div>
     </footer>
 
+    <!-- Cookie Consent Banner -->
+    <div class="cookie-banner" id="cookieBanner" role="dialog" aria-label="Cookie consent">
+        <div class="container">
+            <p class="cookie-banner-text">
+                We use only essential cookies to keep our site working properly. No tracking or advertising cookies.
+                <a href="/cookies.html">Learn more</a>
+            </p>
+            <div class="cookie-banner-actions">
+                <button class="cookie-btn cookie-btn-decline" onclick="setCookieConsent('declined')">Decline</button>
+                <button class="cookie-btn cookie-btn-accept" onclick="setCookieConsent('accepted')">Accept</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Security Shield - Load First -->
     <script src="js/security.js"></script>
 
     <!-- Scripts -->
     <script src="js/main.js" defer></script>
+
+    <script>
+        function setCookieConsent(value) {
+            localStorage.setItem('cookie_consent', value);
+            document.getElementById('cookieBanner').classList.remove('visible');
+        }
+        if (!localStorage.getItem('cookie_consent')) {
+            setTimeout(() => document.getElementById('cookieBanner').classList.add('visible'), 1000);
+        }
+    </script>
 </body>
 
 </html>

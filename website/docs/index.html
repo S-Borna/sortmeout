@@ -462,7 +462,7 @@
                     </svg>
                     <span>SortMeOut</span>
                 </a>
-                <span class="sidebar-version">v1.0</span>
+                <span class="sidebar-version">v1.0.1</span>
             </div>
 
             <nav class="sidebar-nav">
@@ -1477,7 +1477,7 @@ Actions:
                 <hr style="margin: 2rem 0; border: 0; border-top: 1px solid var(--color-border);">
 
                 <p style="font-size: 0.875rem; color: var(--color-text-muted);">
-                    SortMeOut v1.0 • © 2026 Said Borna. All rights reserved.<br>
+                    SortMeOut v1.0.1 • © 2026 Said Borna. All rights reserved.<br>
                     This documentation is proprietary. Unauthorized distribution is prohibited.
                 </p>
             </section>
@@ -1509,6 +1509,34 @@ Actions:
 
     <!-- Security Shield -->
     <script src="../js/security.js"></script>
+
+    <!-- Cookie Consent Banner -->
+    <div class="cookie-banner" id="cookieBanner" role="dialog" aria-label="Cookie consent"
+        style="position:fixed;bottom:0;left:0;right:0;z-index:10000;background:#111827;border-top:1px solid rgba(99,102,241,0.3);padding:1rem 0;transform:translateY(100%);transition:transform 0.4s cubic-bezier(0.16,1,0.3,1)">
+        <div
+            style="max-width:1200px;margin:0 auto;padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+            <p style="flex:1;min-width:280px;color:#d1d5db;font-size:0.875rem;line-height:1.5;margin:0">
+                We use only essential cookies to keep our site working properly. No tracking or advertising cookies.
+                <a href="/cookies.html" style="color:#818cf8;text-decoration:none">Learn more</a>
+            </p>
+            <div style="display:flex;gap:0.75rem;flex-shrink:0">
+                <button onclick="setCookieConsent('declined')"
+                    style="padding:8px 20px;border-radius:8px;font-size:0.875rem;font-weight:500;cursor:pointer;background:transparent;color:#9ca3af;border:1px solid #374151;font-family:inherit">Decline</button>
+                <button onclick="setCookieConsent('accepted')"
+                    style="padding:8px 20px;border-radius:8px;font-size:0.875rem;font-weight:500;cursor:pointer;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;border:none;font-family:inherit">Accept</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setCookieConsent(value) {
+            localStorage.setItem('cookie_consent', value);
+            document.getElementById('cookieBanner').style.transform = 'translateY(100%)';
+        }
+        if (!localStorage.getItem('cookie_consent')) {
+            setTimeout(() => { document.getElementById('cookieBanner').style.transform = 'translateY(0)'; }, 1000);
+        }
+    </script>
 </body>
 
 </html>
