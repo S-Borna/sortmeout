@@ -1836,7 +1836,7 @@ ol {
     backdrop-filter: blur(20px) saturate(1.4);
     -webkit-backdrop-filter: blur(20px) saturate(1.4);
     transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-                opacity 0.4s ease;
+        opacity 0.4s ease;
     opacity: 0;
 }
 
