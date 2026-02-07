@@ -130,25 +130,37 @@ class MenuBarApp:
             None,
             rumps.MenuItem(
                 "Trash",
-                [
-                    rumps.MenuItem("View Trash Status", callback=self._show_trash_status),
-                    rumps.MenuItem("Empty Trash", callback=self._empty_trash),
-                ],
             ),
             None,
             rumps.MenuItem("Enter Pro License...", callback=self._enter_license),
             rumps.MenuItem("Settings...", callback=self._show_settings),
             rumps.MenuItem(
                 "Help",
-                [
-                    rumps.MenuItem("Documentation", callback=self._open_docs),
-                    rumps.MenuItem("Report Issue", callback=self._report_issue),
-                    rumps.MenuItem(f"About SortMeOut v{__version__}", callback=self._show_about),
-                ],
             ),
             None,
             rumps.MenuItem("Quit SortMeOut", callback=self._quit),
         ]
+
+        # Build Trash submenu (dict-style assignment for proper rumps submenu)
+        trash_menu = self.app.menu["Trash"]
+        trash_menu["View Trash Status"] = rumps.MenuItem(
+            "View Trash Status", callback=self._show_trash_status,
+        )
+        trash_menu["Empty Trash"] = rumps.MenuItem(
+            "Empty Trash", callback=self._empty_trash,
+        )
+
+        # Build Help submenu (dict-style assignment for proper rumps submenu)
+        help_menu = self.app.menu["Help"]
+        help_menu["Documentation"] = rumps.MenuItem(
+            "Documentation", callback=self._open_docs,
+        )
+        help_menu["Report Issue"] = rumps.MenuItem(
+            "Report Issue", callback=self._report_issue,
+        )
+        help_menu[f"About SortMeOut v{__version__}"] = rumps.MenuItem(
+            f"About SortMeOut v{__version__}", callback=self._show_about,
+        )
 
         self._update_folders_menu()
 

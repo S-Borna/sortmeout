@@ -38,6 +38,29 @@ CONTROL_X = LABEL_WIDTH + PADDING + 10
 CONTROL_WIDTH = 240
 
 
+# NSObject delegate for button actions (plain Python objects can't receive ObjC selectors)
+class _ButtonDelegate(NSObject):
+    """Objective-C delegate that forwards Save/Cancel button clicks."""
+
+    def init(self):
+        self = objc.super(_ButtonDelegate, self).init()
+        if self is None:
+            return None
+        self._on_save_callback = None
+        self._on_cancel_callback = None
+        return self
+
+    @objc.typedSelector(b"v@:@")
+    def doSave_(self, sender):
+        if self._on_save_callback:
+            self._on_save_callback(sender)
+
+    @objc.typedSelector(b"v@:@")
+    def doCancel_(self, sender):
+        if self._on_cancel_callback:
+            self._on_cancel_callback(sender)
+
+
 def show_settings_window(
     config_manager: ConfigManager,
     on_change: Optional[Callable] = None,
@@ -120,14 +143,19 @@ class SettingsWindow:
 
         content.addSubview_(tab_view)
 
+        # Button delegate (NSObject subclass required for ObjC selector dispatch)
+        self._btn_delegate = _ButtonDelegate.alloc().init()
+        self._btn_delegate._on_save_callback = self._on_save
+        self._btn_delegate._on_cancel_callback = self._on_cancel
+
         # Save / Cancel buttons
         save_btn = AppKit.NSButton.alloc().initWithFrame_(
             NSMakeRect(WIN_WIDTH - 100, 10, 80, 30)
         )
         save_btn.setTitle_("Save")
         save_btn.setBezelStyle_(AppKit.NSBezelStyleRounded)
-        save_btn.setTarget_(self)
-        save_btn.setAction_(objc.selector(self._on_save, signature=b"v@:@"))
+        save_btn.setTarget_(self._btn_delegate)
+        save_btn.setAction_("doSave:")
         save_btn.setKeyEquivalent_("\r")
         content.addSubview_(save_btn)
 
@@ -136,8 +164,8 @@ class SettingsWindow:
         )
         cancel_btn.setTitle_("Cancel")
         cancel_btn.setBezelStyle_(AppKit.NSBezelStyleRounded)
-        cancel_btn.setTarget_(self)
-        cancel_btn.setAction_(objc.selector(self._on_cancel, signature=b"v@:@"))
+        cancel_btn.setTarget_(self._btn_delegate)
+        cancel_btn.setAction_("doCancel:")
         cancel_btn.setKeyEquivalent_("\x1b")
         content.addSubview_(cancel_btn)
 
@@ -191,7 +219,7 @@ class SettingsWindow:
         y -= 30
         self._add_checkbox(view, "watcher_ignore_system", "Ignore System Files",
                            ws.ignore_system_files, y)
-        y -= 40
+        y -= 80
         self._add_text_field(view, "watcher_ignore_patterns", "Ignore Patterns (comma-separated):",
                              ", ".join(ws.custom_ignore_patterns), y, height=60)
 
