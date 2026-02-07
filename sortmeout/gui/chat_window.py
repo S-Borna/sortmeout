@@ -99,25 +99,34 @@ def _c(r, g, b, a=1.0):
 
 
 class Colors:
-    """Website-matched color palette (dark theme for native macOS app)."""
+    """Website-matched color palette — LIGHT theme mirroring landing page.
 
-    # Backgrounds — based on gray-950 / gray-900 / gray-800
-    WINDOW_BG   = _c(0.012, 0.027, 0.071)   # #030712  gray-950
-    CHAT_BG     = _c(0.047, 0.063, 0.110)    # between 950/900
-    INPUT_BG    = _c(0.122, 0.161, 0.216)    # #1F2937  gray-800
-    HEADER_BG   = _c(0.030, 0.043, 0.090)    # between 950/900
+    Mirrors the landing page design system exactly:
+    - Backgrounds: white / gray-50 / gray-100
+    - Text: gray-900 dark on light
+    - Accents: primary (#6366F1) → secondary (#8B5CF6) gradient
+    - Borders: gray-200 (#E5E7EB)
+    """
 
-    # Text — gray-50 / gray-400 / gray-500
-    TEXT_PRIMARY   = _c(0.969, 0.976, 0.984)  # #F8FAFC
-    TEXT_SECONDARY = _c(0.612, 0.639, 0.690)  # #9CA3AF  gray-400
-    TEXT_MUTED     = _c(0.420, 0.459, 0.514)  # #6B7280  gray-500
+    # Backgrounds — white / gray-50 / gray-100 (website hero + content palette)
+    WINDOW_BG   = _c(1.0, 1.0, 1.0)          # #FFFFFF  white
+    CHAT_BG     = _c(0.976, 0.980, 0.984)     # #F9FAFB  gray-50
+    INPUT_BG    = _c(0.953, 0.957, 0.965)     # #F3F4F6  gray-100
+    HEADER_BG   = _c(1.0, 1.0, 1.0)          # #FFFFFF  white (clean header)
+
+    # Text — gray-900 / gray-500 / gray-400 (dark text on light bg)
+    TEXT_PRIMARY   = _c(0.067, 0.094, 0.153)  # #111827  gray-900
+    TEXT_SECONDARY = _c(0.420, 0.447, 0.502)  # #6B7280  gray-500
+    TEXT_MUTED     = _c(0.612, 0.639, 0.686)  # #9CA3AF  gray-400
     TEXT_ON_INDIGO = _c(1.0, 1.0, 1.0)
+    TEXT_PLACEHOLDER = _c(0.612, 0.639, 0.686)  # gray-400
 
-    # Accents — primary / primary-light / secondary
+    # Accents — primary / primary-dark / primary-light / secondary
     ACCENT        = _c(0.389, 0.400, 0.945)  # #6366F1  primary
     ACCENT_DARK   = _c(0.310, 0.275, 0.898)  # #4F46E5  primary-dark
     ACCENT_LIGHT  = _c(0.506, 0.549, 0.973)  # #818CF8  primary-light
     ACCENT_VIOLET = _c(0.545, 0.361, 0.965)  # #8B5CF6  secondary
+    ACCENT_PINK   = _c(0.925, 0.286, 0.600)  # #EC4899  accent (website)
 
     # Semantic
     SUCCESS = _c(0.063, 0.725, 0.506)  # #10B981
@@ -126,21 +135,23 @@ class Colors:
 
     # Buttons
     BTN_PRIMARY  = _c(0.389, 0.400, 0.945)   # primary
-    BTN_DISABLED = _c(0.216, 0.255, 0.318)    # gray-700
+    BTN_HOVER    = _c(0.467, 0.475, 0.960)   # brighter primary
+    BTN_DISABLED = _c(0.820, 0.835, 0.859)   # #D1D5DB  gray-300
 
     # Structure
-    DIVIDER       = _c(0.160, 0.195, 0.260)
-    BORDER_SUBTLE = _c(0.130, 0.165, 0.225)
-    CODE_BG       = _c(0.067, 0.094, 0.153)   # #111827  gray-900
+    DIVIDER       = _c(0.898, 0.906, 0.922)  # #E5E7EB  gray-200
+    BORDER_SUBTLE = _c(0.898, 0.906, 0.922)  # #E5E7EB  gray-200
+    BORDER_FOCUS  = _c(0.389, 0.400, 0.945, 0.4)  # primary at 40%
+    CODE_BG       = _c(0.953, 0.957, 0.965)  # #F3F4F6  gray-100
 
     # Markdown
-    HEADING_COLOR = _c(0.85, 0.87, 0.92)
-    BULLET_COLOR  = _c(0.506, 0.549, 0.973)   # primary-light
-    HR_COLOR      = _c(0.216, 0.255, 0.318)
+    HEADING_COLOR = _c(0.067, 0.094, 0.153)  # #111827  gray-900
+    BULLET_COLOR  = _c(0.389, 0.400, 0.945)  # #6366F1  primary
+    HR_COLOR      = _c(0.820, 0.835, 0.859)  # #D1D5DB  gray-300
 
     # Thinking indicator
-    DOT_DIM    = _c(0.25, 0.28, 0.45, 0.35)
-    DOT_BRIGHT = _c(0.506, 0.549, 0.973, 1.0)  # primary-light
+    DOT_DIM    = _c(0.820, 0.835, 0.859, 0.5)   # gray-300 dimmed
+    DOT_BRIGHT = _c(0.389, 0.400, 0.945, 1.0)   # primary
 
 
 class Fonts:
@@ -330,7 +341,7 @@ class MarkdownRenderer:
 
         na = {
             NSFontAttributeName: Fonts.body_medium(),
-            NSForegroundColorAttributeName: Colors.ACCENT_LIGHT,
+            NSForegroundColorAttributeName: Colors.ACCENT,
             NSParagraphStyleAttributeName: p,
         }
         result.appendAttributedString_(
@@ -387,7 +398,7 @@ class MarkdownRenderer:
             elif code_t is not None:
                 a = dict(base_attrs)
                 a[NSFontAttributeName] = Fonts.code()
-                a[NSForegroundColorAttributeName] = Colors.ACCENT_LIGHT
+                a[NSForegroundColorAttributeName] = Colors.ACCENT_DARK
                 a[NSBackgroundColorAttributeName] = Colors.CODE_BG
                 result.appendAttributedString_(
                     NSAttributedString.alloc().initWithString_attributes_(f" {code_t} ", a)
@@ -427,6 +438,40 @@ def _get_user_name():
     except Exception:
         pass
     return os.environ.get("USER", "You").capitalize()
+
+
+def _get_ai_name():
+    """Get the AI assistant's custom name from config, or default."""
+    config_path = os.path.join(CONFIG_DIR, "config.json")
+    if os.path.exists(config_path):
+        try:
+            import json
+            with open(config_path, "r") as f:
+                cfg = json.load(f)
+            name = cfg.get("assistant_name", "").strip()
+            if name:
+                return name
+        except Exception:
+            pass
+    return "SortMeOut AI"
+
+
+def _save_ai_name(name):
+    """Save the AI assistant's custom name to config."""
+    config_path = os.path.join(CONFIG_DIR, "config.json")
+    try:
+        import json
+        cfg = {}
+        if os.path.exists(config_path):
+            with open(config_path, "r") as f:
+                cfg = json.load(f)
+        cfg["assistant_name"] = name.strip()
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        with open(config_path, "w") as f:
+            json.dump(cfg, f, indent=2)
+        return True
+    except Exception:
+        return False
 
 
 def load_api_key():
@@ -511,6 +556,9 @@ class ChatWindow:
         self.user_name = _get_user_name()
         self.user_initial = self.user_name[0].upper() if self.user_name else "U"
 
+        # AI identity (user-customizable)
+        self.ai_name = _get_ai_name()
+
         self.delegate = ChatWindowDelegate.alloc().init()
         self.delegate.set_chat_window(self)
 
@@ -540,7 +588,7 @@ class ChatWindow:
         self.window = NSWindow.alloc().initWithContentRect_styleMask_backing_defer_(
             frame, style, NSBackingStoreBuffered, False
         )
-        self.window.setTitle_("SortMeOut AI")
+        self.window.setTitle_(self.ai_name)
         self.window.setTitlebarAppearsTransparent_(True)
         self.window.setTitleVisibility_(NSWindowTitleHidden)
         self.window.setMinSize_(NSSize(440, 520))
@@ -569,10 +617,18 @@ class ChatWindow:
         header.layer().setBackgroundColor_(Colors.HEADER_BG.CGColor())
         header.setAutoresizingMask_(NSViewWidthSizable | NSViewMinYMargin)
 
-        # Accent line at bottom
+        # Gradient accent line at bottom (mirrors website gradient-primary: indigo → violet)
         accent = NSView.alloc().initWithFrame_(NSMakeRect(0, 0, W, 2))
         accent.setWantsLayer_(True)
-        accent.layer().setBackgroundColor_(Colors.ACCENT.CGColor())
+        gradient_layer = objc.lookUpClass('CAGradientLayer').layer()
+        gradient_layer.setFrame_(accent.bounds())
+        gradient_layer.setStartPoint_((0, 0.5))
+        gradient_layer.setEndPoint_((1, 0.5))
+        gradient_layer.setColors_([
+            Colors.ACCENT.CGColor(),        # #6366F1 indigo
+            Colors.ACCENT_VIOLET.CGColor(), # #8B5CF6 violet
+        ])
+        accent.layer().addSublayer_(gradient_layer)
         accent.setAutoresizingMask_(NSViewWidthSizable)
         header.addSubview_(accent)
 
@@ -606,7 +662,8 @@ class ChatWindow:
         # Title
         tx = icon_size + 10
         title = NSTextField.alloc().initWithFrame_(NSMakeRect(tx, 34, grp_w - tx, 20))
-        title.setStringValue_("SortMeOut AI")
+        self.header_title = title
+        title.setStringValue_(self.ai_name)
         title.setBezeled_(False)
         title.setDrawsBackground_(False)
         title.setEditable_(False)
@@ -655,7 +712,7 @@ class ChatWindow:
         scroll.setDrawsBackground_(True)
         scroll.setBackgroundColor_(Colors.CHAT_BG)
         scroll.setScrollerStyle_(1)
-        scroll.verticalScroller().setKnobStyle_(2)
+        scroll.verticalScroller().setKnobStyle_(1)  # dark knob for light bg
 
         tw = W - 40
         self.chat_view = NSTextView.alloc().initWithFrame_(NSMakeRect(0, 0, tw, ch))
@@ -693,26 +750,26 @@ class ChatWindow:
         top.setAutoresizingMask_(NSViewWidthSizable)
         bar.addSubview_(top)
 
-        pill = NSView.alloc().initWithFrame_(NSMakeRect(14, 14, W - 28, 40))
-        pill.setWantsLayer_(True)
-        pill.layer().setCornerRadius_(20)
-        pill.layer().setBackgroundColor_(Colors.INPUT_BG.CGColor())
-        pill.layer().setBorderWidth_(1)
-        pill.layer().setBorderColor_(Colors.BORDER_SUBTLE.CGColor())
-        pill.setAutoresizingMask_(NSViewWidthSizable)
-        bar.addSubview_(pill)
+        self.input_pill = NSView.alloc().initWithFrame_(NSMakeRect(14, 14, W - 28, 40))
+        self.input_pill.setWantsLayer_(True)
+        self.input_pill.layer().setCornerRadius_(20)
+        self.input_pill.layer().setBackgroundColor_(Colors.INPUT_BG.CGColor())
+        self.input_pill.layer().setBorderWidth_(1.5)
+        self.input_pill.layer().setBorderColor_(Colors.BORDER_SUBTLE.CGColor())
+        self.input_pill.setAutoresizingMask_(NSViewWidthSizable)
+        bar.addSubview_(self.input_pill)
 
         self.input_field = NSTextField.alloc().initWithFrame_(NSMakeRect(16, 6, W - 100, 28))
-        self.input_field.setPlaceholderString_("Ask me anything about your files\u2026")
+        self.input_field.setPlaceholderString_("Organize files, create rules, ask anything\u2026")
         self.input_field.setBezeled_(False)
         self.input_field.setDrawsBackground_(False)
         self.input_field.setTextColor_(Colors.TEXT_PRIMARY)
         self.input_field.setFont_(Fonts.body())
-        self.input_field.setFocusRingType_(1)
+        self.input_field.setFocusRingType_(1)  # suppress default focus ring
         self.input_field.setEditable_(True)
         self.input_field.setSelectable_(True)
         self.input_field.setAutoresizingMask_(NSViewWidthSizable)
-        pill.addSubview_(self.input_field)
+        self.input_pill.addSubview_(self.input_field)
 
         bs = 30
         bx = W - 28 - bs - 6
@@ -722,12 +779,17 @@ class ChatWindow:
         self.send_button.setWantsLayer_(True)
         self.send_button.layer().setCornerRadius_(bs / 2)
         self.send_button.layer().setBackgroundColor_(Colors.BTN_PRIMARY.CGColor())
+        # Send button glow shadow (website btn-primary box-shadow glow)
+        self.send_button.layer().setShadowColor_(Colors.ACCENT.CGColor())
+        self.send_button.layer().setShadowOpacity_(0.4)
+        self.send_button.layer().setShadowRadius_(6)
+        self.send_button.layer().setShadowOffset_((0, 0))
         self.send_button.setFont_(NSFont.systemFontOfSize_weight_(16, NSFontWeightBold))
         self.send_button.setContentTintColor_(Colors.TEXT_ON_INDIGO)
         self.send_button.setTarget_(self.delegate)
         self.send_button.setAction_("sendClicked:")
         self.send_button.setAutoresizingMask_(NSViewMinXMargin)
-        pill.addSubview_(self.send_button)
+        self.input_pill.addSubview_(self.send_button)
 
         content.addSubview_(bar)
 
@@ -780,7 +842,7 @@ class ChatWindow:
                 f"{self.AI_EMOJI}  ",
                 {
                     NSFontAttributeName: NSFont.systemFontOfSize_(14),
-                    NSForegroundColorAttributeName: Colors.ACCENT_LIGHT,
+                    NSForegroundColorAttributeName: Colors.ACCENT,
                     NSParagraphStyleAttributeName: lp,
                 },
             )
@@ -788,10 +850,10 @@ class ChatWindow:
         # Name
         block.appendAttributedString_(
             NSAttributedString.alloc().initWithString_attributes_(
-                "SortMeOut AI",
+                self.ai_name,
                 {
                     NSFontAttributeName: Fonts.sender(),
-                    NSForegroundColorAttributeName: Colors.ACCENT_LIGHT,
+                    NSForegroundColorAttributeName: Colors.ACCENT,
                     NSParagraphStyleAttributeName: lp,
                 },
             )
@@ -819,10 +881,11 @@ class ChatWindow:
             else:
                 brightness = 0.2
 
-            r = 0.20 + 0.35 * brightness
-            g = 0.20 + 0.40 * brightness
-            b = 0.40 + 0.57 * brightness
-            a = 0.35 + 0.65 * brightness
+            # Light theme: dots go from gray-300 (dim) to primary indigo (bright)
+            r = 0.82 - 0.43 * brightness   # 0.82 → 0.39
+            g = 0.84 - 0.44 * brightness   # 0.84 → 0.40
+            b = 0.86 + 0.085 * brightness  # 0.86 → 0.945
+            a = 0.45 + 0.55 * brightness
 
             dot_color = _c(r, g, b, a)
             block.appendAttributedString_(
@@ -882,17 +945,21 @@ class ChatWindow:
 
     def _add_welcome_message(self):
         greeting = f"Hey {self.user_name}! " if self.user_name != "You" else "Hey! "
+        name_hint = ""
+        if self.ai_name == "SortMeOut AI":
+            name_hint = "\n\n*Tip: You can give me a name \u2014 just say \"Call yourself Jarvis\" or whatever you'd like!*"
         welcome = (
-            f"{greeting}I'm your AI file assistant.  {self.AI_EMOJI}\n\n"
+            f"{greeting}I'm **{self.ai_name}**, your AI file assistant.  {self.AI_EMOJI}\n\n"
             "Here's what I can help with:\n\n"
             "- **Organize files** \u2014 sort Downloads, Desktop, and more\n"
+            "- **Create rules** \u2014 persistent automation from chat\n"
             "- **Analyze documents** \u2014 suggest the best location\n"
-            "- **Create folder structures** \u2014 smart categories\n"
+            "- **System control** \u2014 dark mode, volume, screenshots\n"
             "- **Clean up duplicates** \u2014 find and resolve clutter\n"
             "- **Sort by type, date, or content** \u2014 powerful filtering\n\n"
-            "Just tell me what you'd like to do."
+            f"Just tell me what you'd like to do.{name_hint}"
         )
-        self._add_message("SortMeOut AI", welcome, is_ai=True, show_timestamp=False)
+        self._add_message(self.ai_name, welcome, is_ai=True, show_timestamp=False)
 
     # ──────────────────────────────────────────────────────────────────
     # TIMER
@@ -909,7 +976,7 @@ class ChatWindow:
                 mt, data = self.response_queue.get_nowait()
                 if mt == "response":
                     self._hide_thinking()
-                    self._add_message("SortMeOut AI", data, is_ai=True)
+                    self._add_message(self.ai_name, data, is_ai=True)
                     self._set_status("Ready to help", False)
                     self.is_processing = False
                     self.send_button.setEnabled_(True)
@@ -919,7 +986,7 @@ class ChatWindow:
                 elif mt == "error":
                     self._hide_thinking()
                     self._add_message(
-                        "SortMeOut AI", f"Something went wrong: {data}", is_ai=True, is_error=True
+                        self.ai_name, f"Something went wrong: {data}", is_ai=True, is_error=True
                     )
                     self._set_status("Error occurred", False)
                     self.is_processing = False
@@ -966,7 +1033,7 @@ class ChatWindow:
 
         if is_ai:
             avatar_char = self.AI_EMOJI  # 🤖
-            avatar_color = Colors.ACCENT_LIGHT if not is_error else Colors.ERROR
+            avatar_color = Colors.ACCENT if not is_error else Colors.ERROR
             avatar_font = NSFont.systemFontOfSize_(14)
             display_name = sender
         else:
@@ -1042,7 +1109,7 @@ class ChatWindow:
     def _set_status(self, text, processing):
         if processing:
             self.header_status.setStringValue_(f"{text}")
-            self.header_status.setTextColor_(Colors.ACCENT_LIGHT)
+            self.header_status.setTextColor_(Colors.ACCENT)
             self.status_dot.layer().setBackgroundColor_(Colors.WARNING.CGColor())
         else:
             self.header_status.setStringValue_(text)

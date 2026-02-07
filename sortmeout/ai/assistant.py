@@ -63,9 +63,10 @@ class FileAssistant:
         self.conversation_history = []  # Store conversation history
         self.config_path = os.path.expanduser("~/.config/sortmeout")
 
-        # Load knowledge
+        # Load knowledge and persisted conversation
         self._load_folder_structure()
         self._load_history()
+        self._load_conversation_history()
 
     def _load_folder_structure(self):
         """Scan and learn the user's folder structure."""
@@ -156,6 +157,29 @@ class FileAssistant:
                     self.file_history = json.load(f)
             except:
                 self.file_history = []
+
+    def _load_conversation_history(self):
+        """Load persisted conversation history from disk."""
+        chat_file = os.path.join(self.config_path, "chat_history.json")
+        if os.path.exists(chat_file):
+            try:
+                with open(chat_file, "r") as f:
+                    data = json.load(f)
+                if isinstance(data, list):
+                    # Keep last 20 messages
+                    self.conversation_history = data[-20:]
+            except Exception:
+                self.conversation_history = []
+
+    def _save_conversation_history(self):
+        """Persist conversation history to disk."""
+        chat_file = os.path.join(self.config_path, "chat_history.json")
+        try:
+            os.makedirs(self.config_path, exist_ok=True)
+            with open(chat_file, "w") as f:
+                json.dump(self.conversation_history[-20:], f, indent=2, ensure_ascii=False)
+        except Exception:
+            pass  # Don't let history persistence break the flow
 
     def _save_history(self, entry: Dict):
         """Save a history entry to core engine's SQLite database.
@@ -586,6 +610,19 @@ EXECUTE COMMANDS — YOUR FULL TOOLKIT
 [EXECUTE: eject "USB Drive"]
 [EXECUTE: lockscreen ""]
 
+📐 RULE CREATION (persistent automation):
+[EXECUTE: createrule "Rule Name" "folder|attribute|operator|value|action_type|action_arg"]
+Examples:
+  [EXECUTE: createrule "PDFs to Documents" "~/Downloads|extension|equals|pdf|move|~/Documents/PDFs"]
+  [EXECUTE: createrule "Screenshots to Pictures" "~/Desktop|name|contains|screenshot|move|~/Pictures/Screenshots"]
+  [EXECUTE: createrule "Trash old downloads" "~/Downloads|date_modified|not_within_last|30d|trash|"]
+  [EXECUTE: createrule "Tag large files" "~/Downloads|size|greater_than|100MB|add_tags|Important"]
+
+Format: "folder|attribute|operator|value|action_type|destination"
+Attributes: name, extension, size, date_created, date_modified, file_type, tags, contents, where_from
+Operators: equals, not_equals, contains, starts_with, ends_with, greater_than, less_than, matches_glob, within_last, not_within_last
+Actions: move, copy, rename, trash, delete, add_tags, archive
+
 ═══════════════════════════════════════════════════
 
 IMPORTANT RULES FOR EXECUTE:
@@ -596,6 +633,7 @@ IMPORTANT RULES FOR EXECUTE:
 - Commands with no argument still need empty quotes: [EXECUTE: battery ""]
 - Use "open" to open a file in its default app
 - Use "openapp" to launch an application by name (e.g. "Safari", "Finder", "Terminal")
+- Use "createrule" to create persistent rules that the user dictates in chat
 
 CRITICAL FOR EXECUTION:
 - When the user confirms (yes, go ahead, do it) — write ALL commands in ONE response
@@ -638,6 +676,22 @@ SCOPE — WHAT YOU CAN DO:
 - Reveal files in Finder
 - Quick Look preview files
 - Empty the Trash
+- **Create persistent automation rules** that survive app restarts
+
+RULE CREATION — HOW IT WORKS:
+When the user asks you to create a rule, sorting pattern, or automation:
+1. Discuss what they want (what files, what condition, what action)
+2. Use [EXECUTE: createrule ...] to create it
+3. Rules are saved permanently — they persist across app restarts
+4. Rules run automatically when the user starts watching folders
+5. Be proactive: if you see a pattern in how they organize files, suggest a rule!
+
+ASSISTANT NAMING:
+The user can rename you using [EXECUTE: renameai "NewName"]. When the user says something like:
+- "Call yourself Jarvis", "Your name is Nova", "I want to name you X"
+Respond warmly and include the command. Example:
+"Love it! I'm now **Jarvis** — your personal file assistant. ✨
+[EXECUTE: renameai "Jarvis"]"
 
 SCOPE — WHAT YOU CANNOT DO (be honest about this):
 - Create document contents (PowerPoints, Word docs, spreadsheets)
@@ -670,6 +724,9 @@ IMPORTANT:
         if len(self.conversation_history) > 20:
             self.conversation_history = self.conversation_history[-20:]
 
+        # Persist to disk
+        self._save_conversation_history()
+
         try:
             response = self.client.messages.create(
                 model=get_model(),
@@ -685,6 +742,7 @@ IMPORTANT:
 
             # Save assistant's response to history
             self.conversation_history.append({"role": "assistant", "content": assistant_response})
+            self._save_conversation_history()
 
             # SAFETY CHECK: Do NOT run commands if the AI is asking for confirmation
             if self._is_asking_for_confirmation(assistant_response):
@@ -749,18 +807,108 @@ IMPORTANT:
         """Extract EXECUTE commands from the response without running them."""
         import re
 
-        pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash|open|openapp|search|tag|untag|reveal|compress|decompress|getinfo|emptytrash|notify|clipboard|screenshot|darkmode|volume|preview|killprocess|diskspace|battery|wifi|lockscreen|say|eject|symlink|wallpaper|hiddenfiles|runningapps|foldersize|mute)\s*(?:"([^"]*)")?(?:\s+"([^"]*)")?\]'
+        pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash|open|openapp|search|tag|untag|reveal|compress|decompress|getinfo|emptytrash|notify|clipboard|screenshot|darkmode|volume|preview|killprocess|diskspace|battery|wifi|lockscreen|say|eject|symlink|wallpaper|hiddenfiles|runningapps|foldersize|mute|createrule|renameai)\s*(?:"([^"]*)")?(?:\s+"([^"]*)")?\]'
         return re.findall(pattern, response)
 
     def _remove_execute_commands(self, response: str) -> str:
         """Remove EXECUTE commands from the AI response."""
         import re
 
-        pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash|open|openapp|search|tag|untag|reveal|compress|decompress|getinfo|emptytrash|notify|clipboard|screenshot|darkmode|volume|preview|killprocess|diskspace|battery|wifi|lockscreen|say|eject|symlink|wallpaper|hiddenfiles|runningapps|foldersize|mute)\s*(?:"([^"]*)")?(?:\s+"([^"]*)")?\]'
+        pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash|open|openapp|search|tag|untag|reveal|compress|decompress|getinfo|emptytrash|notify|clipboard|screenshot|darkmode|volume|preview|killprocess|diskspace|battery|wifi|lockscreen|say|eject|symlink|wallpaper|hiddenfiles|runningapps|foldersize|mute|createrule|renameai)\s*(?:"([^"]*)")?(?:\s+"([^"]*)")?\]'
         clean = re.sub(pattern, "", response)
         # Remove extra blank lines
         clean = re.sub(r"\n{3,}", "\n\n", clean)
         return clean.strip()
+
+    def _create_rule_from_chat(self, rule_name: str, rule_spec: str) -> str:
+        """Create a persistent rule from the AI chat.
+
+        rule_spec format: "folder|attribute|operator|value|action_type|action_arg"
+        Examples:
+            "~/Downloads|extension|equals|pdf|move|~/Documents/PDFs"
+            "~/Desktop|size|greater_than|100MB|trash|"
+            "~/Downloads|name|contains|screenshot|move|~/Pictures/Screenshots"
+        """
+        try:
+            from sortmeout.core.rule import Rule
+            from sortmeout.core.condition import Condition
+            from sortmeout.core.action import Action
+            from sortmeout.config.manager import ConfigManager
+
+            parts = rule_spec.split("|")
+            if len(parts) < 6:
+                return f"❌ Invalid rule spec: need folder|attribute|operator|value|action|destination"
+
+            folder = os.path.expanduser(parts[0])
+            attribute = parts[1]
+            operator = parts[2]
+            value = parts[3]
+            action_type = parts[4]
+            action_arg = os.path.expanduser(parts[5]) if parts[5] else ""
+
+            # Build condition
+            condition = Condition(attribute, operator, value)
+
+            # Build action with proper params
+            action_params = {}
+            if action_type in ("move", "copy"):
+                action_params["destination"] = action_arg
+            elif action_type == "rename":
+                action_params["new_name"] = action_arg
+            elif action_type == "add_tags":
+                action_params["tags"] = [action_arg]
+
+            action = Action(action_type, **action_params)
+
+            # Create the rule
+            rule = Rule(
+                name=rule_name,
+                conditions=[condition],
+                actions=[action],
+                description=f"Created via AI chat on {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+            )
+
+            # Save to config
+            config_mgr = ConfigManager()
+            config = config_mgr.load_config()
+
+            # Ensure folder exists in config
+            if "folders" not in config:
+                config["folders"] = []
+
+            # Find or create folder entry
+            folder_entry = None
+            for f in config["folders"]:
+                if os.path.expanduser(f.get("path", "")) == folder or f.get("path", "") == parts[0]:
+                    folder_entry = f
+                    break
+
+            if folder_entry is None:
+                folder_entry = {"path": parts[0], "rules": []}
+                config["folders"].append(folder_entry)
+
+            if "rules" not in folder_entry:
+                folder_entry["rules"] = []
+
+            # Check for duplicate name
+            for existing in folder_entry["rules"]:
+                if existing.get("name") == rule_name:
+                    return f"⚠️ A rule named \"{rule_name}\" already exists for {parts[0]}"
+
+            folder_entry["rules"].append(rule.to_dict())
+            config_mgr.save_config(config)
+
+            return (
+                f"✅ Rule created: **{rule_name}**\n"
+                f"  📂 Folder: `{parts[0]}`\n"
+                f"  🔍 When: {attribute} {operator} \"{value}\"\n"
+                f"  ⚡ Then: {action_type}"
+                + (f" → `{action_arg}`" if action_arg else "")
+                + f"\n\n*Rule is saved and will activate when watching starts.*"
+            )
+
+        except Exception as e:
+            return f"❌ Could not create rule: {str(e)}"
 
     def _execute_pending_commands(self) -> str:
         """Execute all pending commands."""
@@ -1060,6 +1208,20 @@ IMPORTANT:
                     else:
                         failed.append(f"❌ Could not get size for: `{path1}`")
 
+                elif action == "createrule" and path2:
+                    result_msg = self._create_rule_from_chat(path1, path2)
+                    if result_msg.startswith("✅"):
+                        successful.append(result_msg)
+                    else:
+                        failed.append(result_msg)
+
+                elif action == "renameai" and path1:
+                    from sortmeout.gui.chat_window import _save_ai_name
+                    if _save_ai_name(path1):
+                        successful.append(f"✅ Assistant renamed to **{path1}** — restart chat to see the change")
+                    else:
+                        failed.append(f"❌ Could not save assistant name")
+
             except Exception as e:
                 failed.append(f"❌ {action} {Path(path1).name if path1 else ''}: {str(e)[:50]}")
 
@@ -1102,7 +1264,7 @@ IMPORTANT:
         from sortmeout.macos import system as macos_sys
 
         # Find all EXECUTE commands
-        pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash|open|openapp|search|tag|untag|reveal|compress|decompress|getinfo|emptytrash|notify|clipboard|screenshot|darkmode|volume|preview|killprocess|diskspace|battery|wifi|lockscreen|say|eject|symlink|wallpaper|hiddenfiles|runningapps|foldersize|mute)\s*(?:"([^"]*)")?(?:\s+"([^"]*)")?\]'
+        pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash|open|openapp|search|tag|untag|reveal|compress|decompress|getinfo|emptytrash|notify|clipboard|screenshot|darkmode|volume|preview|killprocess|diskspace|battery|wifi|lockscreen|say|eject|symlink|wallpaper|hiddenfiles|runningapps|foldersize|mute|createrule|renameai)\s*(?:"([^"]*)")?(?:\s+"([^"]*)")?\]'
         matches = re.findall(pattern, response)
 
         if not matches:
@@ -1412,6 +1574,20 @@ IMPORTANT:
                     else:
                         failed.append(f"❌ Could not get size for: `{path1}`")
 
+                elif action == "createrule" and path2:
+                    result_msg = self._create_rule_from_chat(path1, path2)
+                    if result_msg.startswith("✅"):
+                        successful.append(result_msg)
+                    else:
+                        failed.append(result_msg)
+
+                elif action == "renameai" and path1:
+                    from sortmeout.gui.chat_window import _save_ai_name
+                    if _save_ai_name(path1):
+                        successful.append(f"✅ Assistant renamed to **{path1}** — restart chat to see the change")
+                    else:
+                        failed.append("❌ Could not save assistant name")
+
             except Exception as e:
                 failed.append(f"❌ {action} {Path(path1).name if path1 else ''}: {str(e)[:50]}")
 
@@ -1463,6 +1639,7 @@ IMPORTANT:
     def clear_conversation(self):
         """Clear conversation history."""
         self.conversation_history = []
+        self._save_conversation_history()
         return "Conversation history cleared."
 
     def refresh_knowledge(self):

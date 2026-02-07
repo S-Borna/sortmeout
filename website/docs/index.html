@@ -1512,18 +1512,19 @@ Actions:
 
     <!-- Cookie Consent Banner -->
     <div class="cookie-banner" id="cookieBanner" role="dialog" aria-label="Cookie consent"
-        style="position:fixed;bottom:0;left:0;right:0;z-index:10000;background:#111827;border-top:1px solid rgba(99,102,241,0.3);padding:1rem 0;transform:translateY(100%);transition:transform 0.4s cubic-bezier(0.16,1,0.3,1)">
-        <div
-            style="max-width:1200px;margin:0 auto;padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-            <p style="flex:1;min-width:280px;color:#d1d5db;font-size:0.875rem;line-height:1.5;margin:0">
-                We use only essential cookies to keep our site working properly. No tracking or advertising cookies.
-                <a href="/cookies.html" style="color:#818cf8;text-decoration:none">Learn more</a>
+        style="position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(calc(100% + 3rem));z-index:10000;width:100%;max-width:520px;background:rgba(255,255,255,0.92);border:1px solid #e5e7eb;border-radius:1.5rem;padding:1.5rem 2rem;box-shadow:0 20px 60px -12px rgba(0,0,0,0.15),0 0 80px -20px rgba(99,102,241,0.12);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);transition:transform 0.5s cubic-bezier(0.16,1,0.3,1),opacity 0.4s ease;opacity:0">
+        <div style="display:flex;flex-direction:column;gap:1rem">
+            <div style="font-size:1.5rem">🍪</div>
+            <h3 style="font-size:1rem;font-weight:600;color:#111827;margin:0 0 0.25rem">We value your privacy</h3>
+            <p style="color:#6b7280;font-size:0.875rem;line-height:1.6;margin:0">
+                We use only essential cookies to keep things running smoothly. No tracking, no ads, no nonsense.
+                <a href="/cookies.html" style="color:#6366f1;text-decoration:none;font-weight:500">Cookie Policy</a>
             </p>
-            <div style="display:flex;gap:0.75rem;flex-shrink:0">
+            <div style="display:flex;gap:0.75rem;width:100%">
                 <button onclick="setCookieConsent('declined')"
-                    style="padding:8px 20px;border-radius:8px;font-size:0.875rem;font-weight:500;cursor:pointer;background:transparent;color:#9ca3af;border:1px solid #374151;font-family:inherit">Decline</button>
+                    style="flex:1;padding:10px 20px;border-radius:0.75rem;font-size:0.875rem;font-weight:600;cursor:pointer;background:#f3f4f6;color:#4b5563;border:1px solid #e5e7eb;font-family:inherit;transition:all 0.2s ease">Decline</button>
                 <button onclick="setCookieConsent('accepted')"
-                    style="padding:8px 20px;border-radius:8px;font-size:0.875rem;font-weight:500;cursor:pointer;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;border:none;font-family:inherit">Accept</button>
+                    style="flex:1;padding:10px 20px;border-radius:0.75rem;font-size:0.875rem;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;border:none;font-family:inherit;box-shadow:0 4px 14px -3px rgba(99,102,241,0.45);transition:all 0.2s ease">Accept</button>
             </div>
         </div>
     </div>
@@ -1531,10 +1532,16 @@ Actions:
     <script>
         function setCookieConsent(value) {
             localStorage.setItem('cookie_consent', value);
-            document.getElementById('cookieBanner').style.transform = 'translateY(100%)';
+            var b = document.getElementById('cookieBanner');
+            b.style.transform = 'translateX(-50%) translateY(calc(100% + 3rem))';
+            b.style.opacity = '0';
         }
         if (!localStorage.getItem('cookie_consent')) {
-            setTimeout(() => { document.getElementById('cookieBanner').style.transform = 'translateY(0)'; }, 1000);
+            setTimeout(() => {
+                var b = document.getElementById('cookieBanner');
+                b.style.transform = 'translateX(-50%) translateY(0)';
+                b.style.opacity = '1';
+            }, 1000);
         }
     </script>
 </body>

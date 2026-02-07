@@ -15,7 +15,7 @@
     <title>SortMeOut — Pro License Activated</title>
     <style>
         .success-page {
-            min-height: 100vh;
+            min-height: calc(100vh - 300px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -317,6 +317,109 @@
 
         // Load on page ready
         loadLicenseKey();
+    </script>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="/" class="logo" aria-label="SortMeOut Home">
+                        <svg class="logo-icon" width="40" height="40" viewBox="0 0 40 40" fill="none"
+                            xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <rect width="40" height="40" rx="10" fill="url(#logo-gradient-footer)" />
+                            <path d="M12 14h16M12 20h12M12 26h8" stroke="white" stroke-width="2.5"
+                                stroke-linecap="round" />
+                            <circle cx="28" cy="26" r="4" fill="white" />
+                            <defs>
+                                <linearGradient id="logo-gradient-footer" x1="0" y1="0" x2="40" y2="40"
+                                    gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#6366F1" />
+                                    <stop offset="1" stop-color="#8B5CF6" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <span class="logo-text">SortMeOut</span>
+                    </a>
+                    <p class="footer-tagline">Intelligent file automation for macOS</p>
+                </div>
+
+                <nav class="footer-nav" aria-label="Footer navigation">
+                    <div class="footer-column">
+                        <h3 class="footer-heading">Product</h3>
+                        <ul class="footer-links">
+                            <li><a href="/#features">Features</a></li>
+                            <li><a href="/#screenshots">Screenshots</a></li>
+                            <li><a href="/#pricing">Pricing</a></li>
+                            <li><a href="/#download">Download</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="footer-column">
+                        <h3 class="footer-heading">Resources</h3>
+                        <ul class="footer-links">
+                            <li><a href="/docs/">Documentation</a></li>
+                            <li><a href="/docs/#quick-start">User Manual</a></li>
+                            <li><a href="/docs/#rules">Rules Guide</a></li>
+                            <li><a href="/docs/#faq">FAQ</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="footer-column">
+                        <h3 class="footer-heading">Support</h3>
+                        <ul class="footer-links">
+                            <li><a href="mailto:said@saidborna.com">Contact Support</a></li>
+                            <li><a href="/docs/#faq">FAQ</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="footer-column">
+                        <h3 class="footer-heading">Legal</h3>
+                        <ul class="footer-links">
+                            <li><a href="/privacy.html">Privacy Policy</a></li>
+                            <li><a href="/terms.html">Terms of Service</a></li>
+                            <li><a href="/cookies.html">Cookie Policy</a></li>
+                        </ul>
+                    </div>
+                </nav>
+            </div>
+
+            <div class="footer-bottom">
+                <p class="copyright">&copy; 2026 SortMeOut. All rights reserved.</p>
+                <p class="legal-disclaimer">SortMeOut is an independent software product and is not affiliated with or
+                    endorsed by any other file automation software vendors.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Cookie Consent Banner -->
+    <div class="cookie-banner" id="cookieBanner" role="dialog" aria-label="Cookie consent">
+        <div class="container">
+            <div class="cookie-banner-icon">🍪</div>
+            <h3 class="cookie-banner-title">We value your privacy</h3>
+            <p class="cookie-banner-text">
+                We use only essential cookies to keep things running smoothly. No tracking, no ads, no nonsense.
+                <a href="/cookies.html">Cookie Policy</a>
+            </p>
+            <div class="cookie-banner-actions">
+                <button class="cookie-btn cookie-btn-decline" onclick="setCookieConsent('declined')">Decline</button>
+                <button class="cookie-btn cookie-btn-accept" onclick="setCookieConsent('accepted')">Accept</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Shield -->
+    <script src="js/security.js"></script>
+    <script src="js/main.js" defer></script>
+
+    <script>
+        function setCookieConsent(value) {
+            localStorage.setItem('cookie_consent', value);
+            document.getElementById('cookieBanner').classList.remove('visible');
+        }
+        if (!localStorage.getItem('cookie_consent')) {
+            setTimeout(() => document.getElementById('cookieBanner').classList.add('visible'), 1000);
+        }
     </script>
 </body>
 
