@@ -24,7 +24,7 @@ import hashlib
 # ========================================
 
 # Rate limits per license tier
-TRIAL_AI_DAILY_LIMIT = 10  # Trial: 10/day (Haiku)
+TRIAL_AI_DAILY_LIMIT = 5  # Trial: 5/day
 PRO_AI_DAILY_LIMIT = 30  # Pro: 30/day (Haiku)
 
 # ========================================
@@ -461,7 +461,7 @@ class LicenseAuthority:
             - If blocked: (False, AI_BLOCKED_MESSAGE)
 
         Rules:
-        - TRIAL_ACTIVE: allowed if under daily limit (10/day, matches website/terms)
+        - TRIAL_ACTIVE: allowed if under daily limit (5/day, matches website/terms)
         - PRO_ACTIVE: allowed if under daily limit (30/day)
         - TRIAL_EXPIRED: never allowed
         - CREATOR: unlimited

@@ -66,7 +66,7 @@ On top of the rule engine, the AI assistant acts as a full desktop companion —
 | Metric | Value |
 |--------|-------|
 | Python source files | 34 |
-| Lines of code (app) | ~15,600 |
+| Lines of code (app) | ~15,900 |
 | Lines of code (tests) | ~2,400 |
 | Test cases | 207 (all passing) |
 | AI commands | 31 |
@@ -139,25 +139,25 @@ sortmeout/
 │   │   ├── history.py          # SQLite history & undo (713 lines)
 │   │   ├── license.py          # License authority singleton (700 lines)
 │   │   ├── rule.py             # Rule dataclass & serialization (324 lines)
-│   │   ├── scheduler.py        # Scheduled rules (cron-like) (309 lines)
-│   │   ├── templates.py        # Prebuilt rule templates (317 lines)
+│   │   ├── scheduler.py        # Scheduled rules (cron-like) (308 lines)
+│   │   ├── templates.py        # Prebuilt rule templates (316 lines)
 │   │   └── watcher.py          # FSEvents folder watcher (620 lines)
 │   │
 │   ├── ai/                     # AI assistant
 │   │   ├── __init__.py
-│   │   └── assistant.py        # Claude-powered assistant (1,471 lines)
+│   │   └── assistant.py        # Claude-powered assistant (1,648 lines)
 │   │
 │   ├── gui/                    # Native macOS GUI
-│   │   ├── app.py              # Menu bar app (rumps) (822 lines)
-│   │   ├── chat_window.py      # AI chat window (AppKit) (1,165 lines)
+│   │   ├── app.py              # Menu bar app (rumps) (834 lines)
+│   │   ├── chat_window.py      # AI chat window (AppKit) (1,232 lines)
 │   │   ├── rule_editor.py      # Visual rule editor (AppKit) (854 lines)
-│   │   ├── settings_window.py  # Preferences window (AppKit) (495 lines)
+│   │   ├── settings_window.py  # Preferences window (AppKit) (523 lines)
 │   │   └── main_window.py      # Entry point shim
 │   │
 │   ├── macos/                  # macOS-specific integrations
 │   │   ├── spotlight.py        # Spotlight search (mdfind/mdls) (345 lines)
-│   │   ├── tags.py             # Finder tags CRUD (xattr) (318 lines)
-│   │   ├── trash.py            # Trash management (456 lines)
+│   │   ├── tags.py             # Finder tags CRUD (xattr) (317 lines)
+│   │   ├── trash.py            # Trash management (455 lines)
 │   │   └── system.py           # System commands (639 lines)
 │   │
 │   ├── config/                 # Configuration
@@ -183,8 +183,10 @@ sortmeout/
 │   ├── privacy.html            # Privacy policy
 │   ├── terms.html              # Terms of service
 │   ├── cookies.html            # Cookie policy
+│   ├── success.html            # Payment success page
 │   ├── css/styles.css          # Design system
-│   └── js/main.js              # Frontend logic
+│   ├── js/main.js              # Frontend logic
+│   └── js/security.js          # Security shield v2.0
 │
 ├── docs/                       # Documentation
 ├── pyproject.toml              # Build config
@@ -310,7 +312,7 @@ Uses `watchdog` (via macOS FSEvents) for real-time file system monitoring.
 
 ### Scheduler
 
-**File:** `core/scheduler.py` (309 lines)
+**File:** `core/scheduler.py` (308 lines)
 
 Allows rules to run on a time-based schedule instead of (or in addition to) file system events.
 
@@ -353,7 +355,7 @@ Singleton `LicenseAuthority` — the single source of truth for all license logi
 
 - Machine fingerprint (hardware UUID) for tamper resistance
 - API-based license verification via `api.sortmeout.saidborna.com`
-- Rate limiting: Trial = 10 AI calls/day, Pro = 30 AI calls/day
+- Rate limiting: Trial = 5 AI calls/day, Pro = 30 AI calls/day
 - Feature gates: `can_execute_ai()`, `can_execute_automation()`, `can_watch_filesystem()`
 - Stripe integration for payment processing
 
@@ -363,7 +365,7 @@ Singleton `LicenseAuthority` — the single source of truth for all license logi
 
 ### AI Architecture
 
-**File:** `ai/assistant.py` (1,471 lines)
+**File:** `ai/assistant.py` (1,648 lines)
 
 The `FileAssistant` class provides an AI-powered desktop companion using the Anthropic Claude API.
 
@@ -432,7 +434,7 @@ Additional info commands (no EXECUTE required): `runningapps`, `foldersize`, `hi
 
 ### Chat Window
 
-**File:** `gui/chat_window.py` (1,165 lines)
+**File:** `gui/chat_window.py` (1,232 lines)
 
 A premium native macOS chat interface built entirely with AppKit/PyObjC.
 
@@ -472,7 +474,7 @@ Wraps `mdfind` and `mdls` for Spotlight search and metadata retrieval.
 
 ### Finder Tags
 
-**File:** `macos/tags.py` (318 lines)
+**File:** `macos/tags.py` (317 lines)
 
 Full CRUD for macOS Finder tags via `xattr` and plist manipulation.
 
@@ -486,7 +488,7 @@ Full CRUD for macOS Finder tags via `xattr` and plist manipulation.
 
 ### Trash Management
 
-**File:** `macos/trash.py` (456 lines)
+**File:** `macos/trash.py` (455 lines)
 
 - `TrashManager` — Full trash lifecycle management
 - `TrashItem` dataclass with path, original_path, size, deleted_date, age_days
@@ -538,7 +540,7 @@ Comprehensive macOS system automation:
 
 ### Menu Bar App
 
-**File:** `gui/app.py` (822 lines)
+**File:** `gui/app.py` (834 lines)
 
 The main entry point for the GUI. Uses `rumps` for macOS menu bar integration.
 
@@ -577,7 +579,7 @@ A native AppKit window for visually creating and editing rules.
 
 ### Settings Window
 
-**File:** `gui/settings_window.py` (495 lines)
+**File:** `gui/settings_window.py` (523 lines)
 
 Tabbed preferences window built with AppKit.
 

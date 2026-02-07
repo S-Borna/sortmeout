@@ -162,7 +162,7 @@ sortmeout ai chat        # Talk to the AI
 | **Duration** | 7 days | Unlimited |
 | **Rule automation** | ✅ | ✅ |
 | **Folder watching** | ✅ | ✅ |
-| **AI Assistant** | 10/day | 30/day |
+| **AI Assistant** | 5/day | 30/day |
 | **All 31 AI commands** | ✅ | ✅ |
 | **Templates** | ✅ | ✅ |
 | **History & Undo** | ✅ | ✅ |
@@ -191,7 +191,7 @@ No other Mac app combines **rule-based file automation** with a **full AI deskto
 
 ## Technical Highlights
 
-- **15,600 lines** of Python
+- **15,900 lines** of Python
 - **207 tests** passing
 - **Native macOS** — AppKit/PyObjC, not Electron
 - **Claude Sonnet 4** — latest Anthropic model
