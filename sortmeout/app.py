@@ -16,14 +16,58 @@ from pathlib import Path
 from typing import Dict, List, Optional, Callable, Any
 from datetime import datetime
 
+import appdirs
+
 from sortmeout.core.watcher import FolderWatcher, WatcherManager
 from sortmeout.core.rule import Rule
 from sortmeout.core.engine import RuleEngine
+from sortmeout.core.scheduler import Scheduler, ScheduledRule
 from sortmeout.config.manager import ConfigManager
 from sortmeout.config.settings import Settings
 from sortmeout.utils.logger import setup_logging, get_logger
 
 logger = get_logger(__name__)
+
+# PID file path — shared location so CLI can find running instance
+_PID_DIR = appdirs.user_data_dir("SortMeOut", "SaidBorna")
+_PID_FILE = os.path.join(_PID_DIR, "sortmeout.pid")
+
+
+def get_pid_file() -> str:
+    """Return the PID file path."""
+    return _PID_FILE
+
+
+def read_pid() -> Optional[int]:
+    """Read PID from file. Returns None if no running instance."""
+    try:
+        with open(_PID_FILE, "r") as f:
+            pid = int(f.read().strip())
+        # Check if process is actually running
+        os.kill(pid, 0)
+        return pid
+    except (FileNotFoundError, ValueError, ProcessLookupError, PermissionError):
+        # Clean up stale PID file
+        try:
+            os.remove(_PID_FILE)
+        except FileNotFoundError:
+            pass
+        return None
+
+
+def _write_pid() -> None:
+    """Write current process PID to file."""
+    os.makedirs(_PID_DIR, exist_ok=True)
+    with open(_PID_FILE, "w") as f:
+        f.write(str(os.getpid()))
+
+
+def _remove_pid() -> None:
+    """Remove PID file."""
+    try:
+        os.remove(_PID_FILE)
+    except FileNotFoundError:
+        pass
 
 
 class SortMeOut:
@@ -92,6 +136,12 @@ class SortMeOut:
             "errors": 0,
             "start_time": None,
         }
+
+        # Scheduler — runs rules on a timer
+        self._scheduler = Scheduler(
+            on_execute=self._on_scheduled_rule,
+            check_interval=60,
+        )
 
         # Load saved configuration
         self._load_saved_config()
@@ -482,13 +532,23 @@ class SortMeOut:
 
         This method starts the file system watchers for all configured folders.
         It blocks until stop() is called or a signal is received.
+        Writes a PID file so other processes can send stop signals.
         """
         if self._running:
             logger.warning("Already running")
             return
 
+        # Check for existing running instance
+        existing_pid = read_pid()
+        if existing_pid:
+            logger.warning("SortMeOut already running (PID %d)", existing_pid)
+            return
+
         self._running = True
         self._stats["start_time"] = datetime.now()
+
+        # Write PID file
+        _write_pid()
 
         # Set up signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -507,6 +567,9 @@ class SortMeOut:
         # Start the watcher manager
         self._watcher_manager.start()
 
+        # Start the scheduler
+        self._scheduler.start()
+
     def start_background(self) -> threading.Thread:
         """
         Start watching in a background thread.
@@ -519,14 +582,61 @@ class SortMeOut:
         return thread
 
     def stop(self) -> None:
-        """Stop watching all folders."""
+        """Stop watching all folders and clean up PID file."""
         if not self._running:
             return
 
         self._running = False
+        self._scheduler.stop()
         self._watcher_manager.stop()
+        _remove_pid()
 
         logger.info("SortMeOut stopped")
+
+    def _on_scheduled_rule(self, schedule: ScheduledRule) -> None:
+        """
+        Execute a scheduled rule.
+
+        Processes all files in the scheduled folder against the specified rule.
+        """
+        folder = os.path.expanduser(schedule.folder)
+        folder = str(Path(folder).resolve())
+
+        with self._lock:
+            rules = self._folder_rules.get(folder, [])
+
+        # Find the specific rule
+        target_rule = None
+        for rule in rules:
+            if rule.id == schedule.rule_id or rule.name == schedule.rule_id:
+                target_rule = rule
+                break
+
+        if not target_rule:
+            logger.warning(
+                "Scheduled rule '%s' not found in folder '%s'",
+                schedule.rule_id,
+                folder,
+            )
+            return
+
+        # Process all files in folder with this specific rule
+        if os.path.isdir(folder):
+            for entry in os.scandir(folder):
+                if entry.is_file() and not self._should_skip_file(entry.path):
+                    self._rule_engine.process_file(entry.path, [target_rule])
+                    self._stats["files_processed"] += 1
+
+        logger.info(
+            "Scheduled rule '%s' executed on folder '%s'",
+            schedule.name or schedule.rule_id,
+            folder,
+        )
+
+    @property
+    def scheduler(self) -> Scheduler:
+        """Access the scheduler instance."""
+        return self._scheduler
 
     def _signal_handler(self, signum: int, frame: Any) -> None:
         """Handle shutdown signals."""

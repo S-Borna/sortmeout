@@ -389,7 +389,7 @@ class ChatWindow:
         # Subtitle/Status
         subtitle_frame = NSMakeRect(66, 10, 300, 18)
         self.header_status = NSTextField.alloc().initWithFrame_(subtitle_frame)
-        self.header_status.setStringValue_("Redo att hjälpa dig")
+        self.header_status.setStringValue_("Ready to help")
         self.header_status.setBezeled_(False)
         self.header_status.setDrawsBackground_(False)
         self.header_status.setEditable_(False)
@@ -477,7 +477,7 @@ class ChatWindow:
         # Input field (inside container)
         input_frame = NSMakeRect(16, 8, 360, 28)
         self.input_field = NSTextField.alloc().initWithFrame_(input_frame)
-        self.input_field.setPlaceholderString_("Skriv ett meddelande...")
+        self.input_field.setPlaceholderString_("Type a message...")
         self.input_field.setBezeled_(False)
         self.input_field.setDrawsBackground_(False)
         self.input_field.setTextColor_(Colors.TEXT_PRIMARY)
@@ -519,17 +519,17 @@ class ChatWindow:
         """Add styled welcome message."""
         self._add_message(
             "SortMeOut AI",
-            """Välkommen! 👋
+            """Welcome! 👋
 
-Jag är din personliga AI-assistent för filorganisation. Jag kan hjälpa dig med:
+I'm your personal AI assistant for file organization. I can help you with:
 
-✦  Organisera filer automatiskt
-✦  Analysera dokument och föreslå placering
-✦  Skapa smarta mappstrukturer
-✦  Städa upp i Downloads och Desktop
-✦  Sortera efter typ, datum eller innehåll
+✦  Organize files automatically
+✦  Analyze documents and suggest placement
+✦  Create smart folder structures
+✦  Clean up Downloads and Desktop
+✦  Sort by type, date, or content
 
-Berätta vad du vill göra så hjälper jag dig!""",
+Tell me what you'd like to do and I'll help!""",
             is_ai=True,
             show_timestamp=False,
         )
@@ -547,7 +547,7 @@ Berätta vad du vill göra så hjälper jag dig!""",
                 msg_type, data = self.response_queue.get_nowait()
                 if msg_type == "response":
                     self._add_message("SortMeOut AI", data, is_ai=True)
-                    self._set_status("Redo att hjälpa dig", processing=False)
+                    self._set_status("Ready to help", processing=False)
                     self.is_processing = False
                     self.send_button.setEnabled_(True)
                     self.send_button.layer().setBackgroundColor_(Colors.BUTTON_BG.CGColor())
@@ -555,7 +555,7 @@ Berätta vad du vill göra så hjälper jag dig!""",
                     self._set_status(data, processing=True)
                 elif msg_type == "error":
                     self._add_message("System", f"⚠️ {data}", is_ai=True, is_error=True)
-                    self._set_status("Ett fel uppstod", processing=False)
+                    self._set_status("An error occurred", processing=False)
                     self.is_processing = False
                     self.send_button.setEnabled_(True)
                     self.send_button.layer().setBackgroundColor_(Colors.BUTTON_BG.CGColor())
@@ -651,13 +651,13 @@ Berätta vad du vill göra så hjälper jag dig!""",
 
         # Clear input and add user message
         self.input_field.setStringValue_("")
-        self._add_message("Du", message.strip(), is_ai=False)
+        self._add_message("You", message.strip(), is_ai=False)
 
         # Start processing
         self.is_processing = True
         self.send_button.setEnabled_(False)
         self.send_button.layer().setBackgroundColor_(Colors.BUTTON_DISABLED.CGColor())
-        self._set_status("Tänker...", processing=True)
+        self._set_status("Thinking...", processing=True)
 
         # Process in background
         thread = threading.Thread(target=self._process_ai, args=(message,))
@@ -667,20 +667,20 @@ Berätta vad du vill göra så hjälper jag dig!""",
     def _process_ai(self, message):
         """Process message with AI (background thread)."""
         try:
-            self.response_queue.put(("status", "Analyserar din förfrågan..."))
+            self.response_queue.put(("status", "Analyzing your request..."))
 
             if not self.assistant:
                 self.response_queue.put(
-                    ("error", "AI-assistenten kunde inte initieras. Kontrollera din API-nyckel.")
+                    ("error", "AI assistant could not be initialized. Check your API key.")
                 )
                 return
 
-            self.response_queue.put(("status", "Tänker..."))
+            self.response_queue.put(("status", "Thinking..."))
             response = self.assistant.chat(message)
             self.response_queue.put(("response", response))
 
         except Exception as e:
-            self.response_queue.put(("error", f"Ett fel uppstod: {str(e)}"))
+            self.response_queue.put(("error", f"An error occurred: {str(e)}"))
 
     def clear_chat(self):
         """Clear chat history."""

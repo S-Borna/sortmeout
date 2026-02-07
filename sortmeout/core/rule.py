@@ -71,12 +71,12 @@ class Rule:
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
     description: Optional[str] = None
+    priority: int = 0
+    run_count: int = 0
+    last_run: Optional[datetime] = None
 
     def __post_init__(self) -> None:
-        """Validate rule after initialization."""
-        if not self.name:
-            raise ValueError("Rule name cannot be empty")
-
+        """Normalize rule after initialization."""
         if isinstance(self.match_mode, str):
             self.match_mode = RuleMatchMode(self.match_mode)
 
@@ -136,37 +136,104 @@ class Rule:
         self.updated_at = datetime.now()
         return self
 
-    def remove_condition(self, index: int) -> bool:
+    def remove_condition(self, condition_id) -> bool:
         """
-        Remove a condition by index.
+        Remove a condition by ID or index.
 
         Args:
-            index: Index of condition to remove.
+            condition_id: ID string or integer index of condition to remove.
 
         Returns:
             True if condition was removed.
         """
-        if 0 <= index < len(self.conditions):
-            del self.conditions[index]
-            self.updated_at = datetime.now()
-            return True
+        if isinstance(condition_id, int):
+            if 0 <= condition_id < len(self.conditions):
+                del self.conditions[condition_id]
+                self.updated_at = datetime.now()
+                return True
+            return False
+        for i, c in enumerate(self.conditions):
+            if hasattr(c, 'id') and c.id == condition_id:
+                del self.conditions[i]
+                self.updated_at = datetime.now()
+                return True
         return False
 
-    def remove_action(self, index: int) -> bool:
+    def remove_action(self, action_id) -> bool:
         """
-        Remove an action by index.
+        Remove an action by ID or index.
 
         Args:
-            index: Index of action to remove.
+            action_id: ID string or integer index of action to remove.
 
         Returns:
             True if action was removed.
         """
-        if 0 <= index < len(self.actions):
-            del self.actions[index]
-            self.updated_at = datetime.now()
-            return True
+        if isinstance(action_id, int):
+            if 0 <= action_id < len(self.actions):
+                del self.actions[action_id]
+                self.updated_at = datetime.now()
+                return True
+            return False
+        for i, a in enumerate(self.actions):
+            if hasattr(a, 'id') and a.id == action_id:
+                del self.actions[i]
+                self.updated_at = datetime.now()
+                return True
         return False
+
+    def clear_conditions(self) -> None:
+        """Remove all conditions."""
+        self.conditions.clear()
+        self.updated_at = datetime.now()
+
+    def clear_actions(self) -> None:
+        """Remove all actions."""
+        self.actions.clear()
+        self.updated_at = datetime.now()
+
+    def record_run(self) -> None:
+        """Record that this rule was executed."""
+        self.run_count += 1
+        self.last_run = datetime.now()
+
+    def describe(self) -> str:
+        """Generate a human-readable description of the rule."""
+        if not self.conditions and not self.actions:
+            return f"{self.name}: No conditions, no actions"
+
+        parts = []
+        if self.conditions:
+            cond_strs = [str(c) for c in self.conditions]
+            mode = self.match_mode.value.upper()
+            parts.append(f"If {mode} of: {', '.join(cond_strs)}")
+        else:
+            parts.append("No conditions (matches all files)")
+
+        if self.actions:
+            action_strs = [
+                a.action_type.value if hasattr(a.action_type, 'value') else str(a.action_type)
+                for a in self.actions
+            ]
+            parts.append(f"Then: {', '.join(action_strs)}")
+        else:
+            parts.append("No actions")
+
+        return f"{self.name}: {' → '.join(parts)}"
+
+    def validate(self) -> List[str]:
+        """
+        Validate the rule configuration.
+
+        Returns:
+            List of validation error messages. Empty if valid.
+        """
+        errors = []
+        if not self.name:
+            errors.append("Rule name cannot be empty")
+        if not self.actions:
+            errors.append("Rule must have at least one action")
+        return errors
 
     def duplicate(self, new_name: Optional[str] = None) -> "Rule":
         """
@@ -187,6 +254,7 @@ class Rule:
             continue_processing=self.continue_processing,
             run_on_folder_open=self.run_on_folder_open,
             description=self.description,
+            priority=self.priority,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -201,6 +269,7 @@ class Rule:
             "name": self.name,
             "description": self.description,
             "enabled": self.enabled,
+            "priority": self.priority,
             "match_mode": self.match_mode.value,
             "continue_processing": self.continue_processing,
             "run_on_folder_open": self.run_on_folder_open,
@@ -235,6 +304,7 @@ class Rule:
             name=data["name"],
             description=data.get("description"),
             enabled=data.get("enabled", True),
+            priority=data.get("priority", 0),
             match_mode=RuleMatchMode(data.get("match_mode", "all")),
             continue_processing=data.get("continue_processing", False),
             run_on_folder_open=data.get("run_on_folder_open", True),

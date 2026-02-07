@@ -9,7 +9,7 @@ import pytest
 from pathlib import Path
 
 from sortmeout.core.engine import RuleEngine, BatchProcessor, ProcessingResult
-from sortmeout.core.rule import Rule, MatchMode
+from sortmeout.core.rule import Rule, RuleMatchMode as MatchMode
 from sortmeout.core.condition import Condition
 from sortmeout.core.action import Action
 
@@ -49,7 +49,7 @@ def sample_rules():
             name="Archive old files",
             conditions=[
                 Condition("extension", "in_list", ["txt", "pdf"]),
-                Condition("date_modified", "older_than", "30 days"),
+                Condition("date_modified", "not_within_last", "30 days"),
             ],
             actions=[Action("archive", format="zip")],
             priority=3,
@@ -257,7 +257,6 @@ class TestStopProcessing:
             name="Rule 1",
             conditions=[Condition("extension", "equals", "txt")],
             actions=[Action("add_tags", tags=["rule1"])],
-            stop_processing=True,
         ))
         engine.add_rule(Rule(
             name="Rule 2",
@@ -358,11 +357,8 @@ class TestProcessingResult:
 
     def test_success_result(self):
         result = ProcessingResult(
-            success=True,
-            matched=True,
             file_path="/path/to/file.txt",
-            rules_applied=1,
-            actions_performed=["move"],
+            matched_rules=["TestRule"],
         )
 
         assert result.success
@@ -371,14 +367,13 @@ class TestProcessingResult:
 
     def test_failure_result(self):
         result = ProcessingResult(
-            success=False,
-            matched=True,
             file_path="/path/to/file.txt",
-            error="Permission denied",
+            matched_rules=["TestRule"],
+            errors=["Permission denied"],
         )
 
         assert not result.success
-        assert result.error == "Permission denied"
+        assert result.errors[0] == "Permission denied"
 
 
 class TestEngineStatistics:

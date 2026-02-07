@@ -18,6 +18,11 @@ from typing import Any, Dict, List, Optional, Callable
 import re
 
 
+def _escape_applescript(s: str) -> str:
+    """Escape a string for safe use inside AppleScript double-quoted strings."""
+    return s.replace('\\', '\\\\').replace('"', '\\"')
+
+
 class ActionType(Enum):
     """Available action types."""
     # File operations
@@ -52,6 +57,12 @@ class ActionType(Enum):
 
     # Notification operations
     NOTIFY = "notify"
+
+    # Advanced file operations
+    SORT_INTO_SUBFOLDER = "sort_into_subfolder"  # Sort into dated/named subfolder
+    MAKE_ALIAS = "make_alias"  # Create macOS alias
+    TOGGLE_LOCK = "toggle_lock"  # Lock/unlock file
+    TOGGLE_EXTENSION = "toggle_extension"  # Show/hide extension
 
     # Utility operations
     NOTHING = "nothing"  # Do nothing (for testing)
@@ -226,17 +237,26 @@ class Action:
             ActionType.DELETE: self._do_delete,
             ActionType.TRASH: self._do_trash,
             ActionType.ARCHIVE: self._do_archive,
+            ActionType.EXTRACT: self._do_extract,
             ActionType.ADD_TAGS: self._do_add_tags,
             ActionType.REMOVE_TAGS: self._do_remove_tags,
             ActionType.SET_TAGS: self._do_set_tags,
             ActionType.SET_COMMENT: self._do_set_comment,
+            ActionType.SET_LABEL: self._do_set_label,
             ActionType.OPEN_WITH: self._do_open_with,
+            ActionType.IMPORT_TO_PHOTOS: self._do_import_to_photos,
+            ActionType.IMPORT_TO_MUSIC: self._do_import_to_music,
             ActionType.RUN_SHELL: self._do_run_shell,
             ActionType.RUN_APPLESCRIPT: self._do_run_applescript,
+            ActionType.RUN_AUTOMATOR: self._do_run_automator,
             ActionType.RUN_SHORTCUT: self._do_run_shortcut,
             ActionType.NOTIFY: self._do_notify,
             ActionType.NOTHING: self._do_nothing,
             ActionType.REVEAL_IN_FINDER: self._do_reveal_in_finder,
+            ActionType.SORT_INTO_SUBFOLDER: self._do_sort_into_subfolder,
+            ActionType.MAKE_ALIAS: self._do_make_alias,
+            ActionType.TOGGLE_LOCK: self._do_toggle_lock,
+            ActionType.TOGGLE_EXTENSION: self._do_toggle_extension,
         }
         return handlers.get(self.action_type)
 
@@ -415,9 +435,10 @@ class Action:
     def _do_trash(self, file_path: str, params: Dict[str, Any], file_info: Dict[str, Any]) -> ActionResult:
         """Move file to Trash."""
         try:
-            # Use macOS-specific trash command
+            # Use macOS-specific trash command with safe string escaping
+            safe_path = _escape_applescript(file_path)
             subprocess.run(
-                ["osascript", "-e", f'tell application "Finder" to delete POSIX file "{file_path}"'],
+                ["osascript", "-e", f'tell application "Finder" to delete POSIX file "{safe_path}"'],
                 check=True,
                 capture_output=True,
             )
@@ -579,9 +600,11 @@ class Action:
         """Set Finder comment."""
         comment = params.get("comment", "")
 
+        safe_path = _escape_applescript(file_path)
+        safe_comment = _escape_applescript(comment)
         script = f'''
             tell application "Finder"
-                set comment of (POSIX file "{file_path}" as alias) to "{comment}"
+                set comment of (POSIX file "{safe_path}" as alias) to "{safe_comment}"
             end tell
         '''
 
@@ -735,8 +758,11 @@ class Action:
         message = params.get("message", f"Processed: {Path(file_path).name}")
         sound = params.get("sound", "default")
 
+        safe_title = _escape_applescript(title)
+        safe_message = _escape_applescript(message)
+        safe_sound = _escape_applescript(sound)
         script = f'''
-            display notification "{message}" with title "{title}" sound name "{sound}"
+            display notification "{safe_message}" with title "{safe_title}" sound name "{safe_sound}"
         '''
 
         subprocess.run(["osascript", "-e", script], check=True, capture_output=True)
@@ -766,6 +792,332 @@ class Action:
             action_type=self.action_type,
             source_path=file_path,
             message="Revealed in Finder",
+        )
+
+    def _do_extract(self, file_path: str, params: Dict[str, Any], file_info: Dict[str, Any]) -> ActionResult:
+        """Extract an archive."""
+        import zipfile
+        import tarfile
+
+        destination = params.get("destination")
+        path = Path(file_path)
+
+        if destination:
+            dest_dir = Path(destination)
+        else:
+            dest_dir = path.parent / path.stem
+
+        dest_dir.mkdir(parents=True, exist_ok=True)
+
+        ext = path.suffix.lower()
+        name_lower = path.name.lower()
+
+        try:
+            if ext == ".zip":
+                with zipfile.ZipFile(file_path, "r") as zf:
+                    zf.extractall(dest_dir)
+            elif name_lower.endswith(".tar.gz") or name_lower.endswith(".tgz"):
+                with tarfile.open(file_path, "r:gz") as tf:
+                    tf.extractall(dest_dir)
+            elif name_lower.endswith(".tar.bz2"):
+                with tarfile.open(file_path, "r:bz2") as tf:
+                    tf.extractall(dest_dir)
+            elif ext == ".tar":
+                with tarfile.open(file_path, "r:") as tf:
+                    tf.extractall(dest_dir)
+            elif ext == ".gz":
+                import gzip
+                out_path = dest_dir / path.stem
+                with gzip.open(file_path, "rb") as fin, open(out_path, "wb") as fout:
+                    shutil.copyfileobj(fin, fout)
+            else:
+                # Try ditto on macOS as fallback
+                subprocess.run(
+                    ["ditto", "-x", "-k", file_path, str(dest_dir)],
+                    check=True,
+                    capture_output=True,
+                )
+        except Exception as e:
+            return ActionResult(
+                success=False,
+                action_type=self.action_type,
+                source_path=file_path,
+                error=f"Extraction failed: {e}",
+            )
+
+        if params.get("delete_original", False):
+            path.unlink()
+
+        return ActionResult(
+            success=True,
+            action_type=self.action_type,
+            source_path=file_path,
+            destination_path=str(dest_dir),
+            message=f"Extracted to {dest_dir}",
+        )
+
+    def _do_set_label(self, file_path: str, params: Dict[str, Any], file_info: Dict[str, Any]) -> ActionResult:
+        """Set Finder color label."""
+        label = params.get("label", "none")
+
+        # Map label names to index
+        label_map = {
+            "none": 0, "gray": 1, "grey": 1, "green": 2, "purple": 3,
+            "blue": 4, "yellow": 5, "red": 6, "orange": 7,
+        }
+
+        if isinstance(label, str):
+            label_idx = label_map.get(label.lower(), 0)
+        else:
+            label_idx = int(label)
+
+        safe_path = _escape_applescript(file_path)
+        script = f'''
+            tell application "Finder"
+                set label index of (POSIX file "{safe_path}" as alias) to {label_idx}
+            end tell
+        '''
+
+        subprocess.run(["osascript", "-e", script], check=True, capture_output=True)
+
+        return ActionResult(
+            success=True,
+            action_type=self.action_type,
+            source_path=file_path,
+            message=f"Set label to {label}",
+            metadata={"label": label, "label_index": label_idx},
+        )
+
+    def _do_import_to_photos(self, file_path: str, params: Dict[str, Any], file_info: Dict[str, Any]) -> ActionResult:
+        """Import file to Photos app."""
+        safe_path = _escape_applescript(file_path)
+        album = params.get("album", "")
+
+        if album:
+            safe_album = _escape_applescript(album)
+            script = f'''
+                tell application "Photos"
+                    activate
+                    delay 2
+                    import POSIX file "{safe_path}" into album "{safe_album}"
+                end tell
+            '''
+        else:
+            script = f'''
+                tell application "Photos"
+                    activate
+                    delay 2
+                    import POSIX file "{safe_path}"
+                end tell
+            '''
+
+        result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=30)
+
+        if result.returncode != 0:
+            return ActionResult(
+                success=False,
+                action_type=self.action_type,
+                source_path=file_path,
+                error=f"Photos import failed: {result.stderr}",
+            )
+
+        if params.get("delete_original", False):
+            Path(file_path).unlink()
+
+        return ActionResult(
+            success=True,
+            action_type=self.action_type,
+            source_path=file_path,
+            message="Imported to Photos",
+        )
+
+    def _do_import_to_music(self, file_path: str, params: Dict[str, Any], file_info: Dict[str, Any]) -> ActionResult:
+        """Import file to Music app."""
+        safe_path = _escape_applescript(file_path)
+        script = f'''
+            tell application "Music"
+                add POSIX file "{safe_path}"
+            end tell
+        '''
+
+        result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=30)
+
+        if result.returncode != 0:
+            return ActionResult(
+                success=False,
+                action_type=self.action_type,
+                source_path=file_path,
+                error=f"Music import failed: {result.stderr}",
+            )
+
+        if params.get("delete_original", False):
+            Path(file_path).unlink()
+
+        return ActionResult(
+            success=True,
+            action_type=self.action_type,
+            source_path=file_path,
+            message="Imported to Music",
+        )
+
+    def _do_run_automator(self, file_path: str, params: Dict[str, Any], file_info: Dict[str, Any]) -> ActionResult:
+        """Run an Automator workflow."""
+        workflow = params.get("workflow") or params.get("path")
+        if not workflow:
+            return ActionResult(
+                success=False,
+                action_type=self.action_type,
+                source_path=file_path,
+                error="No Automator workflow specified",
+            )
+
+        workflow = os.path.expanduser(workflow)
+        result = subprocess.run(
+            ["automator", "-i", file_path, workflow],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+
+        if result.returncode != 0:
+            return ActionResult(
+                success=False,
+                action_type=self.action_type,
+                source_path=file_path,
+                error=f"Automator failed: {result.stderr}",
+            )
+
+        return ActionResult(
+            success=True,
+            action_type=self.action_type,
+            source_path=file_path,
+            message=f"Ran Automator workflow: {Path(workflow).name}",
+            metadata={"output": result.stdout},
+        )
+
+    def _do_sort_into_subfolder(self, file_path: str, params: Dict[str, Any], file_info: Dict[str, Any]) -> ActionResult:
+        """Sort file into a subfolder based on a pattern."""
+        pattern = params.get("pattern") or params.get("subfolder")
+        if not pattern:
+            # Default: sort by date (YYYY/MM)
+            now = datetime.now()
+            pattern = f"{now.strftime('%Y')}/{now.strftime('%m')}"
+
+        path = Path(file_path)
+        subfolder = path.parent / pattern
+        subfolder.mkdir(parents=True, exist_ok=True)
+        dest_path = subfolder / path.name
+        dest_path = self._handle_conflict(dest_path, params.get("if_exists", "rename"))
+        shutil.move(file_path, dest_path)
+
+        return ActionResult(
+            success=True,
+            action_type=self.action_type,
+            source_path=file_path,
+            destination_path=str(dest_path),
+            message=f"Sorted into subfolder {pattern}",
+        )
+
+    def _do_make_alias(self, file_path: str, params: Dict[str, Any], file_info: Dict[str, Any]) -> ActionResult:
+        """Create a macOS Finder alias."""
+        destination = params.get("destination")
+        if not destination:
+            return ActionResult(
+                success=False,
+                action_type=self.action_type,
+                source_path=file_path,
+                error="No destination specified for alias",
+            )
+
+        dest_path = Path(destination)
+        dest_path.mkdir(parents=True, exist_ok=True)
+        alias_name = Path(file_path).stem + " alias" + Path(file_path).suffix
+        alias_path = dest_path / alias_name
+
+        safe_file = _escape_applescript(file_path)
+        safe_dest = _escape_applescript(str(dest_path))
+        script = f'''
+            tell application "Finder"
+                make alias file to POSIX file "{safe_file}" at POSIX file "{safe_dest}"
+            end tell
+        '''
+        result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+
+        if result.returncode != 0:
+            return ActionResult(
+                success=False,
+                action_type=self.action_type,
+                source_path=file_path,
+                error=f"Failed to create alias: {result.stderr}",
+            )
+
+        return ActionResult(
+            success=True,
+            action_type=self.action_type,
+            source_path=file_path,
+            destination_path=str(alias_path),
+            message=f"Created alias in {dest_path}",
+        )
+
+    def _do_toggle_lock(self, file_path: str, params: Dict[str, Any], file_info: Dict[str, Any]) -> ActionResult:
+        """Toggle file lock (uchg flag) on macOS."""
+        path = Path(file_path)
+        import stat
+        current = os.stat(file_path)
+        is_locked = bool(current.st_flags & stat.UF_IMMUTABLE)
+
+        lock = params.get("lock")  # True=lock, False=unlock, None=toggle
+        if lock is None:
+            lock = not is_locked
+
+        if lock:
+            os.chflags(file_path, current.st_flags | stat.UF_IMMUTABLE)
+            action_msg = "Locked"
+        else:
+            os.chflags(file_path, current.st_flags & ~stat.UF_IMMUTABLE)
+            action_msg = "Unlocked"
+
+        return ActionResult(
+            success=True,
+            action_type=self.action_type,
+            source_path=file_path,
+            message=f"{action_msg} file",
+            metadata={"locked": lock},
+        )
+
+    def _do_toggle_extension(self, file_path: str, params: Dict[str, Any], file_info: Dict[str, Any]) -> ActionResult:
+        """Toggle extension visibility in Finder."""
+        show = params.get("show")  # True=show, False=hide, None=toggle
+
+        safe_path = _escape_applescript(file_path)
+        # First get current state
+        get_script = f'''
+            tell application "Finder"
+                set theFile to (POSIX file "{safe_path}" as alias)
+                return extension hidden of theFile
+            end tell
+        '''
+        result = subprocess.run(["osascript", "-e", get_script], capture_output=True, text=True)
+        currently_hidden = result.stdout.strip() == "true"
+
+        if show is None:
+            new_hidden = not currently_hidden
+        else:
+            new_hidden = not show
+
+        set_script = f'''
+            tell application "Finder"
+                set extension hidden of (POSIX file "{safe_path}" as alias) to {"true" if new_hidden else "false"}
+            end tell
+        '''
+        subprocess.run(["osascript", "-e", set_script], check=True, capture_output=True)
+
+        return ActionResult(
+            success=True,
+            action_type=self.action_type,
+            source_path=file_path,
+            message=f"Extension {'hidden' if new_hidden else 'shown'}",
+            metadata={"extension_hidden": new_hidden},
         )
 
     def _handle_conflict(self, path: Path, strategy: str = "rename") -> Path:

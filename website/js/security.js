@@ -495,6 +495,6 @@
     };
 
     // Export for verification
-    window.__SECURITY__ = { status: 'protected', version: '1.0.0' };
+    window.__SECURITY__ = { status: 'protected', version: '1.0.1' };
 
 })();

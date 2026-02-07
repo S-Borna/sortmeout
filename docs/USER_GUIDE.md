@@ -300,7 +300,7 @@ The menu bar icon shows SortMeOut status and provides quick access.
 ## Getting Help
 
 - **Documentation**: [sortmeout.saidborna.com/docs](https://sortmeout.saidborna.com)
-- **Email**: support@saidborna.com
+- **Email**: said@saidborna.com
 
 ---
 

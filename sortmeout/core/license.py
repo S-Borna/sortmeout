@@ -35,6 +35,9 @@ PRO_PRICE_USD = 9.99  # Monthly subscription price
 # The ONLY error message for blocked AI. No variations.
 AI_BLOCKED_MESSAGE = "AI Assistant requires an active Pro license."
 
+# License verification API
+LICENSE_API_URL = "https://api.sortmeout.saidborna.com"
+
 
 class LicenseState(Enum):
     """License states. ONLY these three states exist."""
@@ -324,32 +327,40 @@ class LicenseAuthority:
 
     def activate_pro_license(self, payload: str) -> bool:
         """
-        Activate Pro license with opaque payload.
+        Activate Pro license with a SORTMEOUT-XXXX-XXXX-XXXX-CHECKSUM key.
 
-        This is the PAYMENT HOOK for external payment providers.
-        Payment providers will call this method with their payload.
+        This is the PAYMENT HOOK for Stripe.
+        After successful payment, user receives a license key and enters it here.
 
-        STUB BEHAVIOR (temporary):
-        - Any non-empty payload = PRO_ACTIVE
-
-        This method does NOT validate payload format.
-        This method does NOT make external calls.
-        This method is PROVIDER-AGNOSTIC.
+        Validates:
+        1. Key format (SORTMEOUT-XXXX-XXXX-XXXX-CHECKSUM)
+        2. Checksum integrity
+        3. Optional: server-side verification if network available
 
         Args:
-            payload: Opaque activation payload from payment provider.
+            payload: License key from Stripe checkout.
 
         Returns:
             True if activation successful, False otherwise.
         """
-        # STUB: Any non-empty payload activates Pro
         if not payload or not payload.strip():
             return False
 
-        # Store the payload as-is (for future validation if needed)
-        self._pro_license_key = payload.strip()
+        key = payload.strip().upper()
+
+        # Validate key format and checksum
+        if not self._validate_pro_key(key):
+            return False
+
+        # Store the key and activate
+        self._pro_license_key = key
         self._state = LicenseState.PRO_ACTIVE
         self._save_license()
+
+        # Attempt server verification in background (non-blocking)
+        # If server is unreachable, key still works offline via checksum
+        self._verify_with_server_async(key)
+
         return True
 
     def deactivate_pro(self):
@@ -367,9 +378,8 @@ class LicenseAuthority:
         Effects (IMMEDIATE, no grace period):
         - State becomes TRIAL_EXPIRED (not TRIAL_ACTIVE)
         - AI execution = OFF
-        - Automation execution = OFF
-        - File content reading = OFF
-        - App enters SHELL MODE
+        - Automation continues (freemium)
+        - Filesystem watching continues (freemium)
 
         Trial expiration is FINAL. This does NOT restart trial.
         """
@@ -379,6 +389,63 @@ class LicenseAuthority:
         # Force TRIAL_EXPIRED, not TRIAL_ACTIVE (trial is consumed)
         self._state = LicenseState.TRIAL_EXPIRED
         self._save_license()
+
+    def _verify_with_server_async(self, license_key: str) -> None:
+        """
+        Verify license key with server in background thread.
+        Non-blocking — if server is unreachable, offline validation stands.
+        """
+        import threading
+
+        def _verify():
+            try:
+                self.verify_license_online(license_key)
+            except Exception:
+                pass  # Offline is fine — checksum validation is sufficient
+
+        thread = threading.Thread(target=_verify, daemon=True)
+        thread.start()
+
+    def verify_license_online(self, license_key: str) -> Optional[dict]:
+        """
+        Verify license key against the server.
+
+        Makes a POST to the license API to check if the key is valid
+        and the subscription is active.
+
+        Args:
+            license_key: The SORTMEOUT-XXXX-XXXX-XXXX-CHECKSUM key.
+
+        Returns:
+            Server response dict if successful, None if unreachable.
+            Response contains: {valid: bool, status: str, email: str}
+        """
+        import urllib.request
+        import urllib.error
+
+        try:
+            data = json.dumps({"license_key": license_key}).encode("utf-8")
+            req = urllib.request.Request(
+                f"{LICENSE_API_URL}/api/verify",
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+
+            if result.get("valid") is False and result.get("status") == "cancelled":
+                # Subscription was cancelled — deactivate locally
+                self.deactivate_pro_license()
+
+            return result
+
+        except (urllib.error.URLError, urllib.error.HTTPError, OSError):
+            # Server unreachable — offline mode, keep current state
+            return None
+        except Exception:
+            return None
 
     # ========================================
     # FEATURE GATES (THE ONLY GATES)
@@ -394,7 +461,7 @@ class LicenseAuthority:
             - If blocked: (False, AI_BLOCKED_MESSAGE)
 
         Rules:
-        - TRIAL_ACTIVE: allowed if under daily limit (10/day)
+        - TRIAL_ACTIVE: allowed if under daily limit (10/day, matches website/terms)
         - PRO_ACTIVE: allowed if under daily limit (30/day)
         - TRIAL_EXPIRED: never allowed
         - CREATOR: unlimited
@@ -424,7 +491,8 @@ class LicenseAuthority:
             if self._check_rate_limit(TRIAL_AI_DAILY_LIMIT):
                 return (True, "")
             else:
-                return (False, "Daily AI limit reached (10/day). Upgrade to Pro for 30/day!")
+                remaining = TRIAL_AI_DAILY_LIMIT
+                return (False, f"Daily AI limit reached ({remaining}/day). Upgrade to Pro for {PRO_AI_DAILY_LIMIT}/day!")
 
         # TRIAL_EXPIRED or any other state: blocked
         return (False, AI_BLOCKED_MESSAGE)

@@ -43,7 +43,7 @@ class FileEventHandler(FileSystemEventHandler):
     def __init__(
         self,
         callback: Callable[[str, str, str], None],
-        folder_path: str,
+        folder_path: str = "",
         ignore_patterns: Optional[List[str]] = None,
         include_directories: bool = False,
         debounce_seconds: float = 0.5,
@@ -115,8 +115,13 @@ class FileEventHandler(FileSystemEventHandler):
 
         return True
 
-    def _process_event(self, event_type: str, src_path: str, is_directory: bool) -> None:
+    def _process_event(self, event_type: str = "modified", src_path: str = None, is_directory: bool = False) -> None:
         """Process a file system event."""
+        if src_path is None:
+            # Called with just a path argument
+            src_path = event_type
+            event_type = "modified"
+
         if is_directory and not self.include_directories:
             return
 
@@ -165,10 +170,14 @@ class FolderWatcher:
 
     def __init__(
         self,
-        path: str,
-        callback: Callable[[str, str, str], None],
-        recursive: bool = False,
+        path: Optional[str] = None,
+        callback: Optional[Callable[[str, str, str], None]] = None,
+        recursive: bool = True,
         ignore_patterns: Optional[List[str]] = None,
+        include_extensions: Optional[List[str]] = None,
+        exclude_extensions: Optional[List[str]] = None,
+        ignore_hidden: bool = True,
+        folder_path: Optional[str] = None,
     ):
         """
         Initialize a folder watcher.
@@ -178,12 +187,23 @@ class FolderWatcher:
             callback: Function to call on file events.
             recursive: Watch subdirectories.
             ignore_patterns: Patterns to ignore.
+            include_extensions: Only process files with these extensions.
+            exclude_extensions: Skip files with these extensions.
+            ignore_hidden: Whether to ignore hidden files.
+            folder_path: Alternative to path parameter.
         """
-        self.path = os.path.expanduser(path)
+        actual_path = folder_path if folder_path is not None else path
+        if not actual_path:
+            raise ValueError("Either path or folder_path must be specified")
+        self.path = os.path.expanduser(actual_path)
         self.callback = callback
         self.recursive = recursive
         self.ignore_patterns = ignore_patterns
+        self.include_extensions = include_extensions
+        self.exclude_extensions = exclude_extensions
+        self.ignore_hidden = ignore_hidden
         self.enabled = True
+        self._stats: Dict[str, int] = {"events_processed": 0, "files_processed": 0}
 
         self._observer: Optional[Observer] = None
         self._handler: Optional[FileEventHandler] = None
@@ -191,6 +211,78 @@ class FolderWatcher:
         # Validate path
         if not os.path.isdir(self.path):
             raise ValueError(f"Path is not a directory: {self.path}")
+
+    @property
+    def folder_path(self) -> str:
+        """Alias for path."""
+        return self.path
+
+    @property
+    def running(self) -> bool:
+        """Check if watcher is running."""
+        return self.is_running()
+
+    def should_process(self, filename: str) -> bool:
+        """Check if a file should be processed based on filters."""
+        import fnmatch as fnmatch_mod
+        name = os.path.basename(filename)
+
+        if self.ignore_hidden and name.startswith('.'):
+            return False
+
+        if self.include_extensions:
+            ext = os.path.splitext(name)[1]
+            normalized = [e if e.startswith('.') else f'.{e}' for e in self.include_extensions]
+            if ext not in normalized:
+                return False
+
+        if self.exclude_extensions:
+            ext = os.path.splitext(name)[1]
+            normalized = [e if e.startswith('.') else f'.{e}' for e in self.exclude_extensions]
+            if ext in normalized:
+                return False
+
+        if self.ignore_patterns:
+            for pattern in self.ignore_patterns:
+                if fnmatch_mod.fnmatch(name, pattern):
+                    return False
+
+        return True
+
+    def to_dict(self) -> Dict:
+        """Serialize watcher configuration."""
+        return {
+            "folder_path": self.path,
+            "recursive": self.recursive,
+            "ignore_patterns": self.ignore_patterns or [],
+            "enabled": self.enabled,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict, callback=None) -> "FolderWatcher":
+        """Create a FolderWatcher from a dictionary."""
+        return cls(
+            path=data.get("folder_path") or data.get("path"),
+            callback=callback,
+            recursive=data.get("recursive", True),
+            ignore_patterns=data.get("ignore_patterns"),
+        )
+
+    def get_stats(self) -> Dict[str, int]:
+        """Get watcher statistics."""
+        return self._stats.copy()
+
+    def _increment_stats(self, key: str) -> None:
+        """Increment a stats counter."""
+        if key in self._stats:
+            self._stats[key] += 1
+
+    def _safe_callback(self, *args) -> None:
+        """Call callback with error handling."""
+        try:
+            self.callback(*args)
+        except Exception as e:
+            logger.error("Callback error: %s", e)
 
     def start(self) -> None:
         """Start watching the folder."""
@@ -250,6 +342,11 @@ class WatcherManager:
         self._watchers: Dict[str, FolderWatcher] = {}
         self._running = False
         self._lock = threading.RLock()
+
+    @property
+    def watchers(self) -> Dict[str, FolderWatcher]:
+        """Access watchers dict."""
+        return self._watchers
 
     def add_watch(
         self,
@@ -322,6 +419,54 @@ class WatcherManager:
         """Get list of all watched folders."""
         with self._lock:
             return list(self._watchers.keys())
+
+    def add_watcher(
+        self,
+        folder_path: str = None,
+        callback=None,
+        recursive: bool = True,
+        ignore_patterns=None,
+        path: str = None,
+    ) -> FolderWatcher:
+        """Add a folder watcher and return it."""
+        actual_path = folder_path or path or ""
+        watcher = FolderWatcher(
+            path=actual_path,
+            callback=callback,
+            recursive=recursive,
+            ignore_patterns=ignore_patterns,
+        )
+        with self._lock:
+            self._watchers[watcher.path] = watcher
+            if self._running:
+                watcher.start()
+        return watcher
+
+    def remove_watcher(self, path: str) -> bool:
+        """Remove a watcher by path."""
+        expanded = os.path.expanduser(path)
+        with self._lock:
+            if expanded in self._watchers:
+                self._watchers.pop(expanded).stop()
+                return True
+        return False
+
+    def get_watcher(self, path: str) -> Optional[FolderWatcher]:
+        """Get a watcher by path."""
+        expanded = os.path.expanduser(path)
+        return self._watchers.get(expanded)
+
+    def start_all(self) -> None:
+        """Start all watchers."""
+        self.start()
+
+    def stop_all(self) -> None:
+        """Stop all watchers."""
+        self.stop()
+
+    def list_watched_folders(self) -> List[str]:
+        """List all watched folder paths."""
+        return self.get_watched_folders()
 
     def start(self) -> None:
         """Start all watchers."""

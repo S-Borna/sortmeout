@@ -1,0 +1,14 @@
+{
+    "name": "sortmeout-api",
+    "version": "1.0.0",
+    "private": true,
+    "description": "SortMeOut Stripe webhook handler and license API",
+    "scripts": {
+        "dev": "wrangler dev",
+        "deploy": "wrangler deploy",
+        "tail": "wrangler tail"
+    },
+    "devDependencies": {
+        "wrangler": "^3.0.0"
+    }
+}

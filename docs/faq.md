@@ -8,11 +8,11 @@ Common questions and answers about SortMeOut.
 
 ### What is SortMeOut?
 
-SortMeOut is an open-source file automation tool for macOS. It watches folders you specify and automatically organizes, renames, moves, or processes files based on rules you create. It's similar to Noodlesoft Hazel but free and open-source.
+SortMeOut is an intelligent file automation tool for macOS. It watches folders you specify and automatically organizes, renames, moves, or processes files based on rules you create. It includes an AI-powered assistant to help you organize files conversationally.
 
 ### Is SortMeOut free?
 
-Yes! SortMeOut is completely free and open-source under the MIT License. You can use it, modify it, and distribute it freely.
+SortMeOut offers a **7-day free trial** with full access to all features. After the trial, a **Pro subscription ($9.99/month)** unlocks unlimited AI assistance (30 requests/day), priority support, and continued access to all features.
 
 ### What macOS versions are supported?
 
@@ -37,7 +37,7 @@ pip install sortmeout
 Or install from source:
 
 ```bash
-git clone https://github.com/yourusername/sortmeout.git
+git clone https://github.com/S-Borna/sortmeout.git
 cd sortmeout
 pip install -e .
 ```
@@ -362,25 +362,15 @@ Grant Full Disk Access:
 
 ---
 
-## Contributing
-
-### How can I contribute?
-
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines:
-
-- Report bugs
-- Suggest features
-- Submit pull requests
-- Improve documentation
-- Help with translations
+## Feedback & Bug Reports
 
 ### Where do I report bugs?
 
-Open an issue on GitHub: <https://github.com/yourusername/sortmeout/issues>
+Open an issue on GitHub: <https://github.com/S-Borna/sortmeout/issues>
 
 ### How do I request a feature?
 
-Open a feature request on GitHub Discussions or create an issue with the "enhancement" label.
+Open a feature request on GitHub or create an issue with the "enhancement" label.
 
 ---
 
@@ -400,7 +390,7 @@ Open a feature request on GitHub Discussions or create an issue with the "enhanc
 
 ### Is there a community?
 
-Yes! Join discussions on GitHub to connect with other users and contributors.
+Join discussions on GitHub to connect with other users and share tips.
 
 ---
 

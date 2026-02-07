@@ -1,8 +1,8 @@
 # SortMeOut User Manual
 
-**Version 1.0.0**
+**Version 1.0.1**
 
-A powerful, open-source file automation tool for macOS.
+Intelligent file automation for macOS.
 
 ---
 
@@ -25,7 +25,7 @@ A powerful, open-source file automation tool for macOS.
 
 ## Introduction
 
-SortMeOut is an open-source file automation tool designed to help you automatically organize, rename, move, and manage files on your Mac. Inspired by Noodlesoft Hazel, SortMeOut monitors folders you specify and automatically applies rules to incoming files.
+SortMeOut is an intelligent file automation tool designed to help you automatically organize, rename, move, and manage files on your Mac. With its AI-powered assistant and flexible rule system, SortMeOut monitors folders you specify and automatically applies rules to incoming files.
 
 ### Key Features
 
@@ -57,7 +57,7 @@ pip install sortmeout
 ### Install from source
 
 ```bash
-git clone https://github.com/yourusername/sortmeout.git
+git clone https://github.com/S-Borna/sortmeout.git
 cd sortmeout
 pip install -e .
 ```
@@ -667,10 +667,10 @@ sortmeout rule add --help
 
 ## Support
 
-- **Documentation**: <https://sortmeout.readthedocs.io>
-- **Issues**: <https://github.com/yourusername/sortmeout/issues>
-- **Discussions**: <https://github.com/yourusername/sortmeout/discussions>
+- **Documentation**: <https://sortmeout.saidborna.com/docs>
+- **Issues**: <https://github.com/S-Borna/sortmeout/issues>
+- **Support**: <said@saidborna.com>
 
 ---
 
-*SortMeOut is open-source software licensed under the MIT License.*
+*SortMeOut is proprietary software. © 2026 Said Borna. All rights reserved.*

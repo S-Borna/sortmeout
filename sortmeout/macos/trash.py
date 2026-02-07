@@ -18,6 +18,11 @@ from sortmeout.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
+def _escape_applescript(s: str) -> str:
+    """Escape a string for safe use inside AppleScript double-quoted strings."""
+    return s.replace('\\', '\\\\').replace('"', '\\"')
+
+
 @dataclass
 class TrashItem:
     """Information about an item in the Trash."""
@@ -424,10 +429,11 @@ def clean_app_support_files(app_name: str, to_trash: bool = True) -> List[str]:
     for file_path in files:
         try:
             if to_trash:
-                # Move to trash using Finder
+                # Move to trash using Finder (with safe escaping)
+                safe_path = _escape_applescript(file_path)
                 script = f'''
                     tell application "Finder"
-                        delete POSIX file "{file_path}"
+                        delete POSIX file "{safe_path}"
                     end tell
                 '''
                 subprocess.run(["osascript", "-e", script], capture_output=True, timeout=10)

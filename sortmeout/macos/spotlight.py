@@ -16,6 +16,14 @@ from sortmeout.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
+def _sanitize_spotlight_value(value: str) -> str:
+    """Sanitize a value for use in Spotlight query strings.
+
+    Escapes double-quotes and backslashes to prevent query injection.
+    """
+    return value.replace('\\', '\\\\').replace('"', '\\"').replace("'", "\\'")
+
+
 def get_metadata(file_path: str) -> Dict[str, Any]:
     """
     Get all Spotlight metadata for a file.
@@ -151,7 +159,7 @@ def find_by_kind(kind: str, folder: Optional[str] = None, limit: int = 100) -> L
     Returns:
         List of file paths.
     """
-    query = f'kMDItemKind == "{kind}"'
+    query = f'kMDItemKind == "{_sanitize_spotlight_value(kind)}"'
     results = search_spotlight(query, folder, limit)
     return [r["path"] for r in results]
 
@@ -169,7 +177,7 @@ def find_by_extension(extension: str, folder: Optional[str] = None, limit: int =
         List of file paths.
     """
     extension = extension.lstrip(".")
-    query = f'kMDItemFSName == "*.{extension}"'
+    query = f'kMDItemFSName == "*.{_sanitize_spotlight_value(extension)}"'
     results = search_spotlight(query, folder, limit)
     return [r["path"] for r in results]
 
@@ -186,7 +194,7 @@ def find_by_tag(tag: str, folder: Optional[str] = None, limit: int = 100) -> Lis
     Returns:
         List of file paths.
     """
-    query = f'kMDItemUserTags == "{tag}"'
+    query = f'kMDItemUserTags == "{_sanitize_spotlight_value(tag)}"'
     results = search_spotlight(query, folder, limit)
     return [r["path"] for r in results]
 
@@ -203,7 +211,7 @@ def find_by_content(text: str, folder: Optional[str] = None, limit: int = 100) -
     Returns:
         List of file paths.
     """
-    query = f'kMDItemTextContent == "{text}"c'  # c for case-insensitive
+    query = f'kMDItemTextContent == "{_sanitize_spotlight_value(text)}"c'  # c for case-insensitive
     results = search_spotlight(query, folder, limit)
     return [r["path"] for r in results]
 
@@ -256,7 +264,7 @@ def find_by_author(author: str, folder: Optional[str] = None, limit: int = 100) 
     Returns:
         List of file paths.
     """
-    query = f'kMDItemAuthors == "{author}"c'
+    query = f'kMDItemAuthors == "{_sanitize_spotlight_value(author)}"c'
     results = search_spotlight(query, folder, limit)
     return [r["path"] for r in results]
 

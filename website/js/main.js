@@ -441,12 +441,52 @@
     ║   🗂️  SortMeOut - File Automation          ║
     ║                                           ║
     ║   Proprietary • macOS Only               ║
-    ║   sortmeout.saidborna.com          ║
+    ║   sortmeout.saidborna.com                ║
     ║                                           ║
-    ║   Interested in contributing?             ║
-    ║   We'd love your help! 💜                 ║
+    ║   © 2026 Said Borna. All rights reserved. ║
     ║                                           ║
     ╚═══════════════════════════════════════════╝
     `);
 
 })();
+
+
+// ==========================================
+// Stripe Checkout (outside IIFE — global)
+// ==========================================
+
+const SORTMEOUT_API = 'https://api.sortmeout.saidborna.com';
+
+async function startCheckout() {
+    const btn = document.querySelector('.pricing-card-featured .pricing-cta');
+    const originalText = btn ? btn.textContent : '';
+
+    try {
+        if (btn) {
+            btn.textContent = 'Loading...';
+            btn.disabled = true;
+        }
+
+        const response = await fetch(`${SORTMEOUT_API}/api/checkout`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}),
+        });
+
+        const data = await response.json();
+
+        if (data.url) {
+            window.location.href = data.url;
+        } else {
+            alert('Could not start checkout. Please try again.');
+        }
+    } catch (error) {
+        console.error('Checkout error:', error);
+        alert('Could not connect to payment server. Please try again later.');
+    } finally {
+        if (btn) {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    }
+}

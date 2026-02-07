@@ -5,7 +5,7 @@ Tests for the Rule class.
 import pytest
 from datetime import datetime
 
-from sortmeout.core.rule import Rule, MatchMode
+from sortmeout.core.rule import Rule, RuleMatchMode as MatchMode
 from sortmeout.core.condition import Condition, ConditionGroup
 from sortmeout.core.action import Action, ActionType
 
@@ -200,7 +200,7 @@ class TestRuleMatching:
 
     def test_matches_with_condition_group(self):
         group = ConditionGroup(
-            match_mode="any",
+            mode="any",
             conditions=[
                 Condition("extension", "equals", "txt"),
                 Condition("extension", "equals", "md"),

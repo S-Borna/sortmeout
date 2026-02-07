@@ -202,6 +202,11 @@ def get_all_tags() -> List[str]:
     return ["Red", "Orange", "Yellow", "Green", "Blue", "Purple", "Gray"]
 
 
+def _escape_applescript(s: str) -> str:
+    """Escape a string for safe use inside AppleScript double-quotes."""
+    return s.replace("\\", "\\\\").replace('"', '\\"')
+
+
 def set_finder_comment(file_path: str, comment: str) -> bool:
     """
     Set Finder comment for a file.
@@ -214,13 +219,13 @@ def set_finder_comment(file_path: str, comment: str) -> bool:
         True if successful.
     """
     try:
-        # Escape special characters
-        comment = comment.replace('"', '\\"')
+        safe_path = _escape_applescript(file_path)
+        safe_comment = _escape_applescript(comment)
 
         script = f'''
             tell application "Finder"
-                set theFile to POSIX file "{file_path}" as alias
-                set comment of theFile to "{comment}"
+                set theFile to POSIX file "{safe_path}" as alias
+                set comment of theFile to "{safe_comment}"
             end tell
         '''
 
@@ -248,9 +253,11 @@ def get_finder_comment(file_path: str) -> Optional[str]:
         Comment string or None.
     """
     try:
+        safe_path = _escape_applescript(file_path)
+
         script = f'''
             tell application "Finder"
-                set theFile to POSIX file "{file_path}" as alias
+                set theFile to POSIX file "{safe_path}" as alias
                 get comment of theFile
             end tell
         '''
@@ -288,9 +295,11 @@ def set_label_color(file_path: str, color: str | int) -> bool:
         color_index = color
 
     try:
+        safe_path = _escape_applescript(file_path)
+
         script = f'''
             tell application "Finder"
-                set theFile to POSIX file "{file_path}" as alias
+                set theFile to POSIX file "{safe_path}" as alias
                 set label index of theFile to {color_index}
             end tell
         '''

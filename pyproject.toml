@@ -20,7 +20,7 @@ keywords = [
     "workflow"
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: MacOS X",
     "Intended Audience :: End Users/Desktop",
     "License :: Other/Proprietary License",
@@ -66,6 +66,9 @@ dev = [
 gui = [
     "rumps>=0.4.0",
     "pyobjc-framework-Cocoa>=9.0",
+]
+ai = [
+    "anthropic>=0.39.0",
 ]
 
 [project.scripts]

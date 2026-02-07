@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <title>SortMeOut — Pro License Activated</title>
+    <style>
+        .success-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .success-card {
+            background: var(--bg-secondary, #1a1a2e);
+            border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+            border-radius: 1.5rem;
+            padding: 3rem;
+            max-width: 560px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .success-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .success-subtitle {
+            color: var(--text-secondary, #a1a1aa);
+            margin-bottom: 2rem;
+        }
+
+        .license-key-box {
+            background: var(--bg-primary, #0f0f23);
+            border: 2px solid var(--accent-primary, #6366f1);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .license-key-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent-primary, #6366f1);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .license-key-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            word-break: break-all;
+            user-select: all;
+            cursor: pointer;
+            color: var(--text-primary, #fff);
+        }
+
+        .copy-btn-success {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            background: var(--accent-primary, #6366f1);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: transform 0.15s, opacity 0.15s;
+        }
+
+        .copy-btn-success:hover {
+            transform: scale(1.05);
+        }
+
+        .copy-btn-success:active {
+            transform: scale(0.95);
+        }
+
+        .instructions {
+            text-align: left;
+            background: var(--bg-primary, #0f0f23);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .instructions h3 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .instructions ol {
+            margin: 0;
+            padding-left: 1.25rem;
+        }
+
+        .instructions li {
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary, #a1a1aa);
+            line-height: 1.5;
+        }
+
+        .instructions code {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(99, 102, 241, 0.15);
+            padding: 0.15rem 0.4rem;
+            border-radius: 0.25rem;
+            font-size: 0.85rem;
+            color: var(--accent-primary, #6366f1);
+        }
+
+        .email-note {
+            font-size: 0.85rem;
+            color: var(--text-secondary, #a1a1aa);
+            margin-top: 1rem;
+        }
+
+        .loading-state {
+            padding: 3rem;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(99, 102, 241, 0.2);
+            border-top-color: var(--accent-primary, #6366f1);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-state {
+            color: #ef4444;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <header class="header" role="banner">
+        <nav class="nav container" role="navigation">
+            <a href="/" class="logo" aria-label="SortMeOut Home">
+                <svg class="logo-icon" width="40" height="40" viewBox="0 0 40 40" fill="none"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <rect width="40" height="40" rx="10" fill="url(#logo-gradient-s)" />
+                    <path d="M12 14h16M12 20h12M12 26h8" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+                    <circle cx="28" cy="26" r="4" fill="white" />
+                    <defs>
+                        <linearGradient id="logo-gradient-s" x1="0" y1="0" x2="40" y2="40"
+                            gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#6366F1" />
+                            <stop offset="1" stop-color="#8B5CF6" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span class="logo-text">SortMeOut</span>
+            </a>
+        </nav>
+    </header>
+
+    <main class="success-page">
+        <div class="success-card" id="success-card">
+            <!-- Loading state -->
+            <div class="loading-state" id="loading-state">
+                <div class="spinner"></div>
+                <p>Retrieving your license key...</p>
+            </div>
+
+            <!-- Success state (hidden initially) -->
+            <div id="success-state" style="display: none;">
+                <div class="success-icon">🎉</div>
+                <h1 class="success-title">Welcome to Pro!</h1>
+                <p class="success-subtitle">Your SortMeOut Pro license is ready.</p>
+
+                <div class="license-key-box">
+                    <div class="license-key-label">Your License Key</div>
+                    <div class="license-key-value" id="license-key" title="Click to select">Loading...</div>
+                    <button class="copy-btn-success" id="copy-btn" onclick="copyKey()">Copy</button>
+                </div>
+
+                <div class="instructions">
+                    <h3>How to activate:</h3>
+                    <ol>
+                        <li>Open SortMeOut on your Mac</li>
+                        <li>Click the menu bar icon → <strong>Enter Pro License...</strong></li>
+                        <li>Paste your license key and click <strong>Activate</strong></li>
+                    </ol>
+                    <p style="margin-top: 0.75rem; margin-bottom: 0; font-size: 0.85rem; color: #71717a;">
+                        Or via terminal: <code>sortmeout license activate YOUR-KEY</code>
+                    </p>
+                </div>
+
+                <p class="email-note">
+                    This key has also been saved to your account. You can always retrieve it by visiting this page
+                    again.
+                </p>
+
+                <a href="/" class="btn btn-primary" style="margin-top: 1rem;">Back to SortMeOut</a>
+            </div>
+
+            <!-- Error state (hidden initially) -->
+            <div id="error-state" style="display: none;">
+                <div class="success-icon">⚠️</div>
+                <h1 class="success-title">Something went wrong</h1>
+                <p class="error-state" id="error-message">Could not retrieve your license key.</p>
+                <p class="success-subtitle">
+                    Don't worry — your payment was processed. Please contact
+                    <a href="mailto:said@saidborna.com">said@saidborna.com</a>
+                    and we'll send your key manually.
+                </p>
+                <a href="/" class="btn btn-secondary" style="margin-top: 1rem;">Back to SortMeOut</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API = 'https://api.sortmeout.saidborna.com';
+
+        async function loadLicenseKey() {
+            const params = new URLSearchParams(window.location.search);
+            const sessionId = params.get('session_id');
+
+            if (!sessionId) {
+                showError('No checkout session found. Please complete checkout first.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API}/api/checkout/success?session_id=${encodeURIComponent(sessionId)}`);
+                const data = await response.json();
+
+                if (data.license_key) {
+                    document.getElementById('license-key').textContent = data.license_key;
+                    document.getElementById('loading-state').style.display = 'none';
+                    document.getElementById('success-state').style.display = 'block';
+                } else {
+                    // Webhook might be delayed — retry in 3 seconds
+                    setTimeout(async () => {
+                        try {
+                            const retry = await fetch(`${API}/api/checkout/success?session_id=${encodeURIComponent(sessionId)}`);
+                            const retryData = await retry.json();
+
+                            if (retryData.license_key) {
+                                document.getElementById('license-key').textContent = retryData.license_key;
+                                document.getElementById('loading-state').style.display = 'none';
+                                document.getElementById('success-state').style.display = 'block';
+                            } else {
+                                showError('License key is being generated. Please check your email in a few minutes.');
+                            }
+                        } catch {
+                            showError('Could not retrieve license key. Please check your email.');
+                        }
+                    }, 3000);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Could not connect to license server.');
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-state').style.display = 'block';
+        }
+
+        async function copyKey() {
+            const key = document.getElementById('license-key').textContent;
+            const btn = document.getElementById('copy-btn');
+
+            try {
+                await navigator.clipboard.writeText(key);
+                btn.textContent = 'Copied!';
+                setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+            } catch {
+                // Fallback
+                const range = document.createRange();
+                range.selectNode(document.getElementById('license-key'));
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+                btn.textContent = 'Selected!';
+                setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+            }
+        }
+
+        // Load on page ready
+        loadLicenseKey();
+    </script>
+</body>
+
+</html>

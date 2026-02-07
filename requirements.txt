@@ -14,3 +14,6 @@ humanize>=4.0.0
 
 # GUI dependencies
 rumps>=0.4.0
+
+# AI dependencies (optional but required for AI Assistant)
+anthropic>=0.39.0

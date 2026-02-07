@@ -19,6 +19,9 @@ from sortmeout.core.license import (
     LicenseState,
 )
 
+# Core engine integration - all AI actions go through HistoryManager
+from sortmeout.core.history import get_history
+
 # Model selection - Haiku for all users, Sonnet only for Creator
 MODEL_HAIKU = "claude-3-5-haiku-20241022"  # All users
 MODEL_SONNET = "claude-sonnet-4-5-20250929"  # Creator only
@@ -57,7 +60,7 @@ class FileAssistant:
         self.client = anthropic.Anthropic(api_key=self.api_key)
         self.folder_structure = {}
         self.file_history = []
-        self.conversation_history = []  # Spara konversationshistorik
+        self.conversation_history = []  # Store conversation history
         self.config_path = os.path.expanduser("~/.config/sortmeout")
 
         # Load knowledge
@@ -113,7 +116,7 @@ class FileAssistant:
                     if current_depth < max_depth - 1:
                         result[item] = self._scan_directory(item_path, max_depth, current_depth + 1)
                 else:
-                    # Lägg till filer också (max 50 per mapp för att inte överbelasta)
+                    # Include files too (max 50 per folder to avoid overload)
                     if len(result["_files"]) < 50:
                         result["_files"].append(item)
         except PermissionError:
@@ -155,17 +158,30 @@ class FileAssistant:
                 self.file_history = []
 
     def _save_history(self, entry: Dict):
-        """Save a history entry."""
-        self.file_history.append(entry)
-        # Keep last 100 entries
-        self.file_history = self.file_history[-100:]
+        """Save a history entry to core engine's SQLite database.
 
-        history_file = os.path.join(self.config_path, "history.json")
+        Routes through HistoryManager so AI actions appear in
+        `sortmeout history`, are undoable, and included in statistics.
+        """
+        action_type = entry.get("action", "unknown")
+        source = entry.get("source", entry.get("filename", ""))
+        destination = entry.get("destination", "")
+
         try:
-            with open(history_file, "w") as f:
-                json.dump(self.file_history, f, indent=2)
-        except:
-            pass
+            get_history().record(
+                action_type=action_type,
+                source_path=source,
+                destination_path=destination,
+                success=True,
+                rule_name="AI Assistant",
+                metadata={"via": "ai_chat", "timestamp": entry.get("timestamp", "")},
+            )
+        except Exception:
+            pass  # Don't let history failures break the AI flow
+
+        # Also keep local cache for session context
+        self.file_history.append(entry)
+        self.file_history = self.file_history[-100:]
 
     def analyze_file(self, filepath: str) -> Dict[str, Any]:
         """Analyze a file and extract information."""
@@ -243,39 +259,39 @@ class FileAssistant:
             ]
         )
 
-        prompt = f"""Du är en intelligent filassistent för macOS. Användaren har en ny fil och behöver hjälp att organisera den.
+        prompt = f"""You are an intelligent file assistant for macOS. The user has a new file and needs help organizing it.
 
-FILINFORMATION:
-- Namn: {file_info['name']}
-- Typ: {file_info['extension']} ({file_info['mime_type']})
-- Storlek: {file_info['size_human']}
-- Plats nu: {file_info['parent']}
+FILE INFORMATION:
+- Name: {file_info['name']}
+- Type: {file_info['extension']} ({file_info['mime_type']})
+- Size: {file_info['size_human']}
+- Current location: {file_info['parent']}
 
-{f"FILINNEHÅLL (förhandsvisning):{chr(10)}{file_info['content_preview'][:500]}" if file_info.get('content_preview') else ""}
+{f"FILE CONTENT (preview):{chr(10)}{file_info['content_preview'][:500]}" if file_info.get('content_preview') else ""}
 
-ANVÄNDARENS MAPPSTRUKTUR:
+USER'S FOLDER STRUCTURE:
 {folder_context}
 
-TIDIGARE ORGANISERING (för kontext):
-{history_context if history_context else "Ingen historik än"}
+PREVIOUS ORGANIZATION (for context):
+{history_context if history_context else "No history yet"}
 
-{f"ANVÄNDARENS KOMMENTAR: {user_context}" if user_context else ""}
+{f"USER'S COMMENT: {user_context}" if user_context else ""}
 
-UPPGIFT:
-1. Analysera filen baserat på namn, typ och innehåll
-2. Föreslå 3-4 lämpliga platser baserat på användarens mappstruktur
-3. Ge en rekommendation och förklara varför
+TASK:
+1. Analyze the file based on name, type, and content
+2. Suggest 3-4 suitable locations based on the user's folder structure
+3. Give a recommendation and explain why
 
-Svara på SVENSKA i detta JSON-format:
+Respond in English in this JSON format:
 {{
-  "analysis": "Kort analys av vad filen verkar vara",
+  "analysis": "Brief analysis of what the file appears to be",
   "suggestions": [
-    {{"path": "~/Documents/...", "reason": "Varför denna plats passar", "confidence": 0.9}},
+    {{"path": "~/Documents/...", "reason": "Why this location is suitable", "confidence": 0.9}},
     {{"path": "~/...", "reason": "...", "confidence": 0.7}}
   ],
   "recommended": 0,
-  "additional_actions": ["Byt namn till...", "Skapa undermapp...", etc],
-  "question": "Eventuell följdfråga till användaren"
+  "additional_actions": ["Rename to...", "Create subfolder...", etc],
+  "question": "Optional follow-up question for the user"
 }}"""
 
         try:
@@ -336,6 +352,13 @@ Svara på SVENSKA i detta JSON-format:
 
                 shutil.move(str(path), str(final_dest))
                 result = {"success": True, "action": "move", "destination": str(final_dest)}
+                get_history().record(
+                    action_type="move",
+                    source_path=str(path),
+                    destination_path=str(final_dest),
+                    rule_name="AI Assistant",
+                    metadata={"via": "ai_execute_action"},
+                )
 
             elif action == "copy":
                 if not destination:
@@ -347,6 +370,13 @@ Svara på SVENSKA i detta JSON-format:
                 final_dest = dest_path / path.name
                 shutil.copy2(str(path), str(final_dest))
                 result = {"success": True, "action": "copy", "destination": str(final_dest)}
+                get_history().record(
+                    action_type="copy",
+                    source_path=str(path),
+                    destination_path=str(final_dest),
+                    rule_name="AI Assistant",
+                    metadata={"via": "ai_execute_action"},
+                )
 
             elif action == "rename":
                 new_name = kwargs.get("new_name")
@@ -356,6 +386,13 @@ Svara på SVENSKA i detta JSON-format:
                 new_path = path.parent / new_name
                 path.rename(new_path)
                 result = {"success": True, "action": "rename", "new_path": str(new_path)}
+                get_history().record(
+                    action_type="rename",
+                    source_path=str(path),
+                    destination_path=str(new_path),
+                    rule_name="AI Assistant",
+                    metadata={"via": "ai_execute_action"},
+                )
 
             elif action == "trash":
                 import subprocess
@@ -369,6 +406,12 @@ Svara på SVENSKA i detta JSON-format:
                     check=True,
                 )
                 result = {"success": True, "action": "trash"}
+                get_history().record(
+                    action_type="trash",
+                    source_path=str(path),
+                    rule_name="AI Assistant",
+                    metadata={"via": "ai_execute_action"},
+                )
 
             elif action == "open":
                 import subprocess
@@ -376,12 +419,13 @@ Svara på SVENSKA i detta JSON-format:
                 subprocess.run(["open", filepath])
                 result = {"success": True, "action": "open"}
 
-            # Save to history
+            # Save to history (already recorded via get_history().record() above)
             if result.get("success"):
                 self._save_history(
                     {
                         "filename": path.name,
                         "action": action,
+                        "source": str(path),
                         "destination": destination,
                         "timestamp": datetime.now().isoformat(),
                     }
@@ -400,7 +444,7 @@ Svara på SVENSKA i detta JSON-format:
         if not allowed:
             return blocked_message
 
-        # FÖRST: Kolla om användaren bekräftar väntande kommandon
+        # Check if user is confirming pending commands
         if (
             self._user_has_confirmed(message)
             and hasattr(self, "pending_commands")
@@ -409,101 +453,101 @@ Svara på SVENSKA i detta JSON-format:
             num_commands = len(self.pending_commands)
             result = self._execute_pending_commands()
             self.pending_commands = []
-            return f"🚀 **Utför {num_commands} åtgärder...**{result}"
+            return f"🚀 **Executing {num_commands} action(s)...**{result}"
 
         files_context = ""
         if files:
             for f in files:
                 info = self.analyze_file(f)
-                files_context += f"\nFil: {info.get('name', f)}\n"
-                files_context += f"  Typ: {info.get('extension', 'okänd')}\n"
-                files_context += f"  Storlek: {info.get('size_human', 'okänd')}\n"
+                files_context += f"\nFile: {info.get('name', f)}\n"
+                files_context += f"  Type: {info.get('extension', 'unknown')}\n"
+                files_context += f"  Size: {info.get('size_human', 'unknown')}\n"
 
         folder_context = json.dumps(self.folder_structure, indent=2)
         home_dir = os.path.expanduser("~")
 
-        # Hämta detaljerad lista över Downloads-filer
+        # Get detailed list of Downloads files
         downloads_files = self.list_files_in_folder("~/Downloads")
         downloads_list = ""
         if downloads_files:
-            downloads_list = "\n\nFILER I DOWNLOADS:\n"
+            downloads_list = "\n\nFILES IN DOWNLOADS:\n"
             for f in downloads_files:
                 ftype = "📁" if f["is_dir"] else "📄"
                 downloads_list += f"  {ftype} {f['name']}\n"
         else:
-            downloads_list = "\n\nDOWNLOADS: (tom)\n"
+            downloads_list = "\n\nDOWNLOADS: (empty)\n"
 
-        system_prompt = f"""Du är SortMeOut Assistant, en vänlig och intelligent filassistent för macOS.
+        system_prompt = f"""You are SortMeOut Assistant, a friendly and intelligent file assistant for macOS.
 
-PERSONLIGHET:
-- Var varm, hjälpsam och kommunikativ
-- Förklara ditt resonemang - varför du föreslår något
-- Ställ följdfrågor för att förstå användarens behov bättre
-- Var försiktig med användarens filer - de är viktiga!
+PERSONALITY:
+- Be warm, helpful, and communicative
+- Explain your reasoning — why you suggest something
+- Ask follow-up questions to better understand the user's needs
+- Be careful with the user's files — they are important!
 
-KRITISK REGEL - LÄS NOGA:
-Du får ALDRIG inkludera [EXECUTE:...] kommandon i ett svar där du också ställer en fråga!
-- Om du presenterar en plan och frågar "Vill du att jag utför detta?" = INGA EXECUTE-kommandon
-- ENDAST när användaren REDAN har svarat "ja", "kör", "gör det" = då får du använda EXECUTE
+CRITICAL RULE — READ CAREFULLY:
+You must NEVER include [EXECUTE:...] commands in a response where you also ask a question!
+- If you present a plan and ask "Would you like me to do this?" = NO EXECUTE commands
+- ONLY when the user has ALREADY replied "yes", "go ahead", "do it" = then you may use EXECUTE
 
-ARBETSFLÖDE (följ exakt):
-STEG 1 - Första svaret:
-- Presentera en detaljerad plan
-- Lista varje fil med exakt namn och vart den ska
-- Avsluta med: "Vill du att jag genomför detta? (ja/nej)"
-- INGA [EXECUTE:] KOMMANDON I DETTA SVAR!
+WORKFLOW (follow exactly):
+STEP 1 - First response:
+- Present a detailed plan
+- List each file with its exact name and where it should go
+- End with: "Would you like me to proceed? (yes/no)"
+- NO [EXECUTE:] COMMANDS IN THIS RESPONSE!
 
-STEG 2 - Efter användaren sagt ja:
-- Nu och ENDAST nu får du använda [EXECUTE:] kommandon
-- Utför alla åtgärder
-- Rapportera vad som gjordes
+STEP 2 - After the user says yes:
+- Now and ONLY now may you use [EXECUTE:] commands
+- Execute all actions
+- Report what was done
 
-EXECUTE-KOMMANDON (ENDAST efter bekräftelse):
-[EXECUTE: mkdir "{home_dir}/Desktop/Målmapp"]
-[EXECUTE: move "{home_dir}/Downloads/EXAKT_FILNAMN" "{home_dir}/Desktop/Målmapp"]
-[EXECUTE: copy "källsökväg" "målmapp"]
-[EXECUTE: rename "sökväg" "nytt_namn"]
-[EXECUTE: trash "sökväg"]
+EXECUTE COMMANDS (ONLY after confirmation):
+[EXECUTE: mkdir "{home_dir}/Desktop/TargetFolder"]
+[EXECUTE: move "{home_dir}/Downloads/EXACT_FILENAME" "{home_dir}/Desktop/TargetFolder"]
+[EXECUTE: copy "source_path" "target_folder"]
+[EXECUTE: rename "path" "new_name"]
+[EXECUTE: trash "path"]
 
-VIKTIGA REGLER FÖR EXECUTE:
-- ALDRIG använd wildcard (*) - det fungerar inte
-- Använd ALLTID exakta filnamn från fillistan nedan
-- En EXECUTE per fil
-- Fullständiga sökvägar alltid (börja med {home_dir})
+IMPORTANT RULES FOR EXECUTE:
+- NEVER use wildcards (*) — they don't work
+- ALWAYS use exact filenames from the file list below
+- One EXECUTE per file
+- Always use full paths (starting with {home_dir})
 
-KRITISKT VID EXEKVERING:
-- När användaren bekräftat (ja, kör, utför) - skriv ALLA kommandon i ETT svar
-- Dela ALDRIG upp i flera meddelanden
-- Skriv ALLA mkdir först, sedan ALLA move/copy/etc
-- Du har gott om utrymme (8000 tokens) - använd det!
-- Avbryt ALDRIG mitt i - kör ALLT till slut
+CRITICAL FOR EXECUTION:
+- When the user confirms (yes, go ahead, do it) — write ALL commands in ONE response
+- NEVER split across multiple messages
+- Write ALL mkdir commands first, then ALL move/copy/etc
+- You have plenty of space (8000 tokens) — use it!
+- NEVER break off mid-way — execute EVERYTHING to completion
 
-ANVÄNDARENS HEMKATALOG: {home_dir}
+USER'S HOME DIRECTORY: {home_dir}
 
-ANVÄNDARENS MAPPSTRUKTUR:
+USER'S FOLDER STRUCTURE:
 {folder_context}
 {downloads_list}
 
-{f"FILER SOM DISKUTERAS:{files_context}" if files_context else ""}
+{f"FILES BEING DISCUSSED:{files_context}" if files_context else ""}
 
-VIKTIGT:
-- Referera ALLTID till exakta filnamn från listan ovan
-- Skapa mappar med mkdir INNAN du flyttar till dem
-- Svara ALLTID på svenska
-- Var transparent med vad du planerar göra
-- Vid osäkerhet - fråga användaren!"""
+IMPORTANT:
+- ALWAYS reference exact filenames from the list above
+- Create folders with mkdir BEFORE moving files to them
+- Always respond in English
+- Be transparent about what you plan to do
+- When in doubt — ask the user!"""
 
-        # Lägg till användarens meddelande i historiken
+        # Add the user's message to history
         self.conversation_history.append({"role": "user", "content": message})
 
-        # Begränsa historik till senaste 20 meddelanden
+        # Limit history to last 20 messages
         if len(self.conversation_history) > 20:
             self.conversation_history = self.conversation_history[-20:]
 
         try:
             response = self.client.messages.create(
                 model=get_model(),
-                max_tokens=8000,  # Ökat för att kunna köra alla kommandon i ett svep
+                max_tokens=8000,  # High limit to run all commands in one pass
                 system=system_prompt,
                 messages=self.conversation_history,
             )
@@ -513,90 +557,93 @@ VIKTIGT:
 
             assistant_response = response.content[0].text
 
-            # Spara assistentens svar i historiken
+            # Save assistant's response to history
             self.conversation_history.append({"role": "assistant", "content": assistant_response})
 
-            # SÄKERHETSKONTROLL: Kör INTE kommandon om AI:n frågar om bekräftelse
+            # SAFETY CHECK: Do NOT run commands if the AI is asking for confirmation
             if self._is_asking_for_confirmation(assistant_response):
-                # Spara kommandona för senare, men kör dem inte nu
+                # Store commands for later, but don't run them now
                 self.pending_commands = self._extract_commands(assistant_response)
-                # Ta bort EXECUTE-kommandon från svaret så de inte visas
+                # Remove EXECUTE commands from the response so they aren't displayed
                 clean_response = self._remove_execute_commands(assistant_response)
                 if self.pending_commands:
                     clean_response += (
-                        f"\n\n*({len(self.pending_commands)} åtgärder väntar på bekräftelse)*"
+                        f"\n\n*({len(self.pending_commands)} action(s) awaiting confirmation)*"
                     )
                 return clean_response
 
-            # Utför eventuella kommandon i svaret (om ingen fråga ställs)
+            # Execute any commands in the response (if no question is asked)
             executed_response = self._execute_commands_in_response(assistant_response)
 
             return executed_response
 
         except Exception as e:
-            return f"Fel vid kommunikation med AI: {str(e)}"
+            return f"Error communicating with AI: {str(e)}"
 
     def _is_asking_for_confirmation(self, response: str) -> bool:
-        """Detekterar om AI:n frågar användaren om bekräftelse."""
+        """Detect if the AI is asking the user for confirmation."""
         confirmation_phrases = [
-            "vill du att jag",
-            "vill du att jag genomför",
-            "(ja/nej)",
-            "ja eller nej",
-            "bekräfta",
-            "ska jag utföra",
-            "ska jag genomföra",
-            "godkänner du",
-            "vill du fortsätta",
+            "would you like me to",
+            "shall i proceed",
+            "(yes/no)",
+            "yes or no",
+            "confirm",
+            "should i execute",
+            "should i go ahead",
+            "do you approve",
+            "would you like to proceed",
+            "want me to continue",
         ]
         response_lower = response.lower()
         return any(phrase in response_lower for phrase in confirmation_phrases)
 
     def _user_has_confirmed(self, message: str) -> bool:
-        """Kollar om användarens meddelande är en bekräftelse."""
+        """Check if the user's message is a confirmation."""
         confirmations = [
-            "ja",
             "yes",
-            "kör",
-            "gör det",
-            "utför",
-            "ok",
-            "okej",
-            "genomför",
-            "fortsätt",
-            "japp",
-            "jepp",
-            "absolutely",
+            "yeah",
+            "yep",
+            "yup",
             "sure",
+            "ok",
+            "okay",
+            "go ahead",
+            "do it",
+            "proceed",
+            "continue",
+            "absolutely",
+            "go for it",
+            "ja",
+            "kör",
         ]
         message_lower = message.lower().strip()
-        return message_lower in confirmations or message_lower.startswith("ja ")
+        return message_lower in confirmations or message_lower.startswith("yes ")
 
     def _extract_commands(self, response: str) -> list:
-        """Extraherar EXECUTE-kommandon från svaret utan att köra dem."""
+        """Extract EXECUTE commands from the response without running them."""
         import re
 
         pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash)\s+"([^"]+)"(?:\s+"([^"]+)")?\]'
         return re.findall(pattern, response)
 
     def _remove_execute_commands(self, response: str) -> str:
-        """Tar bort EXECUTE-kommandon från AI:ns svar."""
+        """Remove EXECUTE commands from the AI response."""
         import re
 
         pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash)\s+"([^"]+)"(?:\s+"([^"]+)")?\]'
         clean = re.sub(pattern, "", response)
-        # Ta bort extra tomma rader
+        # Remove extra blank lines
         clean = re.sub(r"\n{3,}", "\n\n", clean)
         return clean.strip()
 
     def _execute_pending_commands(self) -> str:
-        """Kör alla väntande kommandon."""
+        """Execute all pending commands."""
         import shutil
         import os
         from pathlib import Path
 
         if not hasattr(self, "pending_commands") or not self.pending_commands:
-            return "\n\n*Inga väntande kommandon att köra.*"
+            return "\n\n*No pending commands to execute.*"
 
         successful = []
         failed = []
@@ -617,8 +664,15 @@ VIKTIGT:
                         dest = Path(path2) / src.name
                         shutil.move(str(src), str(dest))
                         successful.append(f"📦 {src.name}")
+                        get_history().record(
+                            action_type="move",
+                            source_path=str(src),
+                            destination_path=str(dest),
+                            rule_name="AI Assistant",
+                            metadata={"via": "ai_pending_cmd"},
+                        )
                     else:
-                        failed.append(f"❌ {Path(path1).name} (finns ej)")
+                        failed.append(f"❌ {Path(path1).name} (not found)")
                 elif action == "trash":
                     import subprocess
 
@@ -633,8 +687,14 @@ VIKTIGT:
                             capture_output=True,
                         )
                         successful.append(f"🗑️ {Path(path1).name}")
+                        get_history().record(
+                            action_type="trash",
+                            source_path=path1,
+                            rule_name="AI Assistant",
+                            metadata={"via": "ai_pending_cmd"},
+                        )
                     else:
-                        failed.append(f"❌ {Path(path1).name} (finns ej)")
+                        failed.append(f"❌ {Path(path1).name} (not found)")
                 elif action == "copy" and path2:
                     src = Path(path1)
                     if src.exists():
@@ -642,24 +702,38 @@ VIKTIGT:
                         dest = Path(path2) / src.name
                         shutil.copy2(str(src), str(dest))
                         successful.append(f"📋 {src.name}")
+                        get_history().record(
+                            action_type="copy",
+                            source_path=str(src),
+                            destination_path=str(dest),
+                            rule_name="AI Assistant",
+                            metadata={"via": "ai_pending_cmd"},
+                        )
                 elif action == "rename" and path2:
                     src = Path(path1)
                     if src.exists():
                         src.rename(src.parent / path2)
                         successful.append(f"✏️ {src.name} → {path2}")
+                        get_history().record(
+                            action_type="rename",
+                            source_path=str(src),
+                            destination_path=str(src.parent / path2),
+                            rule_name="AI Assistant",
+                            metadata={"via": "ai_pending_cmd"},
+                        )
             except Exception as e:
                 failed.append(f"❌ {Path(path1).name}: {str(e)[:30]}")
 
-        # Kompakt resultatrapport
+        # Compact result report
         result = "\n\n---\n"
         if successful:
-            result += f"✅ **{len(successful)} lyckades**\n"
+            result += f"✅ **{len(successful)} succeeded**\n"
         if failed:
-            result += f"⚠️ **{len(failed)} misslyckades**\n"
-            for f in failed[:5]:  # Visa max 5 fel
+            result += f"⚠️ **{len(failed)} failed**\n"
+            for f in failed[:5]:  # Show max 5 errors
                 result += f"  {f}\n"
 
-        # Uppdatera mappstruktur
+        # Refresh folder structure
         if successful:
             self._load_folder_structure()
 
@@ -670,12 +744,12 @@ VIKTIGT:
         import re
         import shutil
 
-        # Hitta alla EXECUTE-kommandon
+        # Find all EXECUTE commands
         pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash)\s+"([^"]+)"(?:\s+"([^"]+)")?\]'
         matches = re.findall(pattern, response)
 
         if not matches:
-            return response  # Inga kommandon att köra
+            return response  # No commands to run
 
         successful = []
         failed = []
@@ -688,7 +762,7 @@ VIKTIGT:
             try:
                 if action == "mkdir":
                     os.makedirs(path1, exist_ok=True)
-                    successful.append(f"✅ Skapade mapp: {Path(path1).name}")
+                    successful.append(f"✅ Created folder: {Path(path1).name}")
 
                 elif action == "move":
                     if path2:
@@ -697,19 +771,18 @@ VIKTIGT:
                             os.makedirs(path2, exist_ok=True)
                             dest = Path(path2) / src.name
                             shutil.move(str(src), str(dest))
-                            successful.append(f"✅ Flyttade: {src.name} → {Path(path2).name}/")
-                            self._save_history(
-                                {
-                                    "filename": src.name,
-                                    "action": "move",
-                                    "destination": str(dest),
-                                    "timestamp": datetime.now().isoformat(),
-                                }
+                            successful.append(f"✅ Moved: {src.name} → {Path(path2).name}/")
+                            get_history().record(
+                                action_type="move",
+                                source_path=str(src),
+                                destination_path=str(dest),
+                                rule_name="AI Assistant",
+                                metadata={"via": "ai_chat_cmd"},
                             )
                         else:
-                            failed.append(f"❌ Kunde inte flytta - finns ej: {Path(path1).name}")
+                            failed.append(f"❌ Could not move — not found: {Path(path1).name}")
                     else:
-                        failed.append(f"❌ Ingen destination angiven för: {Path(path1).name}")
+                        failed.append(f"❌ No destination specified for: {Path(path1).name}")
 
                 elif action == "copy":
                     if path2:
@@ -721,9 +794,16 @@ VIKTIGT:
                                 shutil.copytree(str(src), str(dest))
                             else:
                                 shutil.copy2(str(src), str(dest))
-                            successful.append(f"✅ Kopierade: {src.name} → {Path(path2).name}/")
+                            successful.append(f"✅ Copied: {src.name} → {Path(path2).name}/")
+                            get_history().record(
+                                action_type="copy",
+                                source_path=str(src),
+                                destination_path=str(dest),
+                                rule_name="AI Assistant",
+                                metadata={"via": "ai_chat_cmd"},
+                            )
                         else:
-                            failed.append(f"❌ Kunde inte kopiera - finns ej: {Path(path1).name}")
+                            failed.append(f"❌ Could not copy — not found: {Path(path1).name}")
 
                 elif action == "rename":
                     if path2:
@@ -731,9 +811,16 @@ VIKTIGT:
                         if src.exists():
                             new_path = src.parent / path2
                             src.rename(new_path)
-                            successful.append(f"✅ Döpte om: {src.name} → {path2}")
+                            successful.append(f"✅ Renamed: {src.name} → {path2}")
+                            get_history().record(
+                                action_type="rename",
+                                source_path=str(src),
+                                destination_path=str(new_path),
+                                rule_name="AI Assistant",
+                                metadata={"via": "ai_chat_cmd"},
+                            )
                         else:
-                            failed.append(f"❌ Kunde inte döpa om - finns ej: {Path(path1).name}")
+                            failed.append(f"❌ Could not rename — not found: {Path(path1).name}")
 
                 elif action == "trash":
                     import subprocess
@@ -748,43 +835,49 @@ VIKTIGT:
                             check=True,
                             capture_output=True,
                         )
-                        successful.append(f"✅ Slängde i papperskorg: {Path(path1).name}")
+                        successful.append(f"✅ Moved to Trash: {Path(path1).name}")
+                        get_history().record(
+                            action_type="trash",
+                            source_path=path1,
+                            rule_name="AI Assistant",
+                            metadata={"via": "ai_chat_cmd"},
+                        )
                     else:
-                        failed.append(f"❌ Kunde inte slänga - finns ej: {Path(path1).name}")
+                        failed.append(f"❌ Could not trash — not found: {Path(path1).name}")
 
             except Exception as e:
-                failed.append(f"❌ Fel vid {action} på {Path(path1).name}: {str(e)}")
+                failed.append(f"❌ Error during {action} on {Path(path1).name}: {str(e)}")
 
-        # Ta bort EXECUTE-kommandon från AI:ns svar
+        # Remove EXECUTE commands from the AI response
         clean_response = re.sub(pattern, "", response).strip()
-        # Ta bort tomma rader som blev kvar
+        # Remove leftover blank lines
         clean_response = re.sub(r"\n{3,}", "\n\n", clean_response)
 
-        # Bygg resultatrapport
+        # Build result report
         result_lines = []
 
         if successful or failed:
             result_lines.append("\n\n---")
 
             if successful:
-                result_lines.append(f"📋 **Genomförda åtgärder ({len(successful)}):**")
+                result_lines.append(f"📋 **Actions completed ({len(successful)}):**")
                 result_lines.extend(successful)
 
             if failed:
                 if successful:
-                    result_lines.append("")  # Blank rad
-                result_lines.append(f"⚠️ **Misslyckades ({len(failed)}):**")
+                    result_lines.append("")  # Blank line
+                result_lines.append(f"⚠️ **Failed ({len(failed)}):**")
                 result_lines.extend(failed)
                 result_lines.append("")
                 result_lines.append(
-                    "*Tips: Kontrollera att filerna/mapparna finns och försök igen.*"
+                    "*Tip: Check that the files/folders exist and try again.*"
                 )
 
-            # Om ALLT misslyckades, lägg till en varning
+            # If EVERYTHING failed, add a warning
             if failed and not successful:
-                clean_response = "**OBS: Inga åtgärder kunde genomföras.**\n\n" + clean_response
+                clean_response = "**NOTE: No actions could be completed.**\n\n" + clean_response
 
-            # Uppdatera mappstrukturen efter ändringar
+            # Refresh folder structure after changes
             if successful:
                 self._load_folder_structure()
 
@@ -793,9 +886,9 @@ VIKTIGT:
     def clear_conversation(self):
         """Clear conversation history."""
         self.conversation_history = []
-        return "Konversationshistorik rensad."
+        return "Conversation history cleared."
 
     def refresh_knowledge(self):
         """Refresh folder structure knowledge."""
         self._load_folder_structure()
-        return {"status": "Mappstruktur uppdaterad", "folders": list(self.folder_structure.keys())}
+        return {"status": "Folder structure updated", "folders": list(self.folder_structure.keys())}

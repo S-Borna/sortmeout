@@ -24,6 +24,25 @@ from sortmeout.utils.file_info import get_file_info
 logger = get_logger(__name__)
 
 
+def _try_record_history(action_result: ActionResult, rule_name: str = "", rule_id: str = "", preview: bool = False):
+    """Try to record action to history, silently ignore failures."""
+    try:
+        from sortmeout.core.history import record_action
+        record_action(
+            action_type=action_result.action_type.value if hasattr(action_result.action_type, 'value') else str(action_result.action_type),
+            source_path=action_result.source_path,
+            destination_path=action_result.destination_path or "",
+            success=action_result.success,
+            error=action_result.error,
+            rule_name=rule_name,
+            rule_id=rule_id,
+            preview=preview,
+            metadata=action_result.metadata if hasattr(action_result, 'metadata') else None,
+        )
+    except Exception:
+        pass  # History is best-effort
+
+
 @dataclass
 class ProcessingResult:
     """
@@ -48,6 +67,16 @@ class ProcessingResult:
     def success(self) -> bool:
         """Check if processing was successful (no errors)."""
         return len(self.errors) == 0
+
+    @property
+    def matched(self) -> bool:
+        """Check if any rules matched."""
+        return len(self.matched_rules) > 0
+
+    @property
+    def rules_applied(self) -> int:
+        """Number of rules that matched and were applied."""
+        return len(self.matched_rules)
 
     def __str__(self) -> str:
         return (
@@ -75,6 +104,7 @@ class RuleEngine:
 
     def __init__(
         self,
+        rules: Optional[List[Rule]] = None,
         preview_mode: bool = False,
         stop_on_error: bool = False,
         max_rules_per_file: int = 100,
@@ -83,10 +113,12 @@ class RuleEngine:
         Initialize the rule engine.
 
         Args:
+            rules: Initial list of rules.
             preview_mode: Don't actually execute actions.
             stop_on_error: Stop on first error.
             max_rules_per_file: Maximum rules to process per file (safety limit).
         """
+        self.rules: List[Rule] = rules or []
         self.preview_mode = preview_mode
         self.stop_on_error = stop_on_error
         self.max_rules_per_file = max_rules_per_file
@@ -100,11 +132,67 @@ class RuleEngine:
             "errors": 0,
         }
 
+    # ========================================
+    # RULE MANAGEMENT
+    # ========================================
+
+    def add_rule(self, rule: Rule) -> None:
+        """Add a rule to the engine."""
+        self.rules.append(rule)
+
+    def remove_rule(self, rule_id: str) -> bool:
+        """Remove a rule by ID."""
+        for i, rule in enumerate(self.rules):
+            if rule.id == rule_id:
+                del self.rules[i]
+                return True
+        return False
+
+    def get_rule(self, rule_id: str) -> Optional[Rule]:
+        """Get a rule by ID."""
+        for rule in self.rules:
+            if rule.id == rule_id:
+                return rule
+        return None
+
+    def disable_rule(self, rule_id: str) -> bool:
+        """Disable a rule by ID."""
+        rule = self.get_rule(rule_id)
+        if rule:
+            rule.enabled = False
+            return True
+        return False
+
+    def enable_rule(self, rule_id: str) -> bool:
+        """Enable a rule by ID."""
+        rule = self.get_rule(rule_id)
+        if rule:
+            rule.enabled = True
+            return True
+        return False
+
+    def get_rules_sorted(self) -> List[Rule]:
+        """Get rules sorted by priority (highest first)."""
+        return sorted(self.rules, key=lambda r: r.priority, reverse=True)
+
+    def set_rule_priority(self, rule_id: str, priority: int) -> bool:
+        """Set rule priority."""
+        rule = self.get_rule(rule_id)
+        if rule:
+            rule.priority = priority
+            return True
+        return False
+
+    def find_matching_rules(self, file_info: Dict[str, Any]) -> List[Rule]:
+        """Find all rules that match the given file info."""
+        return [rule for rule in self.rules if rule.enabled and rule.matches(file_info)]
+
     def process_file(
         self,
         file_path: str,
-        rules: List[Rule],
+        rules: Optional[List[Rule]] = None,
         file_info: Optional[Dict[str, Any]] = None,
+        preview: bool = False,
     ) -> ProcessingResult:
         """
         Process a file against a list of rules.
@@ -119,6 +207,30 @@ class RuleEngine:
         """
         start_time = datetime.now()
         result = ProcessingResult(file_path=file_path)
+
+        # Use internal rules if none provided
+        if rules is None:
+            rules = self.rules
+
+        # Handle preview mode
+        old_preview = self.preview_mode
+        if preview:
+            self.preview_mode = True
+
+        try:
+            return self._do_process_file(file_path, rules, file_info, result, start_time)
+        finally:
+            self.preview_mode = old_preview
+
+    def _do_process_file(
+        self,
+        file_path: str,
+        rules: List[Rule],
+        file_info: Optional[Dict[str, Any]],
+        result: ProcessingResult,
+        start_time: datetime,
+    ) -> ProcessingResult:
+        """Internal file processing implementation."""
 
         # LICENSE GATE: Automation requires active license
         if not can_execute_automation():
@@ -184,6 +296,13 @@ class RuleEngine:
             )
 
             result.executed_actions.extend(action_results)
+
+            # Record to history
+            for ar in action_results:
+                _try_record_history(ar, rule_name=rule.name, rule_id=rule.id, preview=self.preview_mode)
+
+            # Record rule run
+            rule.record_run()
 
             # Check for action errors
             for ar in action_results:
@@ -310,7 +429,7 @@ class RuleEngine:
         rule: Rule,
         file_path: str,
         file_info: Optional[Dict[str, Any]] = None,
-    ) -> List[ActionResult]:
+    ) -> Dict[str, Any]:
         """
         Preview what actions a rule would perform on a file.
 
@@ -320,25 +439,32 @@ class RuleEngine:
             file_info: Pre-computed file information.
 
         Returns:
-            List of ActionResults (with preview=True).
+            Dictionary with 'matches', 'rule', and 'actions' keys.
         """
         if file_info is None:
             file_info = get_file_info(file_path)
 
-        if not rule.matches(file_info):
-            return []
+        matches = rule.matches(file_info)
+        actions = []
 
-        results = []
-        for action in rule.actions:
-            if action.enabled:
-                result = action.execute(file_path, file_info, preview=True)
-                results.append(result)
+        if matches:
+            for action in rule.actions:
+                if action.enabled:
+                    result = action.execute(file_path, file_info, preview=True)
+                    actions.append(result)
 
-        return results
+        return {
+            "matches": matches,
+            "rule": rule.name,
+            "actions": actions,
+        }
 
     def get_stats(self) -> Dict[str, int]:
         """Get engine statistics."""
-        return self._stats.copy()
+        stats = self._stats.copy()
+        stats["total_processed"] = stats["files_processed"]
+        stats["total_matched"] = stats["rules_matched"]
+        return stats
 
     def reset_stats(self) -> None:
         """Reset engine statistics."""
@@ -349,6 +475,20 @@ class RuleEngine:
             "actions_executed": 0,
             "errors": 0,
         }
+
+    def export_rules(self, path: str) -> None:
+        """Export rules to a file."""
+        import json
+        data = [rule.to_dict() for rule in self.rules]
+        with open(path, 'w') as f:
+            json.dump(data, f, indent=2, default=str)
+
+    def import_rules(self, path: str) -> None:
+        """Import rules from a file."""
+        import json
+        with open(path, 'r') as f:
+            data = json.load(f)
+        self.rules = [Rule.from_dict(r) for r in data]
 
 
 class BatchProcessor:
@@ -428,3 +568,48 @@ class BatchProcessor:
             results.append(result)
 
         return results
+
+    def process_directory(
+        self,
+        folder_path: str,
+        recursive: bool = False,
+        extensions: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Process all files in a directory and return summary.
+
+        Args:
+            folder_path: Path to the folder.
+            recursive: Process subdirectories.
+            extensions: Only process files with these extensions.
+
+        Returns:
+            Dictionary with total, matched, processed, errors counts.
+        """
+        folder = Path(folder_path)
+
+        if recursive:
+            files = list(folder.rglob("*"))
+        else:
+            files = list(folder.glob("*"))
+
+        files = [f for f in files if f.is_file()]
+
+        if extensions:
+            normalized = [e if e.startswith('.') else f'.{e}' for e in extensions]
+            files = [f for f in files if f.suffix in normalized]
+
+        results = []
+        for path in files:
+            result = self.engine.process_file(str(path))
+            results.append(result)
+
+        matched = sum(1 for r in results if r.matched)
+        processed = sum(1 for r in results if r.matched and r.success)
+
+        return {
+            "total": len(results),
+            "matched": matched,
+            "processed": processed,
+            "errors": sum(1 for r in results if not r.success),
+        }

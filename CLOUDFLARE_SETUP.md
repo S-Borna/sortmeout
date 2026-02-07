@@ -405,7 +405,7 @@ Exempel HTML:
         <h1>🔒 Åtkomst Nekad</h1>
         <p>Din begäran har blockerats av vårt säkerhetssystem.</p>
         <p style="font-size: 14px; margin-top: 20px; opacity: 0.7;">
-            Om du tror detta är ett fel, kontakta support@sortmeout.saidborna.com
+            Om du tror detta är ett fel, kontakta said@saidborna.com
         </p>
     </div>
 </body>
