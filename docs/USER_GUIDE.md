@@ -20,7 +20,7 @@ Welcome to SortMeOut - your intelligent file automation tool for macOS.
 
 SortMeOut watches folders you specify and automatically organizes files based on rules you create.
 
-### How it works:
+### How it works
 
 ```
 📁 Downloads/
@@ -63,6 +63,7 @@ SortMeOut needs the following permissions to work:
 | **Accessibility** | For some advanced automation features |
 
 To grant permissions:
+
 1. Open **System Settings** → **Privacy & Security**
 2. Find each permission category
 3. Enable SortMeOut
@@ -76,6 +77,7 @@ To grant permissions:
 Folders that SortMeOut monitors for new or changed files.
 
 **Common watched folders:**
+
 - `~/Downloads` - Automatically organize downloaded files
 - `~/Desktop` - Keep desktop clean
 - `~/Documents` - Sort documents into subfolders
@@ -83,6 +85,7 @@ Folders that SortMeOut monitors for new or changed files.
 ### Rules
 
 A rule consists of:
+
 1. **Name** - Description of what the rule does
 2. **Conditions** - When the rule should trigger
 3. **Actions** - What to do when conditions match
@@ -93,6 +96,7 @@ A rule consists of:
 Criteria that files must match for the rule to trigger.
 
 **Examples:**
+
 - File extension is `.pdf`
 - File name contains "invoice"
 - File size > 10 MB
@@ -103,6 +107,7 @@ Criteria that files must match for the rule to trigger.
 What happens when a file matches all conditions.
 
 **Examples:**
+
 - Move to specific folder
 - Rename with pattern
 - Add macOS tag
@@ -300,7 +305,7 @@ The menu bar icon shows SortMeOut status and provides quick access.
 ## Getting Help
 
 - **Documentation**: [sortmeout.saidborna.com/docs](https://sortmeout.saidborna.com)
-- **Email**: said@saidborna.com
+- **Email**: <said@saidborna.com>
 
 ---
 
