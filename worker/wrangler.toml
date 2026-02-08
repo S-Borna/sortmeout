@@ -12,7 +12,10 @@ id = "***KV_NAMESPACE_ID_REMOVED***"
 # STRIPE_SECRET_KEY    — sk_live_...
 # STRIPE_WEBHOOK_SECRET — whsec_...
 # LICENSE_SIGNING_KEY  — random hex for HMAC signing
+# DISCORD_WEBHOOK_URL  — Discord channel webhook (optional, set when ready)
 
 [vars]
 STRIPE_PRICE_ID = "***STRIPE_PRICE_ID_REMOVED***"
 CORS_ORIGIN = "https://sortmeout.saidborna.com"
+OWNER_EMAIL = "said@saidborna.com"
+FROM_DOMAIN = "sortmeout.saidborna.com"

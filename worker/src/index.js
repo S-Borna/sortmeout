@@ -5,12 +5,123 @@
  * 1. Stripe webhooks (subscription lifecycle)
  * 2. License key generation and validation
  * 3. Stripe Checkout session creation
+ * 4. Owner notifications (email + Discord)
  *
  * Flow:
  *   User → "Get Pro" → POST /api/checkout → Stripe Checkout URL
  *   Stripe → webhook → POST /api/webhook → generates license key → stores in KV
  *   User → enters key in app → POST /api/verify → validates key
  */
+
+
+// ==========================================
+// Owner Notifications
+// ==========================================
+
+/**
+ * Send notification to the owner about business events.
+ * Uses MailChannels (free via CF Workers) and optionally Discord webhook.
+ * Fire-and-forget — failures never block the main flow.
+ */
+async function notifyOwner(env, subject, details) {
+    const promises = [];
+
+    // 1. Email notification via MailChannels
+    promises.push(sendEmailNotification(env, subject, details).catch(err => {
+        console.error('Email notification failed:', err.message);
+    }));
+
+    // 2. Discord webhook (if configured)
+    if (env.DISCORD_WEBHOOK_URL) {
+        promises.push(sendDiscordNotification(env, subject, details).catch(err => {
+            console.error('Discord notification failed:', err.message);
+        }));
+    }
+
+    // Don't await — fire and forget so webhook response isn't delayed
+    await Promise.allSettled(promises);
+}
+
+/**
+ * Send email via MailChannels API (free for Cloudflare Workers).
+ * Requires DNS TXT record: _mailchannels.sortmeout.saidborna.com → "v=mc1 cfid=sortmeout-api"
+ */
+async function sendEmailNotification(env, subject, details) {
+    const ownerEmail = env.OWNER_EMAIL || 'said@saidborna.com';
+    const fromDomain = env.FROM_DOMAIN || 'sortmeout.saidborna.com';
+
+    const htmlBody = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #6366F1, #8B5CF6); padding: 20px 24px; border-radius: 12px 12px 0 0;">
+                <h2 style="color: white; margin: 0; font-size: 18px;">🗂️ SortMeOut — ${subject}</h2>
+            </div>
+            <div style="background: #1a1a2e; color: #e4e4e7; padding: 24px; border-radius: 0 0 12px 12px; border: 1px solid #27273a;">
+                ${Object.entries(details).map(([key, val]) =>
+        `<p style="margin: 8px 0;"><strong style="color: #a78bfa;">${key}:</strong> ${val}</p>`
+    ).join('')}
+                <hr style="border: none; border-top: 1px solid #27273a; margin: 16px 0;">
+                <p style="color: #71717a; font-size: 12px; margin: 0;">Tidpunkt: ${new Date().toISOString()}</p>
+            </div>
+        </div>
+    `;
+
+    const response = await fetch('https://api.mailchannels.net/tx/v1/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            personalizations: [{
+                to: [{ email: ownerEmail, name: 'Said Borna' }],
+            }],
+            from: {
+                email: `notifications@${fromDomain}`,
+                name: 'SortMeOut Bot',
+            },
+            subject: `[SortMeOut] ${subject}`,
+            content: [{
+                type: 'text/html',
+                value: htmlBody,
+            }],
+        }),
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`MailChannels ${response.status}: ${text}`);
+    }
+}
+
+/**
+ * Send notification to Discord channel via webhook.
+ */
+async function sendDiscordNotification(env, subject, details) {
+    const color = subject.includes('Ny Pro')
+        ? 0x22c55e   // green — new sale
+        : subject.includes('Avbokad')
+            ? 0xef4444  // red — cancellation
+            : subject.includes('Misslyckad')
+                ? 0xf59e0b // yellow — payment failed
+                : 0x6366f1; // indigo — other
+
+    const fields = Object.entries(details).map(([name, value]) => ({
+        name,
+        value: String(value),
+        inline: true,
+    }));
+
+    await fetch(env.DISCORD_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            embeds: [{
+                title: `🗂️ ${subject}`,
+                color,
+                fields,
+                timestamp: new Date().toISOString(),
+                footer: { text: 'SortMeOut API' },
+            }],
+        }),
+    });
+}
 
 // ==========================================
 // License Key Generation
@@ -226,6 +337,15 @@ async function handleWebhook(request, env) {
                 await env.LICENSES.put(`customer:${customerId}`, JSON.stringify(licenseData));
 
                 console.log(`License generated for ${email}: ${licenseKey}`);
+
+                // Notify owner of new Pro customer
+                await notifyOwner(env, 'Ny Pro-kund! 💰', {
+                    'Email': email,
+                    'Licensnyckel': licenseKey,
+                    'Stripe Customer': customerId,
+                    'Prenumeration': subscriptionId,
+                    'Belopp': '$9.99/mån',
+                });
             }
             break;
         }
@@ -245,6 +365,13 @@ async function handleWebhook(request, env) {
                 await env.LICENSES.put(`customer:${customerId}`, JSON.stringify(stored));
 
                 console.log(`Subscription updated for ${stored.email}: ${stored.status}`);
+
+                // Notify owner of subscription change
+                await notifyOwner(env, `Prenumeration uppdaterad: ${stored.status}`, {
+                    'Email': stored.email,
+                    'Ny status': stored.status,
+                    'Customer ID': customerId,
+                });
             }
             break;
         }
@@ -263,6 +390,13 @@ async function handleWebhook(request, env) {
                 await env.LICENSES.put(`customer:${customerId}`, JSON.stringify(stored));
 
                 console.log(`Subscription cancelled for ${stored.email}`);
+
+                // Notify owner of cancellation
+                await notifyOwner(env, 'Prenumeration avbokad ❌', {
+                    'Email': stored.email,
+                    'Customer ID': customerId,
+                    'Avbokad': stored.cancelledAt,
+                });
             }
             break;
         }
@@ -281,6 +415,13 @@ async function handleWebhook(request, env) {
                 await env.LICENSES.put(`customer:${customerId}`, JSON.stringify(stored));
 
                 console.log(`Payment failed for ${stored.email}`);
+
+                // Notify owner of payment failure
+                await notifyOwner(env, 'Betalning misslyckad ⚠️', {
+                    'Email': stored.email,
+                    'Customer ID': customerId,
+                    'Status': 'past_due',
+                });
             }
             break;
         }
