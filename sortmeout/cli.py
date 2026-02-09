@@ -1118,5 +1118,20 @@ def schedule_status():
     ))
 
 
+@main.command()
+def desktop():
+    """Launch the SortMeOut desktop application."""
+    try:
+        from sortmeout.gui.desktop.app import launch_desktop
+
+        console.print("[bold purple]Launching SortMeOut Desktop…[/bold purple]")
+        launch_desktop()
+    except ImportError as e:
+        console.print(f"[red]Missing dependency: {e}[/red]")
+        console.print("Install with: pip install pyobjc-framework-WebKit pyobjc-framework-Cocoa")
+    except Exception as e:
+        console.print(f"[red]Error launching desktop: {e}[/red]")
+
+
 if __name__ == "__main__":
     main()
