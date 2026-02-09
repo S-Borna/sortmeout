@@ -653,6 +653,7 @@ class ImageWindow:
         elif result.get("success"):
             # Record successful generation for rate limiting
             from sortmeout.core.license import record_image_generation
+
             record_image_generation()
 
             path = result.get("path", "")

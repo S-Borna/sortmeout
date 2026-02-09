@@ -502,7 +502,10 @@ class LicenseAuthority:
                 return (True, "")
             else:
                 remaining = TRIAL_AI_DAILY_LIMIT
-                return (False, f"Daily AI limit reached ({remaining}/day). Upgrade to Pro for {PRO_AI_DAILY_LIMIT}/day!")
+                return (
+                    False,
+                    f"Daily AI limit reached ({remaining}/day). Upgrade to Pro for {PRO_AI_DAILY_LIMIT}/day!",
+                )
 
         # TRIAL_EXPIRED or any other state: blocked
         return (False, AI_BLOCKED_MESSAGE)
@@ -589,12 +592,18 @@ class LicenseAuthority:
         if state == LicenseState.PRO_ACTIVE:
             if self._check_image_rate_limit(PRO_IMAGE_DAILY_LIMIT):
                 return (True, "")
-            return (False, f"Daily image limit reached ({PRO_IMAGE_DAILY_LIMIT}/day). Resets at midnight.")
+            return (
+                False,
+                f"Daily image limit reached ({PRO_IMAGE_DAILY_LIMIT}/day). Resets at midnight.",
+            )
 
         if state == LicenseState.TRIAL_ACTIVE:
             if self._check_image_rate_limit(TRIAL_IMAGE_DAILY_LIMIT):
                 return (True, "")
-            return (False, f"Daily image limit reached ({TRIAL_IMAGE_DAILY_LIMIT}/day). Upgrade to Pro for {PRO_IMAGE_DAILY_LIMIT}/day!")
+            return (
+                False,
+                f"Daily image limit reached ({TRIAL_IMAGE_DAILY_LIMIT}/day). Upgrade to Pro for {PRO_IMAGE_DAILY_LIMIT}/day!",
+            )
 
         return (False, AI_BLOCKED_MESSAGE)
 
