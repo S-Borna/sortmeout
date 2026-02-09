@@ -24,6 +24,7 @@ def config_dir():
     yield dir_path
     # Cleanup
     import shutil
+
     shutil.rmtree(dir_path, ignore_errors=True)
 
 

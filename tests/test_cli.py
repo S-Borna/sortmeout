@@ -42,27 +42,33 @@ class TestCLIMainGroup:
 class TestCLISubcommands:
     """Verify all subcommands are registered and respond to --help."""
 
-    @pytest.mark.parametrize("command", [
-        "start",
-        "stop",
-        "status",
-        "test",
-        "images",
-    ])
+    @pytest.mark.parametrize(
+        "command",
+        [
+            "start",
+            "stop",
+            "status",
+            "test",
+            "images",
+        ],
+    )
     def test_top_level_command_help(self, runner, command):
         result = runner.invoke(main, [command, "--help"])
         assert result.exit_code == 0, f"{command} --help failed: {result.output}"
 
-    @pytest.mark.parametrize("group", [
-        "folder",
-        "rule",
-        "trash",
-        "config",
-        "license",
-        "history",
-        "template",
-        "schedule",
-    ])
+    @pytest.mark.parametrize(
+        "group",
+        [
+            "folder",
+            "rule",
+            "trash",
+            "config",
+            "license",
+            "history",
+            "template",
+            "schedule",
+        ],
+    )
     def test_group_help(self, runner, group):
         result = runner.invoke(main, [group, "--help"])
         assert result.exit_code == 0, f"{group} --help failed: {result.output}"

@@ -24,12 +24,19 @@ from sortmeout.utils.file_info import get_file_info
 logger = get_logger(__name__)
 
 
-def _try_record_history(action_result: ActionResult, rule_name: str = "", rule_id: str = "", preview: bool = False):
+def _try_record_history(
+    action_result: ActionResult, rule_name: str = "", rule_id: str = "", preview: bool = False
+):
     """Try to record action to history, silently ignore failures."""
     try:
         from sortmeout.core.history import record_action
+
         record_action(
-            action_type=action_result.action_type.value if hasattr(action_result.action_type, 'value') else str(action_result.action_type),
+            action_type=(
+                action_result.action_type.value
+                if hasattr(action_result.action_type, "value")
+                else str(action_result.action_type)
+            ),
             source_path=action_result.source_path,
             destination_path=action_result.destination_path or "",
             success=action_result.success,
@@ -37,7 +44,7 @@ def _try_record_history(action_result: ActionResult, rule_name: str = "", rule_i
             rule_name=rule_name,
             rule_id=rule_id,
             preview=preview,
-            metadata=action_result.metadata if hasattr(action_result, 'metadata') else None,
+            metadata=action_result.metadata if hasattr(action_result, "metadata") else None,
         )
     except Exception:
         pass  # History is best-effort
@@ -299,7 +306,9 @@ class RuleEngine:
 
             # Record to history
             for ar in action_results:
-                _try_record_history(ar, rule_name=rule.name, rule_id=rule.id, preview=self.preview_mode)
+                _try_record_history(
+                    ar, rule_name=rule.name, rule_id=rule.id, preview=self.preview_mode
+                )
 
             # Record rule run
             rule.record_run()
@@ -479,14 +488,16 @@ class RuleEngine:
     def export_rules(self, path: str) -> None:
         """Export rules to a file."""
         import json
+
         data = [rule.to_dict() for rule in self.rules]
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             json.dump(data, f, indent=2, default=str)
 
     def import_rules(self, path: str) -> None:
         """Import rules from a file."""
         import json
-        with open(path, 'r') as f:
+
+        with open(path, "r") as f:
             data = json.load(f)
         self.rules = [Rule.from_dict(r) for r in data]
 
@@ -596,7 +607,7 @@ class BatchProcessor:
         files = [f for f in files if f.is_file()]
 
         if extensions:
-            normalized = [e if e.startswith('.') else f'.{e}' for e in extensions]
+            normalized = [e if e.startswith(".") else f".{e}" for e in extensions]
             files = [f for f in files if f.suffix in normalized]
 
         results = []
