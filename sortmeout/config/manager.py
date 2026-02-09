@@ -127,7 +127,7 @@ class ConfigManager:
 
             with open(self.config_path, "w") as f:
                 if self.config_path.suffix in (".yaml", ".yml"):
-                    yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+                    yaml.safe_dump(config, f, default_flow_style=False, sort_keys=False)
                 else:
                     json.dump(config, f, indent=2)
 
@@ -171,7 +171,7 @@ class ConfigManager:
 
         try:
             with open(settings_path, "w") as f:
-                yaml.dump(settings.to_dict(), f, default_flow_style=False)
+                yaml.safe_dump(settings.to_dict(), f, default_flow_style=False)
             return True
         except Exception as e:
             logger.error("Failed to save settings: %s", e)
@@ -263,7 +263,7 @@ class ConfigManager:
         try:
             with open(output_path, "w") as f:
                 if format == "yaml":
-                    yaml.dump(config, f, default_flow_style=False)
+                    yaml.safe_dump(config, f, default_flow_style=False)
                 else:
                     json.dump(config, f, indent=2)
 

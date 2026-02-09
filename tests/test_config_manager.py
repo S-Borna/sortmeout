@@ -70,7 +70,7 @@ class TestConfigLoad:
             "folders": [{"path": "/tmp/test", "rules": []}],
         }
         with open(manager.config_path, "w") as f:
-            yaml.dump(test_config, f)
+            yaml.safe_dump(test_config, f)
 
         config = manager.load_config()
         assert len(config["folders"]) == 1
@@ -205,7 +205,7 @@ class TestConfigExportImport:
         # Create an import file
         import_path = os.path.join(config_dir, "import.yaml")
         with open(import_path, "w") as f:
-            yaml.dump({"folders": [{"path": "/tmp/imported"}]}, f)
+            yaml.safe_dump({"folders": [{"path": "/tmp/imported"}]}, f)
 
         result = manager.import_config(import_path, merge=False)
         assert result is True
@@ -220,7 +220,7 @@ class TestConfigExportImport:
         # Create import file with different folder
         import_path = os.path.join(config_dir, "merge.yaml")
         with open(import_path, "w") as f:
-            yaml.dump({"folders": [{"path": "/tmp/new_folder"}]}, f)
+            yaml.safe_dump({"folders": [{"path": "/tmp/new_folder"}]}, f)
 
         result = manager.import_config(import_path, merge=True)
         assert result is True
