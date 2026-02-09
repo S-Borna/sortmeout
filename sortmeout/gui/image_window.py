@@ -126,11 +126,10 @@ class ImageWindowDelegate(NSObject):
             tag = sender.tag()
             self.image_window.open_gallery_item(tag)
 
-    def _runCallback_(self, timer):
-        if self.image_window and hasattr(self.image_window, "_pending_callback"):
-            cb = self.image_window._pending_callback
-            self.image_window._pending_callback = None
-            if cb:
+    def _runCallback_(self, obj):
+        if self.image_window and hasattr(self.image_window, "_pending_callbacks"):
+            while self.image_window._pending_callbacks:
+                cb = self.image_window._pending_callbacks.pop(0)
                 try:
                     cb()
                 except Exception as e:
@@ -158,6 +157,7 @@ class ImageWindow:
         self.gallery_view = None
         self.is_generating = False
         self.gallery_images = []
+        self._pending_callbacks = []
 
         self.delegate = ImageWindowDelegate.alloc().init()
         self.delegate.set_image_window(self)
@@ -826,12 +826,13 @@ class ImageWindow:
             self.status_label.setTextColor_(color)
 
     def _on_main(self, fn):
-        """Execute a function on the main thread via performSelectorOnMainThread."""
-        # Store the callback and use a timer to execute it
-        self._pending_callback = fn
-        NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
-            0.01,
-            self.delegate,
+        """Execute a function on the main thread via performSelectorOnMainThread.
+
+        Uses performSelectorOnMainThread instead of NSTimer to ensure
+        callbacks fire even if the window was closed/hidden during generation.
+        """
+        self._pending_callbacks.append(fn)
+        self.delegate.performSelectorOnMainThread_withObject_waitUntilDone_(
             objc.selector(self.delegate._runCallback_, signature=b"v@:@"),
             None,
             False,
@@ -847,6 +848,12 @@ class ImageWindow:
 
     def show(self):
         """Show the window."""
+        # Reset stale generating state (e.g. if generation completed while window was closed)
+        if self.is_generating:
+            self.is_generating = False
+            self.generate_btn.setEnabled_(True)
+            self.spinner.stopAnimation_(None)
+            self._set_status("", None)
         self.window.makeKeyAndOrderFront_(None)
         NSApp.activateIgnoringOtherApps_(True)
         self.load_gallery()  # Refresh on show
