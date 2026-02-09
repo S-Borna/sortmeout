@@ -2,10 +2,12 @@
 GUI module for SortMeOut.
 
 Structure:
-    - main_window.py: Primary menu bar app (PyInstaller entry point)
-    - app.py: pip-installable GUI entry point (sortmeout-gui command)
+    - app.py: Menu bar app entry point (sortmeout-gui command)
     - chat_window.py: Premium AI chat interface
+    - image_window.py: Image Studio (DALL·E 3 generation, gallery, editing)
     - rule_editor.py: Rule creation/editing window
+    - settings_window.py: Settings configuration
+    - onboarding.py: First-run onboarding flow
 """
 
 
@@ -23,6 +25,10 @@ def __getattr__(name):
         from sortmeout.gui.chat_window import show_chat_window
 
         return show_chat_window
+    if name == "show_image_window":
+        from sortmeout.gui.image_window import show_image_window
+
+        return show_image_window
     if name == "show_rule_editor":
         from sortmeout.gui.rule_editor import show_rule_editor
 
@@ -36,5 +42,6 @@ __all__ = [
     "MenuBarApp",
     # Windows
     "show_chat_window",
+    "show_image_window",
     "show_rule_editor",
 ]
