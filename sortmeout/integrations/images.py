@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 # ── Optional dependency: Pillow ──
 try:
     from PIL import Image, ImageFilter, ImageEnhance, ImageDraw, ImageFont, ImageOps
+
     HAS_PILLOW = True
 except ImportError:
     HAS_PILLOW = False
@@ -37,6 +38,7 @@ except ImportError:
 # ── Optional dependency: OpenAI (for DALL-E 3) ──
 try:
     import openai
+
     HAS_OPENAI = True
 except ImportError:
     HAS_OPENAI = False
@@ -207,7 +209,9 @@ class ImageEditor:
                 elif direction == "vertical":
                     flipped = img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
                 else:
-                    return {"error": f"Invalid direction: {direction} (use 'horizontal' or 'vertical')"}
+                    return {
+                        "error": f"Invalid direction: {direction} (use 'horizontal' or 'vertical')"
+                    }
 
                 out_path = output or self._auto_output(p, f"flipped_{direction}")
                 self._save_image(flipped, out_path, img.format)
@@ -310,9 +314,21 @@ class ImageEditor:
                     return {
                         "error": f"Unknown filter: {filter_name}",
                         "available": [
-                            "blur", "sharpen", "detail", "edge_enhance", "emboss",
-                            "contour", "smooth", "grayscale", "sepia", "invert",
-                            "brightness", "contrast", "saturation", "auto_contrast", "equalize",
+                            "blur",
+                            "sharpen",
+                            "detail",
+                            "edge_enhance",
+                            "emboss",
+                            "contour",
+                            "smooth",
+                            "grayscale",
+                            "sepia",
+                            "invert",
+                            "brightness",
+                            "contrast",
+                            "saturation",
+                            "auto_contrast",
+                            "equalize",
                         ],
                     }
 
@@ -373,9 +389,7 @@ class ImageEditor:
                 text_height = bbox[3] - bbox[1]
 
                 # Calculate position
-                x, y = self._calc_text_position(
-                    overlay.size, (text_width, text_height), position
-                )
+                x, y = self._calc_text_position(overlay.size, (text_width, text_height), position)
 
                 # Parse color
                 fill_color = self._parse_color(color, opacity)
@@ -422,10 +436,12 @@ class ImageEditor:
 
         fmt = format.lower().strip().lstrip(".")
         format_map = {
-            "jpg": "JPEG", "jpeg": "JPEG",
+            "jpg": "JPEG",
+            "jpeg": "JPEG",
             "png": "PNG",
             "webp": "WEBP",
-            "tiff": "TIFF", "tif": "TIFF",
+            "tiff": "TIFF",
+            "tif": "TIFF",
             "bmp": "BMP",
             "gif": "GIF",
             "ico": "ICO",
@@ -523,7 +539,9 @@ class ImageEditor:
                     work.save(out_path, "JPEG", quality=quality, optimize=True)
 
                 new_size = os.path.getsize(out_path)
-                reduction = ((original_size - new_size) / original_size * 100) if original_size > 0 else 0
+                reduction = (
+                    ((original_size - new_size) / original_size * 100) if original_size > 0 else 0
+                )
 
                 return {
                     "success": True,
@@ -558,9 +576,14 @@ class ImageEditor:
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         ext = Path(path).suffix.lower()
         fmt_map = {
-            ".jpg": "JPEG", ".jpeg": "JPEG", ".png": "PNG",
-            ".webp": "WEBP", ".tiff": "TIFF", ".tif": "TIFF",
-            ".bmp": "BMP", ".gif": "GIF",
+            ".jpg": "JPEG",
+            ".jpeg": "JPEG",
+            ".png": "PNG",
+            ".webp": "WEBP",
+            ".tiff": "TIFF",
+            ".tif": "TIFF",
+            ".bmp": "BMP",
+            ".gif": "GIF",
         }
         fmt = fmt_map.get(ext, original_format or "PNG")
 
@@ -713,9 +736,7 @@ class ImageGenerator:
                 pass
 
         # 2. Try dedicated config file
-        config_file = os.path.expanduser(
-            "~/Documents/Config/OpenAI/openai_api_key.txt"
-        )
+        config_file = os.path.expanduser("~/Documents/Config/OpenAI/openai_api_key.txt")
         if os.path.exists(config_file):
             try:
                 with open(config_file, "r") as f:
@@ -797,10 +818,13 @@ class ImageGenerator:
 
             # Download and save the image
             import urllib.request
+
             if not filename:
-                safe_name = "".join(
-                    c for c in prompt[:50] if c.isalnum() or c in " -_"
-                ).strip().replace(" ", "_")
+                safe_name = (
+                    "".join(c for c in prompt[:50] if c.isalnum() or c in " -_")
+                    .strip()
+                    .replace(" ", "_")
+                )
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 filename = f"ai_{safe_name}_{timestamp}.png"
 
@@ -893,15 +917,18 @@ class ImageGenerator:
             image_url = response.data[0].url
 
             if not filename:
-                safe_prompt = "".join(
-                    c for c in prompt[:30] if c.isalnum() or c in " -_"
-                ).strip().replace(" ", "_")
+                safe_prompt = (
+                    "".join(c for c in prompt[:30] if c.isalnum() or c in " -_")
+                    .strip()
+                    .replace(" ", "_")
+                )
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 filename = f"ai_edit_{safe_prompt}_{timestamp}.png"
 
             out_path = os.path.join(self.output_dir, filename)
 
             import urllib.request
+
             urllib.request.urlretrieve(image_url, out_path)
 
             # Clean up temp file

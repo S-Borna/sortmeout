@@ -171,9 +171,9 @@ class ProactiveMonitor:
 
                 try:
                     # Calendar returns ISO format: 2026-02-09T14:00:00.000Z
-                    event_time = datetime.fromisoformat(
-                        start_str.replace("Z", "+00:00")
-                    ).replace(tzinfo=None)
+                    event_time = datetime.fromisoformat(start_str.replace("Z", "+00:00")).replace(
+                        tzinfo=None
+                    )
 
                     time_until = event_time - now
                     if timedelta(0) < time_until <= alert_window:
@@ -209,10 +209,7 @@ class ProactiveMonitor:
             if deadlines:
                 now = datetime.now()
                 today_str = now.strftime("%Y-%m-%d")
-                urgent = [
-                    d for d in deadlines
-                    if d.get("startDate", "")[:10] == today_str
-                ]
+                urgent = [d for d in deadlines if d.get("startDate", "")[:10] == today_str]
                 if urgent:
                     names = ", ".join(d.get("summary", "?") for d in urgent[:3])
                     _send_notification(

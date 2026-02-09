@@ -278,8 +278,13 @@ class MailIntegration:
         """
         self._run_applescript(script)
         mode = "sent" if send else "drafted"
-        return {"success": True, "action": mode, "to": to, "subject": subject,
-                "attachment": attachment or None}
+        return {
+            "success": True,
+            "action": mode,
+            "to": to,
+            "subject": subject,
+            "attachment": attachment or None,
+        }
 
     def reply_to_email(
         self, message_id: int, reply_body: str, send: bool = False

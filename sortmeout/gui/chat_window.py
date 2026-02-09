@@ -109,49 +109,49 @@ class Colors:
     """
 
     # Backgrounds — white / gray-50 / gray-100 (website hero + content palette)
-    WINDOW_BG   = _c(1.0, 1.0, 1.0)          # #FFFFFF  white
-    CHAT_BG     = _c(0.976, 0.980, 0.984)     # #F9FAFB  gray-50
-    INPUT_BG    = _c(0.953, 0.957, 0.965)     # #F3F4F6  gray-100
-    HEADER_BG   = _c(1.0, 1.0, 1.0)          # #FFFFFF  white (clean header)
+    WINDOW_BG = _c(1.0, 1.0, 1.0)  # #FFFFFF  white
+    CHAT_BG = _c(0.976, 0.980, 0.984)  # #F9FAFB  gray-50
+    INPUT_BG = _c(0.953, 0.957, 0.965)  # #F3F4F6  gray-100
+    HEADER_BG = _c(1.0, 1.0, 1.0)  # #FFFFFF  white (clean header)
 
     # Text — gray-900 / gray-500 / gray-400 (dark text on light bg)
-    TEXT_PRIMARY   = _c(0.067, 0.094, 0.153)  # #111827  gray-900
+    TEXT_PRIMARY = _c(0.067, 0.094, 0.153)  # #111827  gray-900
     TEXT_SECONDARY = _c(0.420, 0.447, 0.502)  # #6B7280  gray-500
-    TEXT_MUTED     = _c(0.612, 0.639, 0.686)  # #9CA3AF  gray-400
+    TEXT_MUTED = _c(0.612, 0.639, 0.686)  # #9CA3AF  gray-400
     TEXT_ON_INDIGO = _c(1.0, 1.0, 1.0)
     TEXT_PLACEHOLDER = _c(0.612, 0.639, 0.686)  # gray-400
 
     # Accents — primary / primary-dark / primary-light / secondary
-    ACCENT        = _c(0.389, 0.400, 0.945)  # #6366F1  primary
-    ACCENT_DARK   = _c(0.310, 0.275, 0.898)  # #4F46E5  primary-dark
-    ACCENT_LIGHT  = _c(0.506, 0.549, 0.973)  # #818CF8  primary-light
+    ACCENT = _c(0.389, 0.400, 0.945)  # #6366F1  primary
+    ACCENT_DARK = _c(0.310, 0.275, 0.898)  # #4F46E5  primary-dark
+    ACCENT_LIGHT = _c(0.506, 0.549, 0.973)  # #818CF8  primary-light
     ACCENT_VIOLET = _c(0.545, 0.361, 0.965)  # #8B5CF6  secondary
-    ACCENT_PINK   = _c(0.925, 0.286, 0.600)  # #EC4899  accent (website)
+    ACCENT_PINK = _c(0.925, 0.286, 0.600)  # #EC4899  accent (website)
 
     # Semantic
     SUCCESS = _c(0.063, 0.725, 0.506)  # #10B981
     WARNING = _c(0.961, 0.620, 0.043)  # #F59E0B
-    ERROR   = _c(0.937, 0.267, 0.267)  # #EF4444
+    ERROR = _c(0.937, 0.267, 0.267)  # #EF4444
 
     # Buttons
-    BTN_PRIMARY  = _c(0.389, 0.400, 0.945)   # primary
-    BTN_HOVER    = _c(0.467, 0.475, 0.960)   # brighter primary
-    BTN_DISABLED = _c(0.820, 0.835, 0.859)   # #D1D5DB  gray-300
+    BTN_PRIMARY = _c(0.389, 0.400, 0.945)  # primary
+    BTN_HOVER = _c(0.467, 0.475, 0.960)  # brighter primary
+    BTN_DISABLED = _c(0.820, 0.835, 0.859)  # #D1D5DB  gray-300
 
     # Structure
-    DIVIDER       = _c(0.898, 0.906, 0.922)  # #E5E7EB  gray-200
+    DIVIDER = _c(0.898, 0.906, 0.922)  # #E5E7EB  gray-200
     BORDER_SUBTLE = _c(0.898, 0.906, 0.922)  # #E5E7EB  gray-200
-    BORDER_FOCUS  = _c(0.389, 0.400, 0.945, 0.4)  # primary at 40%
-    CODE_BG       = _c(0.953, 0.957, 0.965)  # #F3F4F6  gray-100
+    BORDER_FOCUS = _c(0.389, 0.400, 0.945, 0.4)  # primary at 40%
+    CODE_BG = _c(0.953, 0.957, 0.965)  # #F3F4F6  gray-100
 
     # Markdown
     HEADING_COLOR = _c(0.067, 0.094, 0.153)  # #111827  gray-900
-    BULLET_COLOR  = _c(0.389, 0.400, 0.945)  # #6366F1  primary
-    HR_COLOR      = _c(0.820, 0.835, 0.859)  # #D1D5DB  gray-300
+    BULLET_COLOR = _c(0.389, 0.400, 0.945)  # #6366F1  primary
+    HR_COLOR = _c(0.820, 0.835, 0.859)  # #D1D5DB  gray-300
 
     # Thinking indicator
-    DOT_DIM    = _c(0.820, 0.835, 0.859, 0.5)   # gray-300 dimmed
-    DOT_BRIGHT = _c(0.389, 0.400, 0.945, 1.0)   # primary
+    DOT_DIM = _c(0.820, 0.835, 0.859, 0.5)  # gray-300 dimmed
+    DOT_BRIGHT = _c(0.389, 0.400, 0.945, 1.0)  # primary
 
 
 class Fonts:
@@ -236,19 +236,19 @@ class MarkdownRenderer:
                 i += 1
                 continue
 
-            hm = re.match(r'^(#{1,3})\s+(.+)$', line)
+            hm = re.match(r"^(#{1,3})\s+(.+)$", line)
             if hm:
                 self._header(result, hm.group(2), len(hm.group(1)))
                 i += 1
                 continue
 
-            bm = re.match(r'^(\s*)[-*]\s+(.+)$', line)
+            bm = re.match(r"^(\s*)[-*]\s+(.+)$", line)
             if bm:
                 self._bullet(result, bm.group(2), len(bm.group(1)) // 2)
                 i += 1
                 continue
 
-            nm = re.match(r'^(\s*)(\d+)\.\s+(.+)$', line)
+            nm = re.match(r"^(\s*)(\d+)\.\s+(.+)$", line)
             if nm:
                 self._numbered(result, nm.group(3), nm.group(2), len(nm.group(1)) // 2)
                 i += 1
@@ -264,7 +264,9 @@ class MarkdownRenderer:
         p.setParagraphSpacingBefore_(pts)
         p.setLineBreakMode_(NSLineBreakByWordWrapping)
         a = {NSFontAttributeName: NSFont.systemFontOfSize_(4), NSParagraphStyleAttributeName: p}
-        result.appendAttributedString_(NSAttributedString.alloc().initWithString_attributes_("\n", a))
+        result.appendAttributedString_(
+            NSAttributedString.alloc().initWithString_attributes_("\n", a)
+        )
 
     def _hr(self, result):
         p = NSMutableParagraphStyle.alloc().init()
@@ -317,7 +319,7 @@ class MarkdownRenderer:
             NSParagraphStyleAttributeName: p,
         }
         result.appendAttributedString_(
-            NSAttributedString.alloc().initWithString_attributes_("\u25CF  ", da)
+            NSAttributedString.alloc().initWithString_attributes_("\u25cf  ", da)
         )
 
         ta = {
@@ -326,7 +328,9 @@ class MarkdownRenderer:
             NSParagraphStyleAttributeName: p,
         }
         result.appendAttributedString_(self._inline(text, ta))
-        result.appendAttributedString_(NSAttributedString.alloc().initWithString_attributes_("\n", ta))
+        result.appendAttributedString_(
+            NSAttributedString.alloc().initWithString_attributes_("\n", ta)
+        )
 
     def _numbered(self, result, text, number, indent_level=0):
         extra = indent_level * 16
@@ -354,7 +358,9 @@ class MarkdownRenderer:
             NSParagraphStyleAttributeName: p,
         }
         result.appendAttributedString_(self._inline(text, ta))
-        result.appendAttributedString_(NSAttributedString.alloc().initWithString_attributes_("\n", ta))
+        result.appendAttributedString_(
+            NSAttributedString.alloc().initWithString_attributes_("\n", ta)
+        )
 
     def _paragraph(self, result, text):
         p = NSMutableParagraphStyle.alloc().init()
@@ -376,7 +382,7 @@ class MarkdownRenderer:
     def _inline(self, text, base_attrs):
         """Parse **bold**, *italic*, `code`, and plain text."""
         result = NSMutableAttributedString.alloc().init()
-        pattern = r'(\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|([^*`]+))'
+        pattern = r"(\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|([^*`]+))"
         for m in re.finditer(pattern, text):
             bold_t = m.group(2)
             italic_t = m.group(3)
@@ -422,6 +428,7 @@ def _get_user_name():
     if os.path.exists(config_path):
         try:
             import json
+
             with open(config_path, "r") as f:
                 cfg = json.load(f)
             name = cfg.get("user_name", "").strip()
@@ -446,6 +453,7 @@ def _get_ai_name():
     if os.path.exists(config_path):
         try:
             import json
+
             with open(config_path, "r") as f:
                 cfg = json.load(f)
             name = cfg.get("assistant_name", "").strip()
@@ -461,6 +469,7 @@ def _save_ai_name(name):
     config_path = os.path.join(CONFIG_DIR, "config.json")
     try:
         import json
+
         cfg = {}
         if os.path.exists(config_path):
             with open(config_path, "r") as f:
@@ -497,9 +506,7 @@ def load_openai_api_key():
         except Exception:
             pass
     # Try dedicated config file
-    config_file = os.path.expanduser(
-        "~/Documents/Config/OpenAI/openai_api_key.txt"
-    )
+    config_file = os.path.expanduser("~/Documents/Config/OpenAI/openai_api_key.txt")
     if os.path.exists(config_file):
         try:
             with open(config_file, "r") as f:
@@ -558,7 +565,7 @@ class ChatWindow:
     user identity — design-matched to the SortMeOut website."""
 
     # AI avatar
-    AI_EMOJI = "\U0001F916"  # 🤖
+    AI_EMOJI = "\U0001f916"  # 🤖
 
     def __init__(self):
         self.window = None
@@ -591,6 +598,7 @@ class ChatWindow:
         if api_key:
             try:
                 from sortmeout.ai.assistant import FileAssistant
+
                 self.assistant = FileAssistant(api_key=api_key)
             except Exception as e:
                 print(f"Assistant init error: {e}")
@@ -645,14 +653,16 @@ class ChatWindow:
         # Gradient accent line at bottom (mirrors website gradient-primary: indigo → violet)
         accent = NSView.alloc().initWithFrame_(NSMakeRect(0, 0, W, 2))
         accent.setWantsLayer_(True)
-        gradient_layer = objc.lookUpClass('CAGradientLayer').layer()
+        gradient_layer = objc.lookUpClass("CAGradientLayer").layer()
         gradient_layer.setFrame_(accent.bounds())
         gradient_layer.setStartPoint_((0, 0.5))
         gradient_layer.setEndPoint_((1, 0.5))
-        gradient_layer.setColors_([
-            Colors.ACCENT.CGColor(),        # #6366F1 indigo
-            Colors.ACCENT_VIOLET.CGColor(), # #8B5CF6 violet
-        ])
+        gradient_layer.setColors_(
+            [
+                Colors.ACCENT.CGColor(),  # #6366F1 indigo
+                Colors.ACCENT_VIOLET.CGColor(),  # #8B5CF6 violet
+            ]
+        )
         accent.layer().addSublayer_(gradient_layer)
         accent.setAutoresizingMask_(NSViewWidthSizable)
         header.addSubview_(accent)
@@ -842,7 +852,9 @@ class ChatWindow:
         # Remove previous frame
         current_end = storage.length()
         if current_end > self.thinking_range_start:
-            storage.deleteCharactersInRange_((self.thinking_range_start, current_end - self.thinking_range_start))
+            storage.deleteCharactersInRange_(
+                (self.thinking_range_start, current_end - self.thinking_range_start)
+            )
 
         block = NSMutableAttributedString.alloc().init()
         phase = self.animation_state % 30
@@ -852,7 +864,11 @@ class ChatWindow:
         sp.setParagraphSpacingBefore_(14)
         block.appendAttributedString_(
             NSAttributedString.alloc().initWithString_attributes_(
-                "\n", {NSFontAttributeName: NSFont.systemFontOfSize_(2), NSParagraphStyleAttributeName: sp}
+                "\n",
+                {
+                    NSFontAttributeName: NSFont.systemFontOfSize_(2),
+                    NSParagraphStyleAttributeName: sp,
+                },
             )
         )
 
@@ -907,15 +923,15 @@ class ChatWindow:
                 brightness = 0.2
 
             # Light theme: dots go from gray-300 (dim) to primary indigo (bright)
-            r = 0.82 - 0.43 * brightness   # 0.82 → 0.39
-            g = 0.84 - 0.44 * brightness   # 0.84 → 0.40
+            r = 0.82 - 0.43 * brightness  # 0.82 → 0.39
+            g = 0.84 - 0.44 * brightness  # 0.84 → 0.40
             b = 0.86 + 0.085 * brightness  # 0.86 → 0.945
             a = 0.45 + 0.55 * brightness
 
             dot_color = _c(r, g, b, a)
             block.appendAttributedString_(
                 NSAttributedString.alloc().initWithString_attributes_(
-                    "\u25CF",
+                    "\u25cf",
                     {
                         NSFontAttributeName: NSFont.systemFontOfSize_(16),
                         NSForegroundColorAttributeName: dot_color,
@@ -972,7 +988,7 @@ class ChatWindow:
         greeting = f"Hey {self.user_name}! " if self.user_name != "You" else "Hey! "
         name_hint = ""
         if self.ai_name == "SortMeOut AI":
-            name_hint = "\n\n*Tip: You can give me a name \u2014 just say \"Call yourself Jarvis\" or whatever you'd like!*"
+            name_hint = '\n\n*Tip: You can give me a name \u2014 just say "Call yourself Jarvis" or whatever you\'d like!*'
         welcome = (
             f"{greeting}I'm **{self.ai_name}**, your AI file assistant.  {self.AI_EMOJI}\n\n"
             "Here's what I can help with:\n\n"
@@ -1046,7 +1062,10 @@ class ChatWindow:
         if storage.length() > 0:
             sp = NSMutableParagraphStyle.alloc().init()
             sp.setParagraphSpacingBefore_(14)
-            sa = {NSFontAttributeName: NSFont.systemFontOfSize_(2), NSParagraphStyleAttributeName: sp}
+            sa = {
+                NSFontAttributeName: NSFont.systemFontOfSize_(2),
+                NSParagraphStyleAttributeName: sp,
+            }
             storage.appendAttributedString_(
                 NSAttributedString.alloc().initWithString_attributes_("\n", sa)
             )
@@ -1095,7 +1114,7 @@ class ChatWindow:
         if show_timestamp:
             storage.appendAttributedString_(
                 NSAttributedString.alloc().initWithString_attributes_(
-                    f"  \u00B7  {format_time()}",
+                    f"  \u00b7  {format_time()}",
                     {
                         NSFontAttributeName: Fonts.timestamp(),
                         NSForegroundColorAttributeName: Colors.TEXT_MUTED,
@@ -1229,7 +1248,9 @@ def main():
     ami = NSMenuItem.alloc().init()
     menubar.addItem_(ami)
     am = NSMenu.alloc().init()
-    am.addItemWithTitle_action_keyEquivalent_("About SortMeOut AI", "orderFrontStandardAboutPanel:", "")
+    am.addItemWithTitle_action_keyEquivalent_(
+        "About SortMeOut AI", "orderFrontStandardAboutPanel:", ""
+    )
     am.addItem_(NSMenuItem.separatorItem())
     am.addItemWithTitle_action_keyEquivalent_("Quit", "terminate:", "q")
     ami.setSubmenu_(am)

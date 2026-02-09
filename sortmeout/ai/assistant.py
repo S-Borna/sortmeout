@@ -1471,10 +1471,14 @@ IMPORTANT:
                 mail = _get_mail()
                 results = mail.search_all_mailboxes(arg1)
                 if results:
-                    lines = [f'🔍 Found **{len(results)}** email(s) matching "{arg1}" across all mailboxes:']
+                    lines = [
+                        f'🔍 Found **{len(results)}** email(s) matching "{arg1}" across all mailboxes:'
+                    ]
                     for e in results[:10]:
-                        mailbox = e.get('mailbox', '?')
-                        lines.append(f"  - [{mailbox}] **{e.get('subject', '?')}** — {e.get('sender', '?')}")
+                        mailbox = e.get("mailbox", "?")
+                        lines.append(
+                            f"  - [{mailbox}] **{e.get('subject', '?')}** — {e.get('sender', '?')}"
+                        )
                     return "\n".join(lines)
                 return f'🔍 No emails found matching "{arg1}" in any mailbox'
 
@@ -1487,11 +1491,12 @@ IMPORTANT:
                     subject = parts[0] if len(parts) >= 1 else ""
                     body = parts[1] if len(parts) >= 2 else ""
                     attachment = parts[2] if len(parts) >= 3 else None
-                result = mail.compose_email(to=arg1, subject=subject, body=body,
-                                            attachment=attachment, send=False)
+                result = mail.compose_email(
+                    to=arg1, subject=subject, body=body, attachment=attachment, send=False
+                )
                 if result.get("success"):
                     attach_str = f"\n  📎 Attachment: `{attachment}`" if attachment else ""
-                    return f"📝 Draft created for **{arg1}** — subject: \"{subject}\"{attach_str}"
+                    return f'📝 Draft created for **{arg1}** — subject: "{subject}"{attach_str}'
                 return f"❌ Could not create draft: {result.get('error', '?')}"
 
             elif action == "mail_send":
@@ -1502,8 +1507,9 @@ IMPORTANT:
                     subject = parts[0] if len(parts) >= 1 else ""
                     body = parts[1] if len(parts) >= 2 else ""
                     attachment = parts[2] if len(parts) >= 3 else None
-                result = mail.compose_email(to=arg1, subject=subject, body=body,
-                                            attachment=attachment, send=True)
+                result = mail.compose_email(
+                    to=arg1, subject=subject, body=body, attachment=attachment, send=True
+                )
                 if result.get("success"):
                     attach_str = f" (📎 with attachment)" if attachment else ""
                     return f"📨 Email sent to **{arg1}**{attach_str}"
@@ -1623,7 +1629,13 @@ IMPORTANT:
             elif action == "cal_edit":
                 cal = _get_calendar()
                 # arg1 = event title, arg2 = "new_title|new_start|new_end|new_location|new_notes"
-                new_title, new_start, new_end, new_location, new_notes = None, None, None, None, None
+                new_title, new_start, new_end, new_location, new_notes = (
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                )
                 if arg2:
                     parts = arg2.split("|")
                     if len(parts) >= 1 and parts[0].strip():
@@ -1636,9 +1648,14 @@ IMPORTANT:
                         new_location = parts[3].strip()
                     if len(parts) >= 5 and parts[4].strip():
                         new_notes = parts[4].strip()
-                result = cal.edit_event(arg1, new_title=new_title, new_start=new_start,
-                                        new_end=new_end, new_location=new_location,
-                                        new_notes=new_notes)
+                result = cal.edit_event(
+                    arg1,
+                    new_title=new_title,
+                    new_start=new_start,
+                    new_end=new_end,
+                    new_location=new_location,
+                    new_notes=new_notes,
+                )
                 if result.get("success"):
                     return f"✏️ Event edited: **{arg1}**"
                 return f"❌ {result.get('error', 'Could not edit event')}"
@@ -1731,8 +1748,12 @@ IMPORTANT:
                 if not first:
                     return "❌ First name is required to create a contact"
                 result = contacts.create_contact(
-                    first_name=first, last_name=last, phone=phone,
-                    email=email, organization=org, note=note
+                    first_name=first,
+                    last_name=last,
+                    phone=phone,
+                    email=email,
+                    organization=org,
+                    note=note,
                 )
                 if result.get("success"):
                     return f"👤 Contact created: **{result.get('name', first)}**"
@@ -1753,8 +1774,11 @@ IMPORTANT:
                     if len(parts) >= 4:
                         new_note = parts[3].strip()
                 result = contacts.edit_contact(
-                    search_name=arg1, new_phone=new_phone, new_email=new_email,
-                    new_organization=new_org, new_note=new_note
+                    search_name=arg1,
+                    new_phone=new_phone,
+                    new_email=new_email,
+                    new_organization=new_org,
+                    new_note=new_note,
                 )
                 if result.get("success"):
                     return f"✏️ Contact edited: **{arg1}**"
@@ -1867,7 +1891,9 @@ IMPORTANT:
             elif action == "img_edit_ai":
                 gen = _get_image_generator()
                 if not gen.is_available:
-                    return "❌ AI image editing unavailable — set OPENAI_API_KEY environment variable"
+                    return (
+                        "❌ AI image editing unavailable — set OPENAI_API_KEY environment variable"
+                    )
                 result = gen.edit_with_ai(path=arg1, prompt=arg2 or "")
                 if result.get("success"):
                     return f"🎨 **Image edited with AI!**\n  → `{result['path']}`"
@@ -1894,7 +1920,12 @@ IMPORTANT:
                 parts = arg2.split("|")
                 if len(parts) < 4:
                     return "❌ Crop requires 4 values: left|top|right|bottom"
-                left, top, right, bottom = int(parts[0]), int(parts[1]), int(parts[2]), int(parts[3])
+                left, top, right, bottom = (
+                    int(parts[0]),
+                    int(parts[1]),
+                    int(parts[2]),
+                    int(parts[3]),
+                )
                 result = editor.crop(arg1, left, top, right, bottom)
                 if result.get("success"):
                     return f"✂️ Cropped to {result['new_size']}\n  → `{result['path']}`"
@@ -1948,7 +1979,9 @@ IMPORTANT:
                         font_size = int(parts[2])
                     if len(parts) >= 4:
                         color = parts[3].strip()
-                result = editor.add_text(arg1, text, position=position, font_size=font_size, color=color)
+                result = editor.add_text(
+                    arg1, text, position=position, font_size=font_size, color=color
+                )
                 if result.get("success"):
                     return f"✏️ Text overlay added: \"{text}\"\n  → `{result['path']}`"
                 return f"❌ Text overlay failed: {result.get('error', '?')}"

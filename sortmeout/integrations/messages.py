@@ -138,7 +138,9 @@ class MessagesIntegration:
         self._run_applescript(script)
         return {"success": True, "chat_id": chat_id, "message": text[:50]}
 
-    def read_messages(self, chat_id: str = "", contact: str = "", count: int = 10) -> List[Dict[str, Any]]:
+    def read_messages(
+        self, chat_id: str = "", contact: str = "", count: int = 10
+    ) -> List[Dict[str, Any]]:
         """Read recent messages from a specific chat or contact.
 
         Uses the Messages SQLite database for reliable message reading.
@@ -165,7 +167,8 @@ class MessagesIntegration:
 
             if contact:
                 # Find chat by contact identifier (phone or email)
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT DISTINCT cm.chat_id
                     FROM chat_message_join cm
                     JOIN chat c ON c.ROWID = cm.chat_id
@@ -174,7 +177,9 @@ class MessagesIntegration:
                     WHERE h.id LIKE ?
                     ORDER BY cm.message_id DESC
                     LIMIT 1
-                """, (f"%{contact}%",))
+                """,
+                    (f"%{contact}%",),
+                )
                 row = cursor.fetchone()
                 if not row:
                     conn.close()
@@ -182,10 +187,7 @@ class MessagesIntegration:
                 db_chat_id = row[0]
             elif chat_id:
                 # Map Messages.app chat_id to DB ROWID
-                cursor.execute(
-                    "SELECT ROWID FROM chat WHERE guid LIKE ?",
-                    (f"%{chat_id}%",)
-                )
+                cursor.execute("SELECT ROWID FROM chat WHERE guid LIKE ?", (f"%{chat_id}%",))
                 row = cursor.fetchone()
                 if not row:
                     conn.close()
@@ -193,10 +195,12 @@ class MessagesIntegration:
                 db_chat_id = row[0]
             else:
                 # Get most recent chat
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT chat_id FROM chat_message_join
                     ORDER BY message_id DESC LIMIT 1
-                """)
+                """
+                )
                 row = cursor.fetchone()
                 if not row:
                     conn.close()
@@ -204,7 +208,8 @@ class MessagesIntegration:
                 db_chat_id = row[0]
 
             # Get messages from chat
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT
                     m.text,
                     m.is_from_me,
@@ -218,7 +223,9 @@ class MessagesIntegration:
                     AND m.text != ''
                 ORDER BY m.date DESC
                 LIMIT ?
-            """, (db_chat_id, count))
+            """,
+                (db_chat_id, count),
+            )
 
             messages = []
             for row in cursor.fetchall():
@@ -228,19 +235,19 @@ class MessagesIntegration:
                     # Messages DB uses nanoseconds since 2001-01-01
                     mac_epoch = datetime(2001, 1, 1, tzinfo=timezone.utc)
                     ts = date_val / 1_000_000_000 if date_val > 1_000_000_000_000 else date_val
-                    msg_time = datetime.fromtimestamp(
-                        mac_epoch.timestamp() + ts
-                    )
+                    msg_time = datetime.fromtimestamp(mac_epoch.timestamp() + ts)
                     date_str = msg_time.strftime("%Y-%m-%d %H:%M")
                 else:
                     date_str = ""
 
-                messages.append({
-                    "text": text,
-                    "sender": "me" if is_from_me else sender,
-                    "is_from_me": bool(is_from_me),
-                    "date": date_str,
-                })
+                messages.append(
+                    {
+                        "text": text,
+                        "sender": "me" if is_from_me else sender,
+                        "is_from_me": bool(is_from_me),
+                        "date": date_str,
+                    }
+                )
 
             conn.close()
             # Return in chronological order
