@@ -47,9 +47,7 @@ class MenuBarApp:
     def __init__(self):
         """Initialize the menu bar app."""
         if rumps is None:
-            raise ImportError(
-                "rumps is required for the GUI. Install with: pip install rumps"
-            )
+            raise ImportError("rumps is required for the GUI. Install with: pip install rumps")
 
         self.app = rumps.App(
             "SortMeOut",
@@ -72,6 +70,7 @@ class MenuBarApp:
 
         # License
         from sortmeout.core.license import get_license
+
         self._license = get_license()
 
         # Check first-run — use onboarding_completed flag, not file existence
@@ -88,6 +87,7 @@ class MenuBarApp:
         # Start proactive monitor (background thread for mail/calendar alerts)
         try:
             from sortmeout.integrations.monitor import get_monitor
+
             self._monitor = get_monitor()
             self._monitor.start()
         except Exception as e:
@@ -155,22 +155,27 @@ class MenuBarApp:
         # Build Trash submenu (dict-style assignment for proper rumps submenu)
         trash_menu = self.app.menu["Trash"]
         trash_menu["View Trash Status"] = rumps.MenuItem(
-            "View Trash Status", callback=self._show_trash_status,
+            "View Trash Status",
+            callback=self._show_trash_status,
         )
         trash_menu["Empty Trash"] = rumps.MenuItem(
-            "Empty Trash", callback=self._empty_trash,
+            "Empty Trash",
+            callback=self._empty_trash,
         )
 
         # Build Help submenu (dict-style assignment for proper rumps submenu)
         help_menu = self.app.menu["Help"]
         help_menu["Documentation"] = rumps.MenuItem(
-            "Documentation", callback=self._open_docs,
+            "Documentation",
+            callback=self._open_docs,
         )
         help_menu["Report Issue"] = rumps.MenuItem(
-            "Report Issue", callback=self._report_issue,
+            "Report Issue",
+            callback=self._report_issue,
         )
         help_menu[f"About SortMeOut v{__version__}"] = rumps.MenuItem(
-            f"About SortMeOut v{__version__}", callback=self._show_about,
+            f"About SortMeOut v{__version__}",
+            callback=self._show_about,
         )
 
         self._update_folders_menu()
@@ -195,9 +200,7 @@ class MenuBarApp:
 
             if not folders:
                 try:
-                    folders_menu.add(
-                        rumps.MenuItem("No folders configured", callback=None)
-                    )
+                    folders_menu.add(rumps.MenuItem("No folders configured", callback=None))
                 except Exception:
                     pass
             else:
@@ -215,9 +218,7 @@ class MenuBarApp:
 
             try:
                 folders_menu.add(None)
-                folders_menu.add(
-                    rumps.MenuItem("Add Folder...", callback=self._add_folder)
-                )
+                folders_menu.add(rumps.MenuItem("Add Folder...", callback=self._add_folder))
             except Exception:
                 pass
         except Exception as e:
@@ -234,12 +235,11 @@ class MenuBarApp:
             self._running = False
             sender.title = "Start Watching"
             self.app.title = "SortMeOut"
-            rumps.notification(
-                "SortMeOut", "Stopped", "File watching has been stopped."
-            )
+            rumps.notification("SortMeOut", "Stopped", "File watching has been stopped.")
         else:
             # License gate
             from sortmeout.core.license import can_watch_filesystem, LicenseAuthority
+
             if not can_watch_filesystem():
                 rumps.alert(
                     title="License Required",
@@ -300,9 +300,7 @@ class MenuBarApp:
             )
             return
 
-        threading.Thread(
-            target=self._do_organize, args=(folders,), daemon=True
-        ).start()
+        threading.Thread(target=self._do_organize, args=(folders,), daemon=True).start()
 
     def _do_organize(self, folders):
         """Run organization in background with grouped notification summary."""
@@ -346,6 +344,7 @@ class MenuBarApp:
         """Open the AI assistant chat window."""
         try:
             from sortmeout.gui.chat_window import show_chat_window
+
             show_chat_window()
         except ImportError as e:
             logger.error("Could not import chat_window: %s", e)
@@ -361,6 +360,7 @@ class MenuBarApp:
         """Open the Image Studio window for AI image generation and editing."""
         try:
             from sortmeout.gui.image_window import show_image_window
+
             show_image_window()
         except ImportError as e:
             logger.error("Could not import image_window: %s", e)
@@ -374,17 +374,27 @@ class MenuBarApp:
 
     def _daily_briefing(self, _) -> None:
         """Show a quick daily briefing notification with calendar, mail, and deadlines."""
+
         def _run_briefing():
             try:
-                lines = ["☀️ Good " + (
-                    "morning" if __import__("datetime").datetime.now().hour < 12
-                    else "afternoon" if __import__("datetime").datetime.now().hour < 17
-                    else "evening"
-                ) + "!\n"]
+                lines = [
+                    "☀️ Good "
+                    + (
+                        "morning"
+                        if __import__("datetime").datetime.now().hour < 12
+                        else (
+                            "afternoon"
+                            if __import__("datetime").datetime.now().hour < 17
+                            else "evening"
+                        )
+                    )
+                    + "!\n"
+                ]
 
                 # Calendar
                 try:
                     from sortmeout.integrations.calendar import CalendarIntegration
+
                     cal = CalendarIntegration()
                     events = cal.get_events_today()
                     if events:
@@ -399,6 +409,7 @@ class MenuBarApp:
                 # Mail
                 try:
                     from sortmeout.integrations.mail import MailIntegration
+
                     mail = MailIntegration()
                     count = mail.get_unread_count()
                     lines.append(f"\n📧 {count} unread email(s)")
@@ -408,6 +419,7 @@ class MenuBarApp:
                 # Deadlines
                 try:
                     from sortmeout.integrations.calendar import CalendarIntegration
+
                     cal = CalendarIntegration()
                     deadlines = cal.get_deadlines(3)
                     if deadlines:
@@ -424,13 +436,13 @@ class MenuBarApp:
 
     def _analyze_file(self, _) -> None:
         """Analyze a file with AI."""
-        script = '''
+        script = """
             tell application "System Events"
                 activate
                 set theFile to choose file with prompt "Select a file to analyze:"
                 return POSIX path of theFile
             end tell
-        '''
+        """
         try:
             result = subprocess.run(
                 ["osascript", "-e", script],
@@ -441,11 +453,14 @@ class MenuBarApp:
                 file_path = result.stdout.strip()
                 try:
                     from sortmeout.ai.assistant import FileAssistant
+
                     assistant = FileAssistant()
                     analysis = assistant.analyze_file(file_path)
                     rumps.alert(
                         title=f"Analysis: {os.path.basename(file_path)}",
-                        message=analysis.get("summary", analysis.get("analysis", "No summary available.")),
+                        message=analysis.get(
+                            "summary", analysis.get("analysis", "No summary available.")
+                        ),
                     )
                 except ImportError:
                     rumps.alert(
@@ -466,7 +481,7 @@ class MenuBarApp:
 
     def _quick_add_rule(self, _) -> None:
         """Quick add a simple extension-based rule."""
-        script = '''
+        script = """
         tell application "System Events"
             activate
             set dialogResult to display dialog "Quick Add Rule\n\nEnter a file extension to organize (e.g., pdf, jpg, docx):" default answer "pdf" buttons {"Cancel", "Add Rule"} default button "Add Rule" with title "SortMeOut - Quick Add"
@@ -476,39 +491,33 @@ class MenuBarApp:
                 return ""
             end if
         end tell
-        '''
-        result = subprocess.run(
-            ["osascript", "-e", script], capture_output=True, text=True
-        )
+        """
+        result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
         extension = result.stdout.strip()
         if not extension:
             return
         extension = extension.lower().lstrip(".")
 
-        dest_script = f'''
+        dest_script = f"""
         tell application "System Events"
             activate
             set destFolder to choose folder with prompt "Choose destination for .{extension} files:"
             return POSIX path of destFolder
         end tell
-        '''
-        result2 = subprocess.run(
-            ["osascript", "-e", dest_script], capture_output=True, text=True
-        )
+        """
+        result2 = subprocess.run(["osascript", "-e", dest_script], capture_output=True, text=True)
         destination = result2.stdout.strip()
         if not destination:
             return
 
-        src_script = '''
+        src_script = """
         tell application "System Events"
             activate
             set srcFolder to choose folder with prompt "Choose folder to watch (e.g., Downloads):"
             return POSIX path of srcFolder
         end tell
-        '''
-        result3 = subprocess.run(
-            ["osascript", "-e", src_script], capture_output=True, text=True
-        )
+        """
+        result3 = subprocess.run(["osascript", "-e", src_script], capture_output=True, text=True)
         source = result3.stdout.strip()
         if not source:
             return
@@ -586,6 +595,7 @@ class MenuBarApp:
         """Show recent activity from history DB."""
         try:
             from sortmeout.core.history import get_history
+
             history = get_history()
             recent = history.get_recent(limit=10)
 
@@ -649,17 +659,15 @@ class MenuBarApp:
 
     def _add_folder(self, _) -> None:
         """Add a folder via native file picker."""
-        script = '''
+        script = """
             tell application "System Events"
                 activate
                 set theFolder to choose folder with prompt "Select a folder to watch:"
                 return POSIX path of theFolder
             end tell
-        '''
+        """
         try:
-            result = subprocess.run(
-                ["osascript", "-e", script], capture_output=True, text=True
-            )
+            result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
             if result.returncode == 0 and result.stdout.strip():
                 folder = result.stdout.strip()
                 if self.sortmeout.add_folder(folder):
@@ -698,9 +706,7 @@ class MenuBarApp:
         )
         if response == 1:
             if empty_trash():
-                rumps.notification(
-                    "SortMeOut", "Trash Emptied", "The Trash has been emptied."
-                )
+                rumps.notification("SortMeOut", "Trash Emptied", "The Trash has been emptied.")
 
     # ──────────────────────────────────────────────────────────────────
     # LICENSE
@@ -731,13 +737,13 @@ class MenuBarApp:
         )
 
         if response == 1:
-            script = '''
+            script = """
                 tell application "System Events"
                     display dialog "Enter your Pro license key:" default answer "" with title "SortMeOut Pro License" buttons {"Cancel", "Activate"} default button "Activate"
                     set theAnswer to text returned of result
                     return theAnswer
                 end tell
-            '''
+            """
             try:
                 result = subprocess.run(
                     ["osascript", "-e", script],
@@ -773,6 +779,7 @@ class MenuBarApp:
         """Open the native settings window."""
         try:
             from sortmeout.gui.settings_window import show_settings_window
+
             show_settings_window(self._config_manager, self._on_settings_changed)
         except ImportError:
             rumps.alert(
@@ -796,6 +803,7 @@ class MenuBarApp:
         """Run first-launch onboarding flow."""
         try:
             from sortmeout.gui.onboarding import run_onboarding
+
             run_onboarding(self.sortmeout, self._config_manager, self._update_folders_menu)
         except ImportError:
             response = rumps.alert(
@@ -862,8 +870,7 @@ class MenuBarApp:
 
         total = sum(folder_counts.values())
         lines = [
-            f"📁 {os.path.basename(f.rstrip('/'))}: {c} file(s)"
-            for f, c in folder_counts.items()
+            f"📁 {os.path.basename(f.rstrip('/'))}: {c} file(s)" for f, c in folder_counts.items()
         ]
 
         subtitle = f"{total} file(s) organized"
@@ -876,18 +883,20 @@ class MenuBarApp:
     def record_file_event(self, folder: str, file_path: str) -> None:
         """Record a file event for batched notification delivery."""
         with self._notification_lock:
-            self._notification_queue.append({
-                "folder": folder,
-                "file": file_path,
-                "time": time.time(),
-            })
+            self._notification_queue.append(
+                {
+                    "folder": folder,
+                    "file": file_path,
+                    "time": time.time(),
+                }
+            )
 
     def _quit(self, _) -> None:
         """Quit the application."""
         if self._running:
             self.sortmeout.stop()
         # Stop proactive monitor
-        if hasattr(self, '_monitor') and self._monitor:
+        if hasattr(self, "_monitor") and self._monitor:
             try:
                 self._monitor.stop()
             except Exception:

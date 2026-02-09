@@ -1174,27 +1174,13 @@ def schedule_status():
     )
 
 
-@main.command()
-def desktop():
-    """Launch the SortMeOut desktop application."""
-    try:
-        from sortmeout.gui.desktop.app import launch_desktop
-
-        console.print("[bold purple]Launching SortMeOut Desktop…[/bold purple]")
-        launch_desktop()
-    except ImportError as e:
-        console.print(f"[red]Missing dependency: {e}[/red]")
-        console.print("Install with: pip install pyobjc-framework-WebKit pyobjc-framework-Cocoa")
-    except Exception as e:
-        console.print(f"[red]Error launching desktop: {e}[/red]")
-
-
 # Image Studio
 @main.command("images")
 def images_command():
     """Open the Image Studio (AI generation + editing)."""
     try:
         from sortmeout.gui.image_window import main as image_main
+
         image_main()
     except ImportError as e:
         console.print(f"[red]Image Studio requires PyObjC: {e}[/red]")

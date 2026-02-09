@@ -96,48 +96,63 @@ def _c(r, g, b, a=1.0):
 
 class Colors:
     WINDOW_BG = _c(1.0, 1.0, 1.0)
-    CONTENT_BG = _c(0.976, 0.980, 0.984)        # gray-50
-    INPUT_BG = _c(0.953, 0.957, 0.965)           # gray-100
+    CONTENT_BG = _c(0.976, 0.980, 0.984)  # gray-50
+    INPUT_BG = _c(0.953, 0.957, 0.965)  # gray-100
     HEADER_BG = _c(1.0, 1.0, 1.0)
     CARD_BG = _c(1.0, 1.0, 1.0)
 
-    TEXT_PRIMARY = _c(0.067, 0.094, 0.153)        # gray-900
-    TEXT_SECONDARY = _c(0.420, 0.447, 0.502)      # gray-500
-    TEXT_MUTED = _c(0.612, 0.639, 0.686)          # gray-400
+    TEXT_PRIMARY = _c(0.067, 0.094, 0.153)  # gray-900
+    TEXT_SECONDARY = _c(0.420, 0.447, 0.502)  # gray-500
+    TEXT_MUTED = _c(0.612, 0.639, 0.686)  # gray-400
     TEXT_ON_PRIMARY = _c(1.0, 1.0, 1.0)
 
-    ACCENT = _c(0.389, 0.400, 0.945)             # #6366F1
-    ACCENT_DARK = _c(0.310, 0.275, 0.898)        # #4F46E5
-    ACCENT_LIGHT = _c(0.506, 0.549, 0.973)       # #818CF8
-    ACCENT_VIOLET = _c(0.545, 0.361, 0.965)      # #8B5CF6
+    ACCENT = _c(0.389, 0.400, 0.945)  # #6366F1
+    ACCENT_DARK = _c(0.310, 0.275, 0.898)  # #4F46E5
+    ACCENT_LIGHT = _c(0.506, 0.549, 0.973)  # #818CF8
+    ACCENT_VIOLET = _c(0.545, 0.361, 0.965)  # #8B5CF6
 
-    SUCCESS = _c(0.063, 0.725, 0.506)             # #10B981
-    WARNING = _c(0.961, 0.620, 0.043)             # #F59E0B
-    ERROR = _c(0.937, 0.267, 0.267)               # #EF4444
+    SUCCESS = _c(0.063, 0.725, 0.506)  # #10B981
+    WARNING = _c(0.961, 0.620, 0.043)  # #F59E0B
+    ERROR = _c(0.937, 0.267, 0.267)  # #EF4444
 
-    DIVIDER = _c(0.898, 0.906, 0.922)             # gray-200
+    DIVIDER = _c(0.898, 0.906, 0.922)  # gray-200
     BORDER = _c(0.898, 0.906, 0.922)
 
-    GALLERY_EMPTY = _c(0.953, 0.957, 0.965)       # gray-100
+    GALLERY_EMPTY = _c(0.953, 0.957, 0.965)  # gray-100
 
 
 class Fonts:
     @staticmethod
-    def h1(): return NSFont.systemFontOfSize_weight_(20, NSFontWeightBold)
+    def h1():
+        return NSFont.systemFontOfSize_weight_(20, NSFontWeightBold)
+
     @staticmethod
-    def h2(): return NSFont.systemFontOfSize_weight_(17, NSFontWeightSemibold)
+    def h2():
+        return NSFont.systemFontOfSize_weight_(17, NSFontWeightSemibold)
+
     @staticmethod
-    def h3(): return NSFont.systemFontOfSize_weight_(15, NSFontWeightSemibold)
+    def h3():
+        return NSFont.systemFontOfSize_weight_(15, NSFontWeightSemibold)
+
     @staticmethod
-    def body(): return NSFont.systemFontOfSize_weight_(13.5, NSFontWeightRegular)
+    def body():
+        return NSFont.systemFontOfSize_weight_(13.5, NSFontWeightRegular)
+
     @staticmethod
-    def body_medium(): return NSFont.systemFontOfSize_weight_(13.5, NSFontWeightMedium)
+    def body_medium():
+        return NSFont.systemFontOfSize_weight_(13.5, NSFontWeightMedium)
+
     @staticmethod
-    def caption(): return NSFont.systemFontOfSize_weight_(11, NSFontWeightMedium)
+    def caption():
+        return NSFont.systemFontOfSize_weight_(11, NSFontWeightMedium)
+
     @staticmethod
-    def caption_regular(): return NSFont.systemFontOfSize_(11)
+    def caption_regular():
+        return NSFont.systemFontOfSize_(11)
+
     @staticmethod
-    def small(): return NSFont.systemFontOfSize_weight_(10, NSFontWeightRegular)
+    def small():
+        return NSFont.systemFontOfSize_weight_(10, NSFontWeightRegular)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -179,7 +194,7 @@ class ImageWindowDelegate(NSObject):
             self.image_window.open_gallery_item(tag)
 
     def _runCallback_(self, timer):
-        if self.image_window and hasattr(self.image_window, '_pending_callback'):
+        if self.image_window and hasattr(self.image_window, "_pending_callback"):
             cb = self.image_window._pending_callback
             self.image_window._pending_callback = None
             if cb:
@@ -252,9 +267,7 @@ class ImageWindow:
 
     def _build_header(self, content, W, H):
         header_h = 60
-        header = NSView.alloc().initWithFrame_(
-            NSMakeRect(0, H - header_h, W, header_h)
-        )
+        header = NSView.alloc().initWithFrame_(NSMakeRect(0, H - header_h, W, header_h))
         header.setAutoresizingMask_(NSViewWidthSizable | NSViewMinYMargin)
         header.setWantsLayer_(True)
         header.layer().setBackgroundColor_(Colors.HEADER_BG.CGColor())
@@ -299,9 +312,7 @@ class ImageWindow:
     def _build_generate_section(self, content, W, H):
         section_h = 230
         top = H - 60 - section_h
-        section = NSView.alloc().initWithFrame_(
-            NSMakeRect(0, top, W, section_h)
-        )
+        section = NSView.alloc().initWithFrame_(NSMakeRect(0, top, W, section_h))
         section.setAutoresizingMask_(NSViewWidthSizable | NSViewMinYMargin)
         section.setWantsLayer_(True)
         section.layer().setBackgroundColor_(Colors.CONTENT_BG.CGColor())
@@ -319,9 +330,7 @@ class ImageWindow:
 
         # Prompt field
         y -= 64
-        self.prompt_field = NSTextView.alloc().initWithFrame_(
-            NSMakeRect(pad, y, W - pad * 2, 56)
-        )
+        self.prompt_field = NSTextView.alloc().initWithFrame_(NSMakeRect(pad, y, W - pad * 2, 56))
         self.prompt_field.setFont_(Fonts.body())
         self.prompt_field.setTextColor_(Colors.TEXT_PRIMARY)
         self.prompt_field.setBackgroundColor_(Colors.INPUT_BG)
@@ -330,9 +339,7 @@ class ImageWindow:
         self.prompt_field.setEditable_(True)
         self.prompt_field.setSelectable_(True)
 
-        prompt_scroll = NSScrollView.alloc().initWithFrame_(
-            NSMakeRect(pad, y, W - pad * 2, 56)
-        )
+        prompt_scroll = NSScrollView.alloc().initWithFrame_(NSMakeRect(pad, y, W - pad * 2, 56))
         prompt_scroll.setDocumentView_(self.prompt_field)
         prompt_scroll.setHasVerticalScroller_(True)
         prompt_scroll.setBorderType_(1)  # NSLineBorder
@@ -353,11 +360,13 @@ class ImageWindow:
         self.size_popup = NSPopUpButton.alloc().initWithFrame_pullsDown_(
             NSMakeRect(pad + 32, opt_y, 160, 24), False
         )
-        self.size_popup.addItemsWithTitles_([
-            "1024×1024 (Square)",
-            "1792×1024 (Landscape)",
-            "1024×1792 (Portrait)",
-        ])
+        self.size_popup.addItemsWithTitles_(
+            [
+                "1024×1024 (Square)",
+                "1792×1024 (Landscape)",
+                "1024×1792 (Portrait)",
+            ]
+        )
         self.size_popup.setFont_(Fonts.caption())
         section.addSubview_(self.size_popup)
 
@@ -395,9 +404,7 @@ class ImageWindow:
         y -= 40
 
         # Generate button
-        self.generate_btn = NSButton.alloc().initWithFrame_(
-            NSMakeRect(pad, y, 150, 32)
-        )
+        self.generate_btn = NSButton.alloc().initWithFrame_(NSMakeRect(pad, y, 150, 32))
         self.generate_btn.setTitle_("✨ Generate Image")
         self.generate_btn.setBezelStyle_(NSBezelStyleRounded)
         self.generate_btn.setFont_(Fonts.body_medium())
@@ -409,16 +416,12 @@ class ImageWindow:
         section.addSubview_(self.generate_btn)
 
         # Edit button
-        edit_btn = NSButton.alloc().initWithFrame_(
-            NSMakeRect(pad + 160, y, 120, 32)
-        )
+        edit_btn = NSButton.alloc().initWithFrame_(NSMakeRect(pad + 160, y, 120, 32))
         edit_btn.setTitle_("🖌 Edit Image")
         edit_btn.setBezelStyle_(NSBezelStyleRounded)
         edit_btn.setFont_(Fonts.body_medium())
         edit_btn.setTarget_(self.delegate)
-        edit_btn.setAction_(
-            objc.selector(self.delegate.editClicked_, signature=b"v@:@")
-        )
+        edit_btn.setAction_(objc.selector(self.delegate.editClicked_, signature=b"v@:@"))
         section.addSubview_(edit_btn)
 
         # Spinner
@@ -456,9 +459,7 @@ class ImageWindow:
 
         # Gallery header bar
         bar_h = 32
-        bar = NSView.alloc().initWithFrame_(
-            NSMakeRect(0, gallery_top - bar_h, W, bar_h)
-        )
+        bar = NSView.alloc().initWithFrame_(NSMakeRect(0, gallery_top - bar_h, W, bar_h))
         bar.setWantsLayer_(True)
         bar.layer().setBackgroundColor_(Colors.WINDOW_BG.CGColor())
         bar.setAutoresizingMask_(NSViewWidthSizable | NSViewMinYMargin)
@@ -480,9 +481,7 @@ class ImageWindow:
         refresh_btn.setBezelStyle_(NSBezelStyleRounded)
         refresh_btn.setFont_(Fonts.caption())
         refresh_btn.setTarget_(self.delegate)
-        refresh_btn.setAction_(
-            objc.selector(self.delegate.refreshGallery_, signature=b"v@:@")
-        )
+        refresh_btn.setAction_(objc.selector(self.delegate.refreshGallery_, signature=b"v@:@"))
         refresh_btn.setAutoresizingMask_(1 << 0)  # NSViewMinXMargin
         bar.addSubview_(refresh_btn)
 
@@ -490,19 +489,13 @@ class ImageWindow:
 
         # Gallery scroll area
         scroll_h = gallery_top - bar_h
-        self.gallery_scroll = NSScrollView.alloc().initWithFrame_(
-            NSMakeRect(0, 0, W, scroll_h)
-        )
+        self.gallery_scroll = NSScrollView.alloc().initWithFrame_(NSMakeRect(0, 0, W, scroll_h))
         self.gallery_scroll.setHasVerticalScroller_(True)
-        self.gallery_scroll.setAutoresizingMask_(
-            NSViewWidthSizable | NSViewHeightSizable
-        )
+        self.gallery_scroll.setAutoresizingMask_(NSViewWidthSizable | NSViewHeightSizable)
         self.gallery_scroll.setBackgroundColor_(Colors.CONTENT_BG)
         self.gallery_scroll.setDrawsBackground_(True)
 
-        self.gallery_view = NSView.alloc().initWithFrame_(
-            NSMakeRect(0, 0, W, scroll_h)
-        )
+        self.gallery_view = NSView.alloc().initWithFrame_(NSMakeRect(0, 0, W, scroll_h))
         self.gallery_scroll.setDocumentView_(self.gallery_view)
 
         content.addSubview_(self.gallery_scroll)
@@ -517,18 +510,18 @@ class ImageWindow:
         output_dir = Path(OUTPUT_DIR)
 
         if output_dir.exists():
-            for f in sorted(
-                output_dir.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True
-            ):
+            for f in sorted(output_dir.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True):
                 if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".tiff"}:
                     try:
                         stat = f.stat()
-                        self.gallery_images.append({
-                            "path": str(f),
-                            "name": f.name,
-                            "size": stat.st_size,
-                            "modified": stat.st_mtime,
-                        })
+                        self.gallery_images.append(
+                            {
+                                "path": str(f),
+                                "name": f.name,
+                                "size": stat.st_size,
+                                "modified": stat.st_mtime,
+                            }
+                        )
                     except Exception:
                         pass
 
@@ -596,9 +589,7 @@ class ImageWindow:
         self.gallery_view.addSubview_(title)
 
         # Subtitle
-        sub = NSTextField.labelWithString_(
-            "Generate your first image with DALL·E 3 above"
-        )
+        sub = NSTextField.labelWithString_("Generate your first image with DALL·E 3 above")
         sub.setFont_(Fonts.body())
         sub.setTextColor_(Colors.TEXT_MUTED)
         sub.setAlignment_(NSTextAlignmentCenter)
@@ -615,9 +606,7 @@ class ImageWindow:
         card.layer().setBorderColor_(Colors.BORDER.CGColor())
 
         # Thumbnail
-        thumb_view = NSImageView.alloc().initWithFrame_(
-            NSMakeRect(0, h - thumb_h, w, thumb_h)
-        )
+        thumb_view = NSImageView.alloc().initWithFrame_(NSMakeRect(0, h - thumb_h, w, thumb_h))
         thumb_view.setImageScaling_(NSImageScaleProportionallyUpOrDown)
         thumb_view.setWantsLayer_(True)
         thumb_view.layer().setCornerRadius_(8)
@@ -653,9 +642,7 @@ class ImageWindow:
         btn = NSButton.alloc().initWithFrame_(NSMakeRect(0, 0, w, h))
         btn.setTransparent_(True)
         btn.setTarget_(self.delegate)
-        btn.setAction_(
-            objc.selector(self.delegate.galleryItemClicked_, signature=b"v@:@")
-        )
+        btn.setAction_(objc.selector(self.delegate.galleryItemClicked_, signature=b"v@:@"))
         btn.setTag_(index)
         card.addSubview_(btn)
 
@@ -696,15 +683,18 @@ class ImageWindow:
         def _do():
             try:
                 from sortmeout.integrations.images import get_generator
+
                 gen = get_generator()
                 if not gen.is_available:
-                    self._on_main(lambda: self._generation_done(
-                        {"error": "OpenAI API key not set. Add OPENAI_API_KEY to ~/.config/sortmeout/.env"}
-                    ))
+                    self._on_main(
+                        lambda: self._generation_done(
+                            {
+                                "error": "OpenAI API key not set. Add OPENAI_API_KEY to ~/.config/sortmeout/.env"
+                            }
+                        )
+                    )
                     return
-                result = gen.generate(
-                    prompt=prompt, size=size, quality=quality, style=style
-                )
+                result = gen.generate(prompt=prompt, size=size, quality=quality, style=style)
                 self._on_main(lambda: self._generation_done(result))
             except Exception as e:
                 self._on_main(lambda: self._generation_done({"error": str(e)}))
@@ -729,17 +719,16 @@ class ImageWindow:
 
     def do_edit(self):
         """Open a file picker and apply editing operations."""
-        script = '''
+        script = """
             tell application "System Events"
                 activate
                 set theFile to choose file with prompt "Select an image to edit:" of type {"public.image"}
                 return POSIX path of theFile
             end tell
-        '''
+        """
         try:
             result = subprocess.run(
-                ["osascript", "-e", script],
-                capture_output=True, text=True, timeout=60
+                ["osascript", "-e", script], capture_output=True, text=True, timeout=60
             )
             if result.returncode != 0 or not result.stdout.strip():
                 return
@@ -752,18 +741,17 @@ class ImageWindow:
     def _show_edit_options(self, image_path):
         """Show edit options dialog via osascript."""
         filename = os.path.basename(image_path)
-        script = f'''
+        script = f"""
             tell application "System Events"
                 activate
                 set editAction to choose from list {{"Resize", "Rotate 90°", "Rotate 180°", "Flip Horizontal", "Flip Vertical", "Grayscale", "Sepia", "Blur", "Sharpen", "Auto Contrast", "Compress (70%)", "Convert to PNG", "Convert to JPEG", "Get Info"}} with prompt "Edit: {filename}" with title "Image Editor"
                 if editAction is false then return ""
                 return item 1 of editAction
             end tell
-        '''
+        """
         try:
             result = subprocess.run(
-                ["osascript", "-e", script],
-                capture_output=True, text=True, timeout=60
+                ["osascript", "-e", script], capture_output=True, text=True, timeout=60
             )
             if result.returncode != 0:
                 return
@@ -783,20 +771,20 @@ class ImageWindow:
         def _do():
             try:
                 from sortmeout.integrations.images import get_editor
+
                 editor = get_editor()
                 result = None
 
                 if action == "Resize":
                     # Ask for width
-                    script = '''
+                    script = """
                         tell application "System Events"
                             display dialog "Enter new width (height auto-calculated):" default answer "800" with title "Resize"
                             return text returned of result
                         end tell
-                    '''
+                    """
                     r = subprocess.run(
-                        ["osascript", "-e", script],
-                        capture_output=True, text=True, timeout=30
+                        ["osascript", "-e", script], capture_output=True, text=True, timeout=30
                     )
                     if r.returncode == 0 and r.stdout.strip():
                         width = int(r.stdout.strip())
@@ -867,6 +855,7 @@ class ImageWindow:
                 f"File: {result.get('size_human', '?')}",
             ]
             from AppKit import NSAlert, NSInformationalAlertStyle
+
             alert = NSAlert.alloc().init()
             alert.setMessageText_(f"Image Info")
             alert.setInformativeText_("\n".join(info_lines))
@@ -876,9 +865,7 @@ class ImageWindow:
             return
 
         out_path = result.get("path", "")
-        self._set_status(
-            f"✅ {action} → {os.path.basename(out_path)}", Colors.SUCCESS
-        )
+        self._set_status(f"✅ {action} → {os.path.basename(out_path)}", Colors.SUCCESS)
         # Open result in Preview
         if out_path:
             subprocess.Popen(["open", out_path])
@@ -910,9 +897,11 @@ class ImageWindow:
         # Store the callback and use a timer to execute it
         self._pending_callback = fn
         NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
-            0.01, self.delegate,
+            0.01,
+            self.delegate,
             objc.selector(self.delegate._runCallback_, signature=b"v@:@"),
-            None, False
+            None,
+            False,
         )
 
     @staticmethod
