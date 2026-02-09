@@ -6,13 +6,10 @@ Design-matched to the SortMeOut website + chat_window.py design system.
 
 import os
 import subprocess
-import sys
 import threading
 import time
 from datetime import datetime
 from pathlib import Path
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     from AppKit import (
@@ -86,73 +83,9 @@ ENV_FILE = os.path.join(CONFIG_DIR, ".env")
 
 
 # ═══════════════════════════════════════════════════════════════════
-# DESIGN SYSTEM — shared with chat_window.py
+# DESIGN SYSTEM — imported from shared theme module
 # ═══════════════════════════════════════════════════════════════════
-
-
-def _c(r, g, b, a=1.0):
-    return NSColor.colorWithCalibratedRed_green_blue_alpha_(r, g, b, a)
-
-
-class Colors:
-    WINDOW_BG = _c(1.0, 1.0, 1.0)
-    CONTENT_BG = _c(0.976, 0.980, 0.984)  # gray-50
-    INPUT_BG = _c(0.953, 0.957, 0.965)  # gray-100
-    HEADER_BG = _c(1.0, 1.0, 1.0)
-    CARD_BG = _c(1.0, 1.0, 1.0)
-
-    TEXT_PRIMARY = _c(0.067, 0.094, 0.153)  # gray-900
-    TEXT_SECONDARY = _c(0.420, 0.447, 0.502)  # gray-500
-    TEXT_MUTED = _c(0.612, 0.639, 0.686)  # gray-400
-    TEXT_ON_PRIMARY = _c(1.0, 1.0, 1.0)
-
-    ACCENT = _c(0.389, 0.400, 0.945)  # #6366F1
-    ACCENT_DARK = _c(0.310, 0.275, 0.898)  # #4F46E5
-    ACCENT_LIGHT = _c(0.506, 0.549, 0.973)  # #818CF8
-    ACCENT_VIOLET = _c(0.545, 0.361, 0.965)  # #8B5CF6
-
-    SUCCESS = _c(0.063, 0.725, 0.506)  # #10B981
-    WARNING = _c(0.961, 0.620, 0.043)  # #F59E0B
-    ERROR = _c(0.937, 0.267, 0.267)  # #EF4444
-
-    DIVIDER = _c(0.898, 0.906, 0.922)  # gray-200
-    BORDER = _c(0.898, 0.906, 0.922)
-
-    GALLERY_EMPTY = _c(0.953, 0.957, 0.965)  # gray-100
-
-
-class Fonts:
-    @staticmethod
-    def h1():
-        return NSFont.systemFontOfSize_weight_(20, NSFontWeightBold)
-
-    @staticmethod
-    def h2():
-        return NSFont.systemFontOfSize_weight_(17, NSFontWeightSemibold)
-
-    @staticmethod
-    def h3():
-        return NSFont.systemFontOfSize_weight_(15, NSFontWeightSemibold)
-
-    @staticmethod
-    def body():
-        return NSFont.systemFontOfSize_weight_(13.5, NSFontWeightRegular)
-
-    @staticmethod
-    def body_medium():
-        return NSFont.systemFontOfSize_weight_(13.5, NSFontWeightMedium)
-
-    @staticmethod
-    def caption():
-        return NSFont.systemFontOfSize_weight_(11, NSFontWeightMedium)
-
-    @staticmethod
-    def caption_regular():
-        return NSFont.systemFontOfSize_(11)
-
-    @staticmethod
-    def small():
-        return NSFont.systemFontOfSize_weight_(10, NSFontWeightRegular)
+from sortmeout.gui.theme import Colors, Fonts, _c
 
 
 # ═══════════════════════════════════════════════════════════════════

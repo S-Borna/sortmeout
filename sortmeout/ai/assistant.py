@@ -217,7 +217,7 @@ class FileAssistant:
         try:
             with open(structure_file, "w") as f:
                 json.dump(structure, f, indent=2)
-        except:
+        except Exception:
             pass
 
     def _scan_directory(self, path: str, max_depth: int = 2, current_depth: int = 0) -> Dict:
@@ -275,7 +275,7 @@ class FileAssistant:
             try:
                 with open(history_file, "r") as f:
                     self.file_history = json.load(f)
-            except:
+            except Exception:
                 self.file_history = []
 
     def _load_conversation_history(self):
@@ -365,7 +365,7 @@ class FileAssistant:
                 try:
                     with open(path, "r", encoding="utf-8", errors="ignore") as f:
                         content_preview = f.read(2000)  # First 2000 chars
-                except:
+                except Exception:
                     pass
 
         info["content_preview"] = content_preview

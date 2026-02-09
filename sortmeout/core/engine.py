@@ -316,7 +316,7 @@ class RuleEngine:
                 # Update file_info for subsequent rules
                 try:
                     file_info = get_file_info(current_path)
-                except:
+                except Exception:
                     pass
 
             # Check if we should stop processing

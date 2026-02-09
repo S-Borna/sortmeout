@@ -6,13 +6,10 @@ AI personality, user identity, and website-matched design system.
 
 import os
 import re
-import sys
 import subprocess
 import threading
 import queue
 from datetime import datetime
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     from AppKit import (
@@ -74,136 +71,9 @@ ENV_FILE = os.path.join(CONFIG_DIR, ".env")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# DESIGN SYSTEM — mirrors website/css/styles.css :root tokens
-# Website: https://sortmeout.pages.dev
-#
-#   --color-primary:       #6366F1
-#   --color-primary-dark:  #4F46E5
-#   --color-primary-light: #818CF8
-#   --color-secondary:     #8B5CF6
-#   --color-gray-950:      #030712
-#   --color-gray-900:      #111827
-#   --color-gray-800:      #1F2937
-#   --color-gray-700:      #374151
-#   --color-gray-400:      #9CA3AF
-#   --color-gray-500:      #6B7280
-#   --color-success:       #10B981
-#   --color-warning:       #F59E0B
-#   --color-error:         #EF4444
+# DESIGN SYSTEM — imported from shared theme module
 # ═══════════════════════════════════════════════════════════════════════════════
-
-
-def _c(r, g, b, a=1.0):
-    """Shorthand color constructor."""
-    return NSColor.colorWithCalibratedRed_green_blue_alpha_(r, g, b, a)
-
-
-class Colors:
-    """Website-matched color palette — LIGHT theme mirroring landing page.
-
-    Mirrors the landing page design system exactly:
-    - Backgrounds: white / gray-50 / gray-100
-    - Text: gray-900 dark on light
-    - Accents: primary (#6366F1) → secondary (#8B5CF6) gradient
-    - Borders: gray-200 (#E5E7EB)
-    """
-
-    # Backgrounds — white / gray-50 / gray-100 (website hero + content palette)
-    WINDOW_BG = _c(1.0, 1.0, 1.0)  # #FFFFFF  white
-    CHAT_BG = _c(0.976, 0.980, 0.984)  # #F9FAFB  gray-50
-    INPUT_BG = _c(0.953, 0.957, 0.965)  # #F3F4F6  gray-100
-    HEADER_BG = _c(1.0, 1.0, 1.0)  # #FFFFFF  white (clean header)
-
-    # Text — gray-900 / gray-500 / gray-400 (dark text on light bg)
-    TEXT_PRIMARY = _c(0.067, 0.094, 0.153)  # #111827  gray-900
-    TEXT_SECONDARY = _c(0.420, 0.447, 0.502)  # #6B7280  gray-500
-    TEXT_MUTED = _c(0.612, 0.639, 0.686)  # #9CA3AF  gray-400
-    TEXT_ON_INDIGO = _c(1.0, 1.0, 1.0)
-    TEXT_PLACEHOLDER = _c(0.612, 0.639, 0.686)  # gray-400
-
-    # Accents — primary / primary-dark / primary-light / secondary
-    ACCENT = _c(0.389, 0.400, 0.945)  # #6366F1  primary
-    ACCENT_DARK = _c(0.310, 0.275, 0.898)  # #4F46E5  primary-dark
-    ACCENT_LIGHT = _c(0.506, 0.549, 0.973)  # #818CF8  primary-light
-    ACCENT_VIOLET = _c(0.545, 0.361, 0.965)  # #8B5CF6  secondary
-    ACCENT_PINK = _c(0.925, 0.286, 0.600)  # #EC4899  accent (website)
-
-    # Semantic
-    SUCCESS = _c(0.063, 0.725, 0.506)  # #10B981
-    WARNING = _c(0.961, 0.620, 0.043)  # #F59E0B
-    ERROR = _c(0.937, 0.267, 0.267)  # #EF4444
-
-    # Buttons
-    BTN_PRIMARY = _c(0.389, 0.400, 0.945)  # primary
-    BTN_HOVER = _c(0.467, 0.475, 0.960)  # brighter primary
-    BTN_DISABLED = _c(0.820, 0.835, 0.859)  # #D1D5DB  gray-300
-
-    # Structure
-    DIVIDER = _c(0.898, 0.906, 0.922)  # #E5E7EB  gray-200
-    BORDER_SUBTLE = _c(0.898, 0.906, 0.922)  # #E5E7EB  gray-200
-    BORDER_FOCUS = _c(0.389, 0.400, 0.945, 0.4)  # primary at 40%
-    CODE_BG = _c(0.953, 0.957, 0.965)  # #F3F4F6  gray-100
-
-    # Markdown
-    HEADING_COLOR = _c(0.067, 0.094, 0.153)  # #111827  gray-900
-    BULLET_COLOR = _c(0.389, 0.400, 0.945)  # #6366F1  primary
-    HR_COLOR = _c(0.820, 0.835, 0.859)  # #D1D5DB  gray-300
-
-    # Thinking indicator
-    DOT_DIM = _c(0.820, 0.835, 0.859, 0.5)  # gray-300 dimmed
-    DOT_BRIGHT = _c(0.389, 0.400, 0.945, 1.0)  # primary
-
-
-class Fonts:
-    """Typography scale."""
-
-    @staticmethod
-    def h1():
-        return NSFont.systemFontOfSize_weight_(20, NSFontWeightBold)
-
-    @staticmethod
-    def h2():
-        return NSFont.systemFontOfSize_weight_(17, NSFontWeightSemibold)
-
-    @staticmethod
-    def h3():
-        return NSFont.systemFontOfSize_weight_(15, NSFontWeightSemibold)
-
-    @staticmethod
-    def body():
-        return NSFont.systemFontOfSize_weight_(13.5, NSFontWeightRegular)
-
-    @staticmethod
-    def body_medium():
-        return NSFont.systemFontOfSize_weight_(13.5, NSFontWeightMedium)
-
-    @staticmethod
-    def bold():
-        return NSFont.systemFontOfSize_weight_(13.5, NSFontWeightSemibold)
-
-    @staticmethod
-    def caption():
-        return NSFont.systemFontOfSize_weight_(11, NSFontWeightMedium)
-
-    @staticmethod
-    def caption_regular():
-        return NSFont.systemFontOfSize_(11)
-
-    @staticmethod
-    def code():
-        return NSFont.monospacedSystemFontOfSize_weight_(12.5, NSFontWeightMedium)
-
-    @staticmethod
-    def title():
-        return NSFont.systemFontOfSize_weight_(16, NSFontWeightSemibold)
-
-    @staticmethod
-    def sender():
-        return NSFont.systemFontOfSize_weight_(12, NSFontWeightSemibold)
-
-    @staticmethod
-    def timestamp():
-        return NSFont.monospacedDigitSystemFontOfSize_weight_(10.5, NSFontWeightRegular)
+from sortmeout.gui.theme import Colors, Fonts, _c
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
