@@ -35,12 +35,14 @@ SortMeOut is a native macOS AI-powered personal assistant that deeply integrates
 **Goal:** Make every existing feature reliable and user-friendly.
 
 ### 1.1 First-Run Experience
+
 - [ ] Onboarding wizard: welcome → set API key → grant permissions → pick watch folders
 - [ ] Auto-detect existing API keys from `.env` and environment
 - [ ] Show permission status on onboarding (Automation, Full Disk Access, Contacts)
 - [ ] "Setup Complete" confirmation with dashboard preview
 
 ### 1.2 Error Handling & Feedback
+
 - [ ] Replace all raw JSON/error displays with friendly user messages
 - [ ] Add retry buttons for failed operations
 - [ ] Loading spinners for all async operations
@@ -48,6 +50,7 @@ SortMeOut is a native macOS AI-powered personal assistant that deeply integrates
 - [ ] Graceful degradation when macOS permissions are missing
 
 ### 1.3 AI Chat Improvements
+
 - [ ] Conversation history persistence (save to SQLite)
 - [ ] Multi-conversation support (sidebar with chat list)
 - [ ] Stream responses (typing effect)
@@ -56,6 +59,7 @@ SortMeOut is a native macOS AI-powered personal assistant that deeply integrates
 - [ ] File/image attachment support
 
 ### 1.4 Integration Hardening
+
 - [ ] Messages: auto-detect permissions and guide user through granting them
 - [ ] Calendar: recurring event support
 - [ ] Email: folder browsing (Inbox, Sent, Drafts, custom)
@@ -64,6 +68,7 @@ SortMeOut is a native macOS AI-powered personal assistant that deeply integrates
 - [ ] Presentations: template selection, theme picker, more slide layouts
 
 ### 1.5 Settings & Configuration
+
 - [ ] Per-feature settings (e.g., default calendar, default mail account)
 - [ ] Dashboard widget ordering (drag & drop)
 - [ ] Notification preferences (which actions should notify)
@@ -77,6 +82,7 @@ SortMeOut is a native macOS AI-powered personal assistant that deeply integrates
 **Goal:** Make the AI proactive and the automation powerful.
 
 ### 2.1 Smart Automation
+
 - [ ] AI-suggested rules ("You often move PDFs to Documents — want a rule?")
 - [ ] Time-based rule triggers (schedule: daily, weekly, on login)
 - [ ] Chained actions (move file → rename → tag → notify)
@@ -84,12 +90,14 @@ SortMeOut is a native macOS AI-powered personal assistant that deeply integrates
 - [ ] Template library (pre-built rules for common workflows)
 
 ### 2.2 Proactive AI
+
 - [ ] Daily briefing (summarize calendar + emails + tasks on app open)
 - [ ] Smart inbox triage (AI categorizes and prioritizes emails)
 - [ ] Meeting prep (gather relevant files/notes before calendar events)
 - [ ] Follow-up reminders (detect "I'll get back to you" in sent emails)
 
 ### 2.3 Enhanced File Management
+
 - [ ] Duplicate file detection
 - [ ] Large file finder
 - [ ] Folder size analysis / disk usage visualization
@@ -97,6 +105,7 @@ SortMeOut is a native macOS AI-powered personal assistant that deeply integrates
 - [ ] Recent files / frequently accessed files dashboard widget
 
 ### 2.4 Image Generation Improvements
+
 - [ ] Image editing (crop, resize, filters) in-app
 - [ ] Style presets for DALL·E (photorealistic, illustration, watercolor)
 - [ ] Image history gallery with regenerate option
@@ -110,6 +119,7 @@ SortMeOut is a native macOS AI-powered personal assistant that deeply integrates
 **Goal:** Make SortMeOut distributable and sustainable.
 
 ### 3.1 App Store Readiness
+
 - [ ] Code signing with Apple Developer certificate
 - [ ] Notarization workflow
 - [ ] App Sandbox compliance evaluation
@@ -118,6 +128,7 @@ SortMeOut is a native macOS AI-powered personal assistant that deeply integrates
 - [ ] macOS 13+ version check and compatibility testing
 
 ### 3.2 Licensing & Payment
+
 - [ ] Stripe integration for Pro subscriptions
 - [ ] License key validation (online + offline grace period)
 - [ ] Feature gating (free tier vs. Pro)
@@ -125,11 +136,13 @@ SortMeOut is a native macOS AI-powered personal assistant that deeply integrates
 - [ ] Renewal/cancellation flow
 
 ### 3.3 Auto-Update
+
 - [ ] Sparkle framework integration for in-app updates
 - [ ] Release notes display on update
 - [ ] Background update check
 
 ### 3.4 Analytics & Telemetry (opt-in)
+
 - [ ] Anonymous usage metrics (which features are used most)
 - [ ] Crash reporting
 - [ ] Performance monitoring
@@ -142,6 +155,7 @@ SortMeOut is a native macOS AI-powered personal assistant that deeply integrates
 **Goal:** Differentiate with unique, powerful features.
 
 ### 4.1 Workflows
+
 - [ ] Multi-step workflow builder (visual canvas)
 - [ ] If/else branching in workflows
 - [ ] Webhook triggers (incoming HTTP events)
@@ -149,17 +163,20 @@ SortMeOut is a native macOS AI-powered personal assistant that deeply integrates
 - [ ] AppleScript dictionary (let other apps control SortMeOut)
 
 ### 4.2 Knowledge Base
+
 - [ ] Index local files for semantic search (RAG)
 - [ ] "Chat with your documents" (PDF, Word, spreadsheet Q&A)
 - [ ] Automatic filing suggestions based on content analysis
 - [ ] Cross-reference notes, emails, and calendar events
 
 ### 4.3 Collaboration
+
 - [ ] Shared rule libraries (export/import rule packs)
 - [ ] Team presets for enterprise (centralized rule deployment)
 - [ ] iCloud sync for rules and settings
 
 ### 4.4 Additional Integrations
+
 - [ ] Reminders.app integration
 - [ ] Safari/browser bookmarks
 - [ ] Finder Quick Actions plugin
@@ -171,6 +188,7 @@ SortMeOut is a native macOS AI-powered personal assistant that deeply integrates
 ## Development Process
 
 ### Branching Strategy
+
 ```
 main ──────────────────────────────────── production
   └── develop ─────────────────────────── integration
@@ -180,6 +198,7 @@ main ─────────────────────────
 ```
 
 ### Release Process
+
 1. Feature branches merge → `develop`
 2. When `develop` is stable → merge to `main`
 3. Tag release: `git tag v1.0.0`
@@ -189,12 +208,14 @@ main ─────────────────────────
 7. Upload to website / distribute
 
 ### Testing Strategy
+
 - **Unit tests**: `tests/` directory (pytest)
 - **Integration tests**: `tests/test_bridge.py` (85 tests)
 - **Manual testing**: Checklist in `DEPLOYMENT_CHECKLIST.md`
 - **Goal**: 80%+ code coverage before v1.0
 
 ### Quality Checklist (per feature)
+
 - [ ] Feature works without API keys (graceful degradation)
 - [ ] Error states have friendly messages
 - [ ] Loading states shown during async operations
