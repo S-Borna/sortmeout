@@ -118,7 +118,7 @@ class MailIntegration:
         # Build account-aware mailbox selector
         if account:
             safe_account = account.replace('"', '\\"')
-            mailbox_js = f'''const accts = Mail.accounts().filter(a => a.name() === "{safe_account}");
+            mailbox_js = f"""const accts = Mail.accounts().filter(a => a.name() === "{safe_account}");
             if (accts.length === 0) return JSON.stringify([]);
             let messages = [];
             const mbs = accts[0].mailboxes();
@@ -132,9 +132,9 @@ class MailIntegration:
             if (messages.length === 0) {{
                 // Fallback: try first mailbox
                 if (mbs.length > 0) messages = mbs[0].messages();
-            }}'''
+            }}"""
         else:
-            mailbox_js = 'let messages = Mail.inbox().messages();'
+            mailbox_js = "let messages = Mail.inbox().messages();"
 
         jxa_script = f"""
         (() => {{

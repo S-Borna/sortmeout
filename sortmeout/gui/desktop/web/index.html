@@ -470,8 +470,8 @@
                     <button class="tab" data-tab="search">Search</button>
                     <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
                         <label style="font-size:12px;color:var(--text-secondary);">Account:</label>
-                        <select id="emailAccountSelect" class="setting-select" style="min-width:140px;font-size:12px;padding:4px 8px;"
-                                onchange="SortMeOut.loadEmails()">
+                        <select id="emailAccountSelect" class="setting-select"
+                            style="min-width:140px;font-size:12px;padding:4px 8px;" onchange="SortMeOut.loadEmails()">
                             <option value="">All Accounts</option>
                         </select>
                     </div>
@@ -517,7 +517,9 @@
             <div class="page-header">
                 <div>
                     <h1 class="page-title">Contacts</h1>
-                    <p class="page-subtitle">Shows all contacts synced in Apple Contacts.app · <a href="#" onclick="SortMeOut.openContactsAccountInfo()" style="color:var(--accent);">Manage accounts</a></p>
+                    <p class="page-subtitle">Shows all contacts synced in Apple Contacts.app · <a href="#"
+                            onclick="SortMeOut.openContactsAccountInfo()" style="color:var(--accent);">Manage
+                            accounts</a></p>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-primary" onclick="SortMeOut.addContact()">
