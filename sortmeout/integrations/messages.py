@@ -34,10 +34,13 @@ class MessagesIntegration:
             )
             if result.returncode != 0:
                 logger.error("AppleScript error: %s", result.stderr.strip())
+                self._last_result_ok = False
                 return ""
+            self._last_result_ok = True
             return result.stdout.strip()
         except Exception as e:
             logger.error("AppleScript failed: %s", e)
+            self._last_result_ok = False
             return ""
 
     def _run_jxa(self, script: str) -> str:
@@ -112,18 +115,29 @@ class MessagesIntegration:
               have the contact in their Messages already.
         """
         # Escape quotes in text
-        safe_text = text.replace('"', '\\"').replace("'", "\\'")
+        safe_text = text.replace("\\", "\\\\").replace('"', '\\"')
+        safe_to = to.replace('"', '\\"')
 
+        # Modern AppleScript syntax that works on macOS Monterey+
         script = f"""
         tell application "Messages"
             set targetService to 1st account whose service type = iMessage
-            set targetBuddy to participant "{to}" of targetService
+            set targetBuddy to buddy "{safe_to}" of targetService
             send "{safe_text}" to targetBuddy
         end tell
         """
         result = self._run_applescript(script)
-        # AppleScript send doesn't return much, check for errors
+        if result == "" and not self._last_success:
+            return {
+                "success": False,
+                "error": f"Failed to send message to {to}. Ensure the contact exists in Messages.app and iMessage is signed in.",
+            }
         return {"success": True, "to": to, "message": text[:50] + "..." if len(text) > 50 else text}
+
+    @property
+    def _last_success(self) -> bool:
+        """Check if last AppleScript succeeded (helper)."""
+        return getattr(self, "_last_result_ok", True)
 
     def send_to_chat(self, chat_id: str, text: str) -> Dict[str, Any]:
         """Send a message to an existing chat by chat ID."""
@@ -264,4 +278,114 @@ class MessagesIntegration:
         return {
             "recent_chats": len(chats),
             "conversations": chats,
+        }
+
+    def get_contacts(self) -> List[Dict[str, Any]]:
+        """Auto-detect iMessage contacts from the Messages database.
+
+        Reads chat.db to find all unique contacts that the user has
+        exchanged messages with. Falls back to Contacts.app if DB unavailable.
+        """
+        import sqlite3
+        import os
+
+        db_path = os.path.expanduser("~/Library/Messages/chat.db")
+        if not os.path.exists(db_path):
+            logger.warning("Messages database not found. Full Disk Access may be required.")
+            return self._get_contacts_from_app()
+
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+
+            # Get all handles (contacts) from the messages database
+            cursor.execute(
+                """
+                SELECT DISTINCT
+                    h.id,
+                    h.service,
+                    COALESCE(h.uncanonicalized_id, h.id) as display_id,
+                    (SELECT COUNT(*) FROM message m
+                     JOIN chat_message_join cmj ON cmj.message_id = m.ROWID
+                     JOIN chat_handle_join chj ON chj.chat_id = cmj.chat_id
+                     WHERE chj.handle_id = h.ROWID) as msg_count,
+                    (SELECT MAX(m.date) FROM message m
+                     JOIN chat_message_join cmj ON cmj.message_id = m.ROWID
+                     JOIN chat_handle_join chj ON chj.chat_id = cmj.chat_id
+                     WHERE chj.handle_id = h.ROWID) as last_msg
+                FROM handle h
+                WHERE h.service = 'iMessage' OR h.service = 'SMS'
+                ORDER BY last_msg DESC
+                LIMIT 100
+            """
+            )
+
+            contacts = []
+            for row in cursor.fetchall():
+                handle_id, service, display_id, msg_count, _ = row
+                contacts.append(
+                    {
+                        "id": handle_id,
+                        "name": display_id,
+                        "service": service or "iMessage",
+                        "message_count": msg_count or 0,
+                    }
+                )
+
+            conn.close()
+            return contacts
+
+        except Exception as e:
+            logger.error("Failed to read contacts from Messages DB: %s", e)
+            logger.info("The app may need Full Disk Access permission.")
+            return self._get_contacts_from_app()
+
+    def _get_contacts_from_app(self) -> List[Dict[str, Any]]:
+        """Fallback: get recently messaged contacts via Messages.app JXA."""
+        jxa_script = """
+        (() => {
+            const Messages = Application("Messages");
+            const buddies = Messages.buddies();
+            const results = [];
+
+            for (let i = 0; i < Math.min(buddies.length, 50); i++) {
+                try {
+                    const b = buddies[i];
+                    results.push({
+                        id: b.handle(),
+                        name: b.name() || b.handle(),
+                        service: b.serviceName() || "iMessage",
+                    });
+                } catch(e) {}
+            }
+
+            return JSON.stringify(results);
+        })()
+        """
+        result = self._run_jxa(jxa_script)
+        if not result:
+            return []
+        try:
+            return json.loads(result)
+        except json.JSONDecodeError:
+            return []
+
+    def check_permissions(self) -> Dict[str, Any]:
+        """Check if the app has the necessary permissions for Messages."""
+        import os
+
+        db_path = os.path.expanduser("~/Library/Messages/chat.db")
+
+        can_read_db = os.path.exists(db_path) and os.access(db_path, os.R_OK)
+
+        return {
+            "database_accessible": can_read_db,
+            "messages_app_available": True,
+            "note": (
+                "Full Disk Access required for reading messages. "
+                "Go to System Settings → Privacy & Security → Full Disk Access "
+                "and add SortMeOut."
+                if not can_read_db
+                else "All permissions OK."
+            ),
         }

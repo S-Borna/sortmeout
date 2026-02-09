@@ -63,6 +63,13 @@ class CalendarIntegration:
             logger.error("AppleScript failed: %s", e)
             return ""
 
+    @staticmethod
+    def _escape_applescript(s: str) -> str:
+        """Escape a string for safe insertion into AppleScript."""
+        if not s:
+            return ""
+        return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "\\r")
+
     # ──────────────────────────────────────────────────────────────
     # READ
     # ──────────────────────────────────────────────────────────────
@@ -247,19 +254,19 @@ class CalendarIntegration:
             all_day: Whether this is an all-day event
             alert_minutes: Minutes before event to show alert (None for no alert)
         """
-        # Build properties
-        props = [f'summary:"{title}"']
+        # Build properties — escape all user input
+        safe_title = self._escape_applescript(title)
 
         if all_day:
-            props.append("alldayEvent:true")
+            pass  # handled below
 
-        location_prop = f', location:"{location}"' if location else ""
-        notes_prop = f', description:"{notes}"' if notes else ""
+        location_prop = f', location:"{self._escape_applescript(location)}"' if location else ""
+        notes_prop = f', description:"{self._escape_applescript(notes)}"' if notes else ""
 
         # Calendar selection
         cal_target = ""
         if calendar_name:
-            cal_target = f'of calendar "{calendar_name}"'
+            cal_target = f'of calendar "{self._escape_applescript(calendar_name)}"'
         else:
             cal_target = "of first calendar"
 
@@ -283,7 +290,7 @@ class CalendarIntegration:
             set minutes of endDate to {end[14:16] if len(end) > 13 else 0}
             set seconds of endDate to 0'''}
 
-            set newEvent to make new event {cal_target} with properties {{summary:"{title}", start date:startDate, end date:endDate{location_prop}{notes_prop}}}
+            set newEvent to make new event {cal_target} with properties {{summary:"{safe_title}", start date:startDate, end date:endDate{location_prop}{notes_prop}}}
 
             {"" if alert_minutes is None else f'''
             tell newEvent

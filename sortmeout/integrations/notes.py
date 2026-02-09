@@ -121,12 +121,14 @@ class NotesIntegration:
     def create_note(self, title: str, body: str, folder: Optional[str] = None) -> Dict[str, Any]:
         """Create a new note."""
         safe_title = title.replace('"', '\\"')
-        safe_body = body.replace('"', '\\"').replace("\n", "\\n")
+        # Notes.app body is HTML — convert newlines to <br>
+        safe_body = body.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "<br>")
 
         if folder:
+            safe_folder = folder.replace('"', '\\"')
             script = f"""
             tell application "Notes"
-                tell folder "{folder}"
+                tell folder "{safe_folder}"
                     make new note with properties {{name:"{safe_title}", body:"{safe_body}"}}
                 end tell
             end tell
@@ -179,7 +181,7 @@ class NotesIntegration:
 
     def append_to_note(self, note_name: str, text: str) -> Dict[str, Any]:
         """Append text to an existing note."""
-        safe_text = text.replace('"', '\\"').replace("\n", "\\n")
+        safe_text = text.replace('"', '\\"').replace("\n", "<br>")
 
         jxa_script = f"""
         (() => {{
@@ -190,7 +192,7 @@ class NotesIntegration:
 
             const n = notes[0];
             const current = n.body();
-            n.body = current + "\\n\\n{safe_text}";
+            n.body = current + "<br><br>{safe_text}";
             return JSON.stringify({{success: true, name: n.name()}});
         }})()
         """
@@ -209,7 +211,7 @@ class NotesIntegration:
             note_name: Title of the note to edit
             new_body: New content to replace the existing body
         """
-        safe_body = new_body.replace('"', '\\"').replace("\n", "\\n")
+        safe_body = new_body.replace('"', '\\"').replace("\n", "<br>")
 
         jxa_script = f"""
         (() => {{

@@ -52,6 +52,9 @@
             case 'rules': loadRules(); break;
             case 'settings': loadSettings(); break;
             case 'messages': loadMessages(); break;
+            case 'files': loadFileManager(); break;
+            case 'images': loadImageGallery(); break;
+            case 'presentations': loadPresentations(); break;
         }
     }
 
@@ -61,6 +64,12 @@
     // ═══════════════════════════════════════════════════════════════════════
 
     async function loadDashboard() {
+        // Apply widget visibility from localStorage
+        const hidden = JSON.parse(localStorage.getItem('dashboard_hidden_widgets') || '[]');
+        document.querySelectorAll('#page-dashboard [data-widget]').forEach(card => {
+            card.style.display = hidden.includes(card.dataset.widget) ? 'none' : '';
+        });
+
         // Update greeting
         const hour = new Date().getHours();
         let greeting = 'Good morning';
@@ -137,6 +146,47 @@
         }
     }
 
+    function configureDashboard() {
+        const widgets = [
+            { id: 'quick-actions', label: 'Quick Actions' },
+            { id: 'events', label: 'Upcoming Events' },
+            { id: 'emails', label: 'Recent Emails' },
+            { id: 'rules', label: 'Active Automations' },
+            { id: 'status', label: 'System Status' },
+        ];
+        const hidden = JSON.parse(localStorage.getItem('dashboard_hidden_widgets') || '[]');
+
+        const rows = widgets.map(w => {
+            const checked = !hidden.includes(w.id) ? 'checked' : '';
+            return `<label style="display:flex;align-items:center;gap:10px;padding:8px 0;cursor:pointer;">
+                <input type="checkbox" ${checked} data-wid="${w.id}"
+                       style="width:18px;height:18px;accent-color:var(--accent);"/>
+                <span>${w.label}</span>
+            </label>`;
+        }).join('');
+
+        showModal('Configure Dashboard', `
+            <p style="margin-bottom:12px;color:var(--text-secondary);">Choose which widgets to show on your dashboard.</p>
+            ${rows}
+            <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;">
+                <button class="btn btn-secondary" onclick="SortMeOut.closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="SortMeOut.saveDashboardConfig()">Save</button>
+            </div>
+        `);
+    }
+
+    function saveDashboardConfig() {
+        const checkboxes = document.querySelectorAll('.modal [data-wid]');
+        const hidden = [];
+        checkboxes.forEach(cb => {
+            if (!cb.checked) hidden.push(cb.dataset.wid);
+        });
+        localStorage.setItem('dashboard_hidden_widgets', JSON.stringify(hidden));
+        closeModal();
+        loadDashboard();
+        showToast('Dashboard updated', 'success');
+    }
+
 
     // ═══════════════════════════════════════════════════════════════════════
     // AI CHAT
@@ -164,7 +214,29 @@
         try {
             const result = await Bridge.chat.send(message);
             typingEl.remove();
-            addChatMessage('assistant', result.response || result.message || JSON.stringify(result));
+
+            // Extract the actual text — handle every possible error shape
+            let reply = '';
+            if (result.error) {
+                // Convert API-key / technical errors to friendly messages
+                const err = result.error;
+                if (err.includes('API key') || err.includes('ANTHROPIC')) {
+                    reply = '⚠️ AI assistant is not configured yet.\n\nGo to **Settings → AI & API** and paste your Anthropic API key, then click Save.';
+                } else {
+                    reply = `⚠️ ${err}`;
+                }
+            } else if (typeof result.response === 'string') {
+                reply = result.response;
+            } else if (typeof result.response === 'object' && result.response) {
+                // Guard against a dict being returned as the response
+                reply = result.response.error
+                    ? `⚠️ ${result.response.error}`
+                    : JSON.stringify(result.response);
+            } else {
+                reply = result.message || 'No response received.';
+            }
+
+            addChatMessage('assistant', reply);
         } catch (err) {
             typingEl.remove();
             addChatMessage('assistant', `Sorry, an error occurred: ${err.message}`);
@@ -220,7 +292,7 @@
                 </div>
             </div>
         `;
-        Bridge.chat.clear().catch(() => {});
+        Bridge.chat.clear().catch(() => { });
     }
 
     function sendSuggestion(text) {
@@ -550,7 +622,102 @@
 
     async function loadMessages() {
         const el = document.getElementById('messagesContainer');
-        el.innerHTML = emptyState('💬', 'Messages', 'Use the AI assistant to send messages or view recent conversations');
+        el.innerHTML = loadingSkeleton(4);
+
+        try {
+            // First check permissions
+            let perms = null;
+            try {
+                perms = await Bridge.messages.checkPermissions();
+            } catch (e) { /* ignore */ }
+
+            // Try to load recent chats
+            const chatsData = await Bridge.messages.getChats(20);
+            if (chatsData.chats && chatsData.chats.length) {
+                el.innerHTML = `
+                    <div class="messages-header" style="padding:0 0 16px 0;">
+                        <h3 style="font-size:14px;color:var(--text-secondary);">Recent Conversations</h3>
+                    </div>
+                ` + chatsData.chats.map((c) => {
+                    const name = c.participants ? c.participants.join(', ') : c.id;
+                    const safeName = name.replace(/'/g, "\\'");
+                    return `
+                    <div class="list-item" onclick="SortMeOut.viewConversation('${safeName}')">
+                        <div class="list-item-icon">💬</div>
+                        <div class="list-item-content">
+                            <div class="list-item-title">${esc(name)}</div>
+                            <div class="list-item-subtitle">${esc(c.serviceName || 'iMessage')}</div>
+                        </div>
+                    </div>
+                `}).join('');
+            } else if (perms && !perms.database_accessible) {
+                el.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🔒</div>
+                        <h3>Permissions Needed</h3>
+                        <p>SortMeOut needs two macOS permissions to work with Messages:</p>
+                        <div style="text-align:left;margin:16px auto;max-width:400px;font-size:13px;line-height:1.8;">
+                            <p><strong>1. Automation</strong> — allows sending messages via Messages.app</p>
+                            <p><strong>2. Full Disk Access</strong> — allows reading message history</p>
+                            <p style="margin-top:12px;">Go to <strong>System Settings → Privacy & Security</strong> and add SortMeOut to both.</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="SortMeOut.openPrivacySettings()" style="margin-top:8px;">Open Privacy Settings</button>
+                    </div>
+                `;
+            } else {
+                el.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">💬</div>
+                        <h3>No Conversations</h3>
+                        <p>Send your first message using the "New Message" button above, or grant Automation permission for Messages.app.</p>
+                        <button class="btn btn-secondary" onclick="SortMeOut.openPrivacySettings()" style="margin-top:12px;">Check Permissions</button>
+                    </div>
+                `;
+            }
+        } catch (err) {
+            el.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">💬</div>
+                    <h3>Messages</h3>
+                    <p>Could not connect to Messages.app. Make sure iMessage is signed in and SortMeOut has Automation permission.</p>
+                    <div style="display:flex;gap:8px;margin-top:16px;justify-content:center;">
+                        <button class="btn btn-primary" onclick="SortMeOut.newMessage()">New Message</button>
+                        <button class="btn btn-secondary" onclick="SortMeOut.openPrivacySettings()">Check Permissions</button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    async function viewConversation(contact) {
+        const el = document.getElementById('messagesContainer');
+        el.innerHTML = loadingSkeleton(6);
+
+        try {
+            const data = await Bridge.messages.read(contact, 30);
+            if (data.messages && data.messages.length) {
+                el.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:8px;padding:0 0 16px 0;">
+                        <button class="btn btn-secondary btn-sm" onclick="SortMeOut.loadMessages()">← Back</button>
+                        <h3 style="font-size:14px;color:var(--text-secondary);">${esc(contact)}</h3>
+                    </div>
+                    <div class="message-thread">
+                        ${data.messages.map((m) => `
+                            <div class="thread-msg ${m.is_from_me ? 'sent' : 'received'}">
+                                <div class="thread-bubble">${esc(m.text)}</div>
+                                <div class="thread-meta">${esc(m.date)} · ${m.is_from_me ? 'You' : esc(m.sender)}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else {
+                el.innerHTML = `
+                    <button class="btn btn-secondary btn-sm" onclick="SortMeOut.loadMessages()">← Back</button>
+                    ` + emptyState('💬', 'No messages', 'No messages found with this contact');
+            }
+        } catch (err) {
+            el.innerHTML = emptyState('⚠️', 'Error', err.message);
+        }
     }
 
     function newMessage() {
@@ -704,17 +871,28 @@
 
     function createPresentation() {
         openModal('New Presentation', `
+            <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:16px;">Creates a .pptx presentation and opens it in Keynote. Describe your slides below — one per line.</p>
             <div class="form-group">
-                <label class="form-label">Title</label>
-                <input class="form-input" id="presTitle" placeholder="Presentation title">
+                <label class="form-label">Presentation Title</label>
+                <input class="form-input" id="presTitle" placeholder="Q1 Review, Team Update…">
             </div>
             <div class="form-group">
-                <label class="form-label">Slides (describe each slide on a new line)</label>
-                <textarea class="form-textarea" id="presSlides" rows="6" placeholder="Title slide: Welcome&#10;Agenda: Topics for today&#10;…"></textarea>
+                <label class="form-label">Subtitle / Author (optional)</label>
+                <input class="form-input" id="presSubtitle" placeholder="Your Name or Team">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Slides</label>
+                <p style="font-size:11px;color:var(--text-tertiary);margin-bottom:6px;">Format: <code>Slide Title: bullet point 1, bullet point 2</code></p>
+                <textarea class="form-textarea" id="presSlides" rows="8" placeholder="Introduction: Welcome to the presentation&#10;Problem: Current challenges we face&#10;Solution: Our proposed approach&#10;Timeline: Key milestones and dates&#10;Next Steps: Action items for the team"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Generate with AI (optional)</label>
+                <input class="form-input" id="presAiPrompt" placeholder="e.g. Create a 5-slide pitch deck about…">
+                <button class="btn btn-sm btn-secondary" onclick="SortMeOut.aiGenerateSlides()" style="margin-top:6px;">✨ Generate Slides with AI</button>
             </div>
         `, [
             { label: 'Cancel', class: 'btn-secondary', action: 'SortMeOut.closeModal()' },
-            { label: 'Create', class: 'btn-primary', action: 'SortMeOut.doCreatePresentation()' },
+            { label: 'Create Presentation', class: 'btn-primary', action: 'SortMeOut.doCreatePresentation()' },
         ]);
     }
 
@@ -725,17 +903,48 @@
 
         const slides = slideText.split('\n').filter(Boolean).map((line) => {
             const [t, ...b] = line.split(':');
-            return { title: t.trim(), body: b.join(':').trim() || '' };
+            const body = b.join(':').trim();
+            // Parse comma-separated bullets into proper content
+            const bullets = body ? body.split(',').map(s => s.trim()).filter(Boolean) : [];
+            return {
+                title: t.trim(),
+                body: body,
+                content: bullets.join('\n'),
+                layout: 'bullets',
+            };
         });
 
         closeModal();
-        toast('Creating presentation in Keynote…', 'info');
+        toast('Creating presentation — will open in Keynote…', 'info');
 
         try {
-            await Bridge.presentations.create(title, slides);
-            toast('Presentation created!', 'success');
+            const result = await Bridge.presentations.create(title, slides);
+            if (result.error) {
+                toast('Failed: ' + result.error, 'error');
+            } else {
+                toast('Presentation created and opened in Keynote!', 'success');
+            }
         } catch (err) {
             toast('Failed: ' + err.message, 'error');
+        }
+    }
+
+    async function aiGenerateSlides() {
+        const prompt = document.getElementById('presAiPrompt')?.value;
+        if (!prompt) return toast('Enter a prompt to generate slides', 'warning');
+
+        toast('Generating slides with AI…', 'info');
+        try {
+            const result = await Bridge.chat.send(`Create a presentation outline for: ${prompt}. Format each slide as "Title: Content" on separate lines. Only output the slide lines, nothing else.`);
+            const reply = result.response || '';
+            // Fill the slides textarea with the AI-generated outline
+            const slidesEl = document.getElementById('presSlides');
+            if (slidesEl && reply) {
+                slidesEl.value = reply;
+                toast('Slides generated — review and click Create', 'success');
+            }
+        } catch (err) {
+            toast('AI generation failed: ' + err.message, 'error');
         }
     }
 
@@ -744,9 +953,138 @@
     // FILES
     // ═══════════════════════════════════════════════════════════════════════
 
+    // ── File Manager ──
+
+    async function loadFileManager(path) {
+        const dir = path || window._currentFilePath || (typeof require !== 'undefined' ? require('os').homedir() : '/Users');
+        window._currentFilePath = dir;
+        const el = document.getElementById('fileGrid');
+        el.innerHTML = loadingSkeleton(6);
+
+        // Update breadcrumb
+        const bc = document.getElementById('fileBreadcrumb');
+        const parts = dir.split('/').filter(Boolean);
+        bc.innerHTML = parts.map((p, i) => {
+            const fullPath = '/' + parts.slice(0, i + 1).join('/');
+            return `<span class="crumb ${i === parts.length - 1 ? 'active' : ''}" onclick="SortMeOut.browseFolder('${fullPath}')">${esc(p)}</span>`;
+        }).join(' <span class="crumb-sep">/</span> ');
+
+        try {
+            const data = await Bridge.files.list(dir);
+            if (data.files && data.files.length) {
+                el.innerHTML = data.files.map((f) => `
+                    <div class="file-card ${f.is_dir ? 'folder' : 'file'}"
+                         onclick="${f.is_dir ? `SortMeOut.browseFolder('${f.path.replace(/'/g, "\\'")}')` : `SortMeOut.openFile('${f.path.replace(/'/g, "\\'")}')`}">
+                        <div class="file-icon">${f.is_dir ? '📁' : fileIcon(f.name)}</div>
+                        <div class="file-name">${esc(f.name)}</div>
+                        <div class="file-meta">${f.is_dir ? '' : formatFileSize(f.size)}</div>
+                    </div>
+                `).join('');
+            } else {
+                el.innerHTML = emptyState('📁', 'Empty folder', 'This folder has no files');
+            }
+        } catch (err) {
+            el.innerHTML = emptyState('⚠️', 'Error loading files', err.message);
+        }
+    }
+
+    function browseFolder(path) {
+        window._currentFilePath = path;
+        loadFileManager(path);
+    }
+
+    function openFile(path) {
+        Bridge.system.openFile(path).catch(() => { });
+    }
+
+    function fileIcon(name) {
+        const ext = (name.split('.').pop() || '').toLowerCase();
+        const icons = {
+            pdf: '📄', doc: '📝', docx: '📝', txt: '📄', md: '📝',
+            jpg: '🖼️', jpeg: '🖼️', png: '🖼️', gif: '🖼️', webp: '🖼️', svg: '🖼️',
+            mp3: '🎵', wav: '🎵', mp4: '🎬', mov: '🎬', avi: '🎬',
+            zip: '📦', dmg: '📦', tar: '📦', gz: '📦',
+            py: '🐍', js: '⚡', html: '🌐', css: '🎨', json: '📋',
+            xls: '📊', xlsx: '📊', csv: '📊', pptx: '📊', key: '📊',
+        };
+        return icons[ext] || '📄';
+    }
+
+    function formatFileSize(bytes) {
+        if (!bytes) return '';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let i = 0;
+        let size = bytes;
+        while (size >= 1024 && i < units.length - 1) { size /= 1024; i++; }
+        return `${size.toFixed(i > 0 ? 1 : 0)} ${units[i]}`;
+    }
+
     function organizeFolder() {
         navigate('chat');
         setTimeout(() => sendMessage('Organize my Downloads folder'), 100);
+    }
+
+    // ── Image Gallery ──
+
+    async function loadImageGallery() {
+        const el = document.getElementById('imagesGallery');
+        el.innerHTML = loadingSkeleton(4);
+
+        try {
+            const data = await Bridge.images.listGallery();
+            if (data.images && data.images.length) {
+                el.innerHTML = '<div class="gallery-grid">' + data.images.map((img) => `
+                    <div class="gallery-card" onclick="SortMeOut.openFile('${img.path.replace(/'/g, "\\'")}')">
+                        <div class="gallery-thumb" style="background-image:url('file://${img.path}')"></div>
+                        <div class="gallery-info">
+                            <span class="gallery-name">${esc(img.name)}</span>
+                            <span class="gallery-size">${formatFileSize(img.size)}</span>
+                        </div>
+                    </div>
+                `).join('') + '</div>';
+            } else {
+                el.innerHTML = emptyState('🎨', 'No images yet', 'Generate your first image with DALL·E 3');
+            }
+        } catch (err) {
+            el.innerHTML = emptyState('⚠️', 'Error loading gallery', err.message);
+        }
+    }
+
+    // ── Presentations ──
+
+    async function loadPresentations() {
+        const el = document.getElementById('presentationsGrid');
+        // List any existing presentations from ~/Documents/Presentations/
+        try {
+            const data = await Bridge.files.list(null, '~/Documents/Presentations');
+            const pptxFiles = (data.files || []).filter(f => f.name.endsWith('.pptx') || f.name.endsWith('.key'));
+            if (pptxFiles.length > 0) {
+                el.innerHTML = pptxFiles.map(f => `
+                    <div class="file-card" onclick="SortMeOut.openFile('${f.path.replace(/'/g, "\\\'")}')">
+                        <div class="file-icon">📊</div>
+                        <div class="file-name">${esc(f.name)}</div>
+                        <div class="file-meta">${formatFileSize(f.size)}</div>
+                    </div>
+                `).join('');
+            } else {
+                el.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📊</div>
+                        <h3>Presentations</h3>
+                        <p>Create presentations using the button above. SortMeOut generates <strong>.pptx</strong> files and opens them in <strong>Apple Keynote</strong>.</p>
+                        <p style="font-size:12px;color:var(--text-tertiary);margin-top:8px;">You can also use the AI assistant to generate a presentation from a description.</p>
+                    </div>
+                `;
+            }
+        } catch (e) {
+            el.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📊</div>
+                    <h3>Presentations</h3>
+                    <p>Create presentations using the button above. SortMeOut generates <strong>.pptx</strong> files and opens them in <strong>Apple Keynote</strong>.</p>
+                </div>
+            `;
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -765,12 +1103,79 @@
         } catch (e) {
             // Use defaults
         }
+
+        // Load API key status
+        try {
+            const keys = await Bridge.settings.getApiKeys();
+            const antEl = document.getElementById('settingAnthropicKey');
+            const oaiEl = document.getElementById('settingOpenAIKey');
+            if (keys.anthropic) antEl.placeholder = '••••••••••••• (configured)';
+            if (keys.openai) oaiEl.placeholder = '••••••••••••• (configured)';
+        } catch (e) { }
+
+        // Check integration status
+        checkIntegrations();
+    }
+
+    async function checkIntegrations() {
+        try {
+            const status = await Bridge.settings.checkIntegrations();
+            const map = {
+                mail: 'intStatusMail',
+                messages: 'intStatusMessages',
+                calendar: 'intStatusCalendar',
+                contacts: 'intStatusContacts',
+                notes: 'intStatusNotes',
+                images: 'intStatusImages',
+                presentations: 'intStatusPres',
+            };
+            for (const [key, elId] of Object.entries(map)) {
+                const el = document.getElementById(elId);
+                if (!el) continue;
+                const info = status[key];
+                if (info && info.available) {
+                    el.textContent = '✅ Ready';
+                    el.style.color = 'var(--success)';
+                } else {
+                    el.textContent = `⚠️ ${(info && info.status) || 'Not available'}`;
+                    el.style.color = 'var(--warning)';
+                }
+            }
+        } catch (e) {
+            // Leave as "Checking…"
+        }
+    }
+
+    async function saveApiKey(provider) {
+        const inputId = provider === 'anthropic' ? 'settingAnthropicKey' : 'settingOpenAIKey';
+        const key = document.getElementById(inputId).value.trim();
+        if (!key) return toast('Please enter an API key', 'warning');
+
+        try {
+            const result = await Bridge.settings.saveApiKey(provider, key);
+            if (result.success) {
+                toast(`${provider === 'anthropic' ? 'Anthropic' : 'OpenAI'} API key saved!`, 'success');
+                document.getElementById(inputId).value = '';
+                document.getElementById(inputId).placeholder = '••••••••••••• (configured)';
+                // Recheck integrations
+                checkIntegrations();
+            } else {
+                toast(result.error || 'Failed to save key', 'error');
+            }
+        } catch (err) {
+            toast('Failed to save: ' + err.message, 'error');
+        }
+    }
+
+    function openPrivacySettings() {
+        Bridge.system.openPrivacySettings().catch(() => { });
+        toast('Opening System Settings → Privacy & Security…', 'info');
     }
 
     function toggleTheme() {
         const dark = document.getElementById('settingDarkMode').checked;
         document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-        Bridge.settings.update({ darkMode: dark }).catch(() => {});
+        Bridge.settings.update({ darkMode: dark }).catch(() => { });
     }
 
     function manageWatchFolders() {
@@ -1100,6 +1505,8 @@
         // Messages
         newMessage,
         doNewMessage,
+        viewConversation,
+        loadMessages: () => loadMessages(),
 
         // Images
         generateImage,
@@ -1109,9 +1516,12 @@
         // Presentations
         createPresentation,
         doCreatePresentation,
+        aiGenerateSlides,
 
         // Files
         organizeFolder,
+        browseFolder,
+        openFile,
 
         // Rules
         createRule,
@@ -1120,9 +1530,15 @@
         // Quick Actions
         quickAction,
 
+        // Dashboard
+        configureDashboard,
+        saveDashboardConfig,
+
         // Settings
         toggleTheme,
         manageWatchFolders,
+        saveApiKey,
+        openPrivacySettings,
 
         // Modal
         closeModal,

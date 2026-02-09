@@ -126,12 +126,17 @@
             search: (query) => callBridge('email_search', { query }),
             searchAll: (query) => callBridge('email_search_all', { query }),
             getUnread: (account) => callBridge('email_unread', { account }),
+            read: (messageId) => callBridge('email_read', { message_id: messageId }),
+            markRead: (messageId) => callBridge('email_mark_read', { message_id: messageId }),
         },
 
         // ── Messages ──
         messages: {
             send: (to, body) => callBridge('msg_send', { to, body }),
             read: (contact, count) => callBridge('msg_read', { contact, count }),
+            getChats: (count) => callBridge('msg_chats', { count }),
+            getContacts: () => callBridge('msg_contacts'),
+            checkPermissions: () => callBridge('msg_permissions'),
         },
 
         // ── Calendar ──
@@ -187,6 +192,9 @@
             get: () => callBridge('settings_get'),
             update: (settings) => callBridge('settings_update', settings),
             getWatchFolders: () => callBridge('settings_watch_folders'),
+            saveApiKey: (provider, key) => callBridge('settings_save_api_key', { provider, key }),
+            getApiKeys: () => callBridge('settings_get_api_keys'),
+            checkIntegrations: () => callBridge('settings_check_integrations'),
         },
 
         // ── System ──
@@ -196,6 +204,7 @@
             openFile: (path) => callBridge('system_open_file', { path }),
             clipboard: (text) => callBridge('system_clipboard', { text }),
             notify: (title, body) => fireBridge('system_notify', { title, body }),
+            openPrivacySettings: () => callBridge('system_open_privacy'),
         },
 
         // ── Raw ──

@@ -134,7 +134,7 @@ class FileAssistant:
 
     def __init__(self, api_key: Optional[str] = None):
         """Initialize the assistant with Claude API."""
-        self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
+        self.api_key = api_key or self._load_api_key()
 
         if not self.api_key:
             raise ValueError("Claude API key required. Set ANTHROPIC_API_KEY or pass api_key.")
@@ -152,6 +152,41 @@ class FileAssistant:
         self._load_folder_structure()
         self._load_history()
         self._load_conversation_history()
+
+    @staticmethod
+    def _load_api_key() -> Optional[str]:
+        """Load Anthropic API key from .env file, config file, or environment.
+
+        Bundled .app on macOS does NOT inherit shell env vars, so we must
+        read from disk first.
+        """
+        # 1. Try .env file in config directory
+        env_file = os.path.expanduser("~/.config/sortmeout/.env")
+        if os.path.exists(env_file):
+            try:
+                with open(env_file, "r") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line.startswith("ANTHROPIC_API_KEY="):
+                            key = line.split("=", 1)[1].strip()
+                            if key:
+                                return key
+            except Exception:
+                pass
+
+        # 2. Try dedicated config file
+        config_file = os.path.expanduser("~/Documents/Config/Anthropic/anthropic_api_key.txt")
+        if os.path.exists(config_file):
+            try:
+                with open(config_file, "r") as f:
+                    key = f.read().strip()
+                    if key:
+                        return key
+            except Exception:
+                pass
+
+        # 3. Fall back to environment variable (works in terminal, not in .app)
+        return os.environ.get("ANTHROPIC_API_KEY")
 
     def _load_folder_structure(self):
         """Scan and learn the user's folder structure."""

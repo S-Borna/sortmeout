@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SortMeOut</title>
     <link rel="stylesheet" href="css/app.css">
 </head>
+
 <body>
     <!-- ═══ SIDEBAR ═══ -->
     <nav id="sidebar" class="sidebar">
@@ -16,7 +18,7 @@
             </div>
             <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                 </svg>
             </button>
         </div>
@@ -24,8 +26,8 @@
         <div class="sidebar-search">
             <div class="search-box">
                 <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
-                    <path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+                    <path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 </svg>
                 <input type="text" placeholder="Search everything…" id="globalSearch" autocomplete="off">
                 <kbd>⌘K</kbd>
@@ -36,11 +38,18 @@
             <div class="nav-section">
                 <div class="nav-label">Main</div>
                 <a class="nav-item active" data-page="dashboard" href="#">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z" stroke="currentColor" stroke-width="1.5"/><path d="M9 22V12h6v10" stroke="currentColor" stroke-width="1.5"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z" stroke="currentColor"
+                            stroke-width="1.5" />
+                        <path d="M9 22V12h6v10" stroke="currentColor" stroke-width="1.5" />
+                    </svg>
                     <span>Dashboard</span>
                 </a>
                 <a class="nav-item" data-page="chat" href="#">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z" stroke="currentColor" stroke-width="1.5"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z" stroke="currentColor"
+                            stroke-width="1.5" />
+                    </svg>
                     <span>AI Assistant</span>
                     <span class="badge">AI</span>
                 </a>
@@ -49,11 +58,17 @@
             <div class="nav-section">
                 <div class="nav-label">Organize</div>
                 <a class="nav-item" data-page="files" href="#">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z" stroke="currentColor" stroke-width="1.5"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z"
+                            stroke="currentColor" stroke-width="1.5" />
+                    </svg>
                     <span>File Manager</span>
                 </a>
                 <a class="nav-item" data-page="rules" href="#">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.5"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor"
+                            stroke-width="1.5" />
+                    </svg>
                     <span>Automation</span>
                 </a>
             </div>
@@ -61,15 +76,25 @@
             <div class="nav-section">
                 <div class="nav-label">Communication</div>
                 <a class="nav-item" data-page="email" href="#">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="1.5"/><path d="M22 6l-10 7L2 6" stroke="currentColor" stroke-width="1.5"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                            stroke="currentColor" stroke-width="1.5" />
+                        <path d="M22 6l-10 7L2 6" stroke="currentColor" stroke-width="1.5" />
+                    </svg>
                     <span>Email</span>
                 </a>
                 <a class="nav-item" data-page="messages" href="#">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12h8M4 18h4M20 4H4a2 2 0 0 0-2 2v16l4-4h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" stroke="currentColor" stroke-width="1.5"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M4 12h8M4 18h4M20 4H4a2 2 0 0 0-2 2v16l4-4h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"
+                            stroke="currentColor" stroke-width="1.5" />
+                    </svg>
                     <span>Messages</span>
                 </a>
                 <a class="nav-item" data-page="contacts" href="#">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.5" />
+                        <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="1.5" />
+                    </svg>
                     <span>Contacts</span>
                 </a>
             </div>
@@ -77,15 +102,25 @@
             <div class="nav-section">
                 <div class="nav-label">Productivity</div>
                 <a class="nav-item" data-page="calendar" href="#">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.5"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5" />
+                        <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.5" />
+                    </svg>
                     <span>Calendar</span>
                 </a>
                 <a class="nav-item" data-page="notes" href="#">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="1.5"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="1.5"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor"
+                            stroke-width="1.5" />
+                        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="1.5" />
+                    </svg>
                     <span>Notes</span>
                 </a>
                 <a class="nav-item" data-page="presentations" href="#">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 21h8M12 17v4" stroke="currentColor" stroke-width="1.5"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.5" />
+                        <path d="M8 21h8M12 17v4" stroke="currentColor" stroke-width="1.5" />
+                    </svg>
                     <span>Presentations</span>
                 </a>
             </div>
@@ -93,7 +128,11 @@
             <div class="nav-section">
                 <div class="nav-label">Creative</div>
                 <a class="nav-item" data-page="images" href="#">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.5"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5" />
+                        <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" stroke-width="1.5" />
+                        <path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.5" />
+                    </svg>
                     <span>Images</span>
                     <span class="badge badge-purple">DALL·E</span>
                 </a>
@@ -102,7 +141,12 @@
             <div class="nav-section">
                 <div class="nav-label">System</div>
                 <a class="nav-item" data-page="settings" href="#">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.5"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+                            stroke="currentColor" stroke-width="1.5" />
+                    </svg>
                     <span>Settings</span>
                 </a>
             </div>
@@ -132,8 +176,18 @@
                     <p class="page-subtitle">Here's what's happening today</p>
                 </div>
                 <div class="header-actions">
+                    <button class="btn btn-ghost" onclick="SortMeOut.configureDashboard()" title="Configure widgets">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9 1.65 1.65 0 0 0 4.27 7.18l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                        Configure
+                    </button>
                     <button class="btn btn-secondary" onclick="SortMeOut.navigate('chat')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z" stroke="currentColor" stroke-width="1.5"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"
+                                stroke="currentColor" stroke-width="1.5" />
+                        </svg>
                         Ask AI
                     </button>
                 </div>
@@ -141,7 +195,7 @@
 
             <div class="dashboard-grid">
                 <!-- Quick actions -->
-                <div class="card card-lg">
+                <div class="card card-lg" data-widget="quick-actions">
                     <div class="card-header">
                         <h3>Quick Actions</h3>
                     </div>
@@ -174,7 +228,7 @@
                 </div>
 
                 <!-- Upcoming events -->
-                <div class="card">
+                <div class="card" data-widget="events">
                     <div class="card-header">
                         <h3>Upcoming Events</h3>
                         <button class="btn-icon" onclick="SortMeOut.navigate('calendar')" title="View all">→</button>
@@ -189,7 +243,7 @@
                 </div>
 
                 <!-- Recent emails -->
-                <div class="card">
+                <div class="card" data-widget="emails">
                     <div class="card-header">
                         <h3>Recent Emails</h3>
                         <button class="btn-icon" onclick="SortMeOut.navigate('email')" title="View all">→</button>
@@ -204,7 +258,7 @@
                 </div>
 
                 <!-- Active rules -->
-                <div class="card">
+                <div class="card" data-widget="rules">
                     <div class="card-header">
                         <h3>Active Automations</h3>
                         <button class="btn-icon" onclick="SortMeOut.navigate('rules')" title="View all">→</button>
@@ -218,7 +272,7 @@
                 </div>
 
                 <!-- System status -->
-                <div class="card">
+                <div class="card" data-widget="status">
                     <div class="card-header">
                         <h3>System Status</h3>
                     </div>
@@ -265,7 +319,10 @@
                     </div>
                     <div class="chat-header-right">
                         <button class="btn btn-ghost" onclick="SortMeOut.clearChat()" title="New conversation">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" />
+                            </svg>
                             New Chat
                         </button>
                     </div>
@@ -277,12 +334,20 @@
                             <div class="logo-icon large">S</div>
                         </div>
                         <h2>What can I help you with?</h2>
-                        <p>I can organize files, send emails, manage your calendar, create images, write notes, and much more.</p>
+                        <p>I can organize files, send emails, manage your calendar, create images, write notes, and much
+                            more.</p>
                         <div class="chat-suggestions">
-                            <button class="suggestion" onclick="SortMeOut.sendSuggestion('Organize my Downloads folder')">📁 Organize my Downloads</button>
-                            <button class="suggestion" onclick="SortMeOut.sendSuggestion('What meetings do I have today?')">📅 Today's meetings</button>
-                            <button class="suggestion" onclick="SortMeOut.sendSuggestion('Check my recent emails')">✉️ Recent emails</button>
-                            <button class="suggestion" onclick="SortMeOut.sendSuggestion('Generate a landscape image')">🎨 Generate an image</button>
+                            <button class="suggestion"
+                                onclick="SortMeOut.sendSuggestion('Organize my Downloads folder')">📁 Organize my
+                                Downloads</button>
+                            <button class="suggestion"
+                                onclick="SortMeOut.sendSuggestion('What meetings do I have today?')">📅 Today's
+                                meetings</button>
+                            <button class="suggestion" onclick="SortMeOut.sendSuggestion('Check my recent emails')">✉️
+                                Recent emails</button>
+                            <button class="suggestion"
+                                onclick="SortMeOut.sendSuggestion('Generate a landscape image')">🎨 Generate an
+                                image</button>
                         </div>
                     </div>
                 </div>
@@ -291,12 +356,20 @@
                     <div class="chat-input-container">
                         <div class="chat-input-actions">
                             <button class="btn-icon" title="Attach file" onclick="SortMeOut.attachFile()">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                    <path
+                                        d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"
+                                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                                </svg>
                             </button>
                         </div>
-                        <textarea id="chatInput" placeholder="Ask me anything… (⌘+Enter to send)" rows="1" autofocus></textarea>
+                        <textarea id="chatInput" placeholder="Ask me anything… (⌘+Enter to send)" rows="1"
+                            autofocus></textarea>
                         <button class="btn btn-primary btn-send" id="chatSendBtn" onclick="SortMeOut.sendMessage()">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.5"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
                         </button>
                     </div>
                     <div class="chat-input-footer">
@@ -315,7 +388,9 @@
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-primary" onclick="SortMeOut.organizeFolder()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
                         Organize Folder
                     </button>
                 </div>
@@ -353,7 +428,9 @@
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-primary" onclick="SortMeOut.createRule()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
                         New Rule
                     </button>
                 </div>
@@ -373,11 +450,13 @@
             <div class="page-header">
                 <div>
                     <h1 class="page-title">Email</h1>
-                    <p class="page-subtitle">Read, compose, and search emails</p>
+                    <p class="page-subtitle">Powered by Apple Mail.app</p>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-primary" onclick="SortMeOut.composeEmail()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
                         Compose
                     </button>
                 </div>
@@ -403,11 +482,13 @@
             <div class="page-header">
                 <div>
                     <h1 class="page-title">Messages</h1>
-                    <p class="page-subtitle">Send and read iMessage & SMS</p>
+                    <p class="page-subtitle">Powered by Apple Messages (iMessage & SMS)</p>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-primary" onclick="SortMeOut.newMessage()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
                         New Message
                     </button>
                 </div>
@@ -427,11 +508,13 @@
             <div class="page-header">
                 <div>
                     <h1 class="page-title">Contacts</h1>
-                    <p class="page-subtitle">Manage your address book</p>
+                    <p class="page-subtitle">Powered by Apple Contacts.app</p>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-primary" onclick="SortMeOut.addContact()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
                         Add Contact
                     </button>
                 </div>
@@ -454,11 +537,13 @@
             <div class="page-header">
                 <div>
                     <h1 class="page-title">Calendar</h1>
-                    <p class="page-subtitle">Events, meetings, and deadlines</p>
+                    <p class="page-subtitle">Powered by Apple Calendar.app</p>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-primary" onclick="SortMeOut.addEvent()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
                         New Event
                     </button>
                 </div>
@@ -477,11 +562,13 @@
             <div class="page-header">
                 <div>
                     <h1 class="page-title">Notes</h1>
-                    <p class="page-subtitle">Apple Notes integration</p>
+                    <p class="page-subtitle">Powered by Apple Notes.app</p>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-primary" onclick="SortMeOut.createNote()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
                         New Note
                     </button>
                 </div>
@@ -501,11 +588,13 @@
             <div class="page-header">
                 <div>
                     <h1 class="page-title">Presentations</h1>
-                    <p class="page-subtitle">Create and manage Keynote presentations</p>
+                    <p class="page-subtitle">Generates .pptx → opens in Apple Keynote</p>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-primary" onclick="SortMeOut.createPresentation()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
                         New Presentation
                     </button>
                 </div>
@@ -526,11 +615,13 @@
             <div class="page-header">
                 <div>
                     <h1 class="page-title">Images</h1>
-                    <p class="page-subtitle">Generate with DALL·E 3, edit with AI</p>
+                    <p class="page-subtitle">Powered by OpenAI DALL·E 3 + Pillow</p>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-primary" onclick="SortMeOut.generateImage()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
                         Generate Image
                     </button>
                     <button class="btn btn-secondary" onclick="SortMeOut.editImage()">Edit Image</button>
@@ -597,14 +688,23 @@
                             <span class="setting-label">Anthropic API Key</span>
                             <span class="setting-desc">Claude AI for the assistant</span>
                         </div>
-                        <input type="password" class="setting-input" id="settingAnthropicKey" placeholder="sk-ant-…">
+                        <div class="setting-input-group">
+                            <input type="password" class="setting-input" id="settingAnthropicKey"
+                                placeholder="sk-ant-…">
+                            <button class="btn btn-sm btn-primary"
+                                onclick="SortMeOut.saveApiKey('anthropic')">Save</button>
+                        </div>
                     </div>
                     <div class="setting-row">
                         <div class="setting-info">
                             <span class="setting-label">OpenAI API Key</span>
                             <span class="setting-desc">DALL·E 3 for image generation</span>
                         </div>
-                        <input type="password" class="setting-input" id="settingOpenAIKey" placeholder="sk-proj-…">
+                        <div class="setting-input-group">
+                            <input type="password" class="setting-input" id="settingOpenAIKey" placeholder="sk-proj-…">
+                            <button class="btn btn-sm btn-primary"
+                                onclick="SortMeOut.saveApiKey('openai')">Save</button>
+                        </div>
                     </div>
                     <div class="setting-row">
                         <div class="setting-info">
@@ -616,6 +716,72 @@
                             <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
                             <option value="claude-3-haiku-20240307">Claude 3 Haiku (fast)</option>
                         </select>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Integrations</h3>
+                    <p class="settings-group-desc">SortMeOut integrates with macOS apps. Each integration requires
+                        permission on first use — macOS will prompt you automatically.</p>
+                    <div id="integrationsStatus">
+                        <div class="setting-row integration-row">
+                            <div class="setting-info">
+                                <span class="setting-label">✉️ Mail.app</span>
+                                <span class="setting-desc">Read, compose, and search emails</span>
+                            </div>
+                            <span class="integration-status" id="intStatusMail">Checking…</span>
+                        </div>
+                        <div class="setting-row integration-row">
+                            <div class="setting-info">
+                                <span class="setting-label">💬 Messages (iMessage)</span>
+                                <span class="setting-desc">Send and read iMessages. Requires Full Disk Access for
+                                    reading.</span>
+                            </div>
+                            <span class="integration-status" id="intStatusMessages">Checking…</span>
+                        </div>
+                        <div class="setting-row integration-row">
+                            <div class="setting-info">
+                                <span class="setting-label">📅 Calendar</span>
+                                <span class="setting-desc">View, create, and manage events</span>
+                            </div>
+                            <span class="integration-status" id="intStatusCalendar">Checking…</span>
+                        </div>
+                        <div class="setting-row integration-row">
+                            <div class="setting-info">
+                                <span class="setting-label">👤 Contacts</span>
+                                <span class="setting-desc">Search, create, and edit contacts</span>
+                            </div>
+                            <span class="integration-status" id="intStatusContacts">Checking…</span>
+                        </div>
+                        <div class="setting-row integration-row">
+                            <div class="setting-info">
+                                <span class="setting-label">📝 Notes</span>
+                                <span class="setting-desc">Create, search, and edit Apple Notes</span>
+                            </div>
+                            <span class="integration-status" id="intStatusNotes">Checking…</span>
+                        </div>
+                        <div class="setting-row integration-row">
+                            <div class="setting-info">
+                                <span class="setting-label">🎨 Image Generation (DALL·E 3)</span>
+                                <span class="setting-desc">Requires OpenAI API key</span>
+                            </div>
+                            <span class="integration-status" id="intStatusImages">Checking…</span>
+                        </div>
+                        <div class="setting-row integration-row">
+                            <div class="setting-info">
+                                <span class="setting-label">📊 Presentations (Keynote)</span>
+                                <span class="setting-desc">Create slide decks in Keynote</span>
+                            </div>
+                            <span class="integration-status" id="intStatusPres">Checking…</span>
+                        </div>
+                    </div>
+                    <div class="setting-row" style="margin-top:12px;">
+                        <div class="setting-info">
+                            <span class="setting-label">Permissions Guide</span>
+                            <span class="setting-desc">Open macOS Privacy settings to grant permissions</span>
+                        </div>
+                        <button class="btn btn-secondary" onclick="SortMeOut.openPrivacySettings()">Open
+                            Settings</button>
                     </div>
                 </div>
 
@@ -673,7 +839,10 @@
     <div class="command-palette-overlay" id="cmdPaletteOverlay" onclick="SortMeOut.closeCommandPalette()">
         <div class="command-palette" onclick="event.stopPropagation()">
             <div class="cmd-search">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+                    <path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
                 <input type="text" placeholder="Type a command or search…" id="cmdInput" autocomplete="off">
             </div>
             <div class="cmd-results" id="cmdResults"></div>
@@ -683,4 +852,5 @@
     <script src="js/bridge.js"></script>
     <script src="js/app.js"></script>
 </body>
+
 </html>

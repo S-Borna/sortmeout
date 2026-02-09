@@ -46,7 +46,7 @@ try:
         NSMenu,
         NSMenuItem,
         NSToolbar,
-        NSWindowTitleVisibility,
+        NSWindowTitleHidden,
         NSStatusBar,
     )
     from WebKit import (
@@ -69,8 +69,13 @@ except ImportError as e:
     HAS_APPKIT = False
 
 
-# ── Web directory ──
-WEB_DIR = os.path.join(os.path.dirname(__file__), "web")
+# ── Web directory (supports PyInstaller bundle) ──
+if getattr(sys, "frozen", False):
+    # Running inside PyInstaller bundle
+    _base = sys._MEIPASS
+    WEB_DIR = os.path.join(_base, "sortmeout", "gui", "desktop", "web")
+else:
+    WEB_DIR = os.path.join(os.path.dirname(__file__), "web")
 
 
 class DesktopApp:
@@ -78,9 +83,7 @@ class DesktopApp:
 
     def __init__(self):
         if not HAS_APPKIT:
-            raise RuntimeError(
-                "macOS AppKit required. Run on macOS with PyObjC installed."
-            )
+            raise RuntimeError("macOS AppKit required. Run on macOS with PyObjC installed.")
         self.window: Optional[NSWindow] = None
         self.webview: Optional[WKWebView] = None
         self.bridge: Optional[BridgeHandler] = None
@@ -122,9 +125,7 @@ class DesktopApp:
             ("Paste", "paste:", "v"),
             ("Select All", "selectAll:", "a"),
         ]:
-            item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
-                title, action, key
-            )
+            item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(title, action, key)
             edit_menu.addItem_(item)
         edit_menu_item.setSubmenu_(edit_menu)
 
@@ -162,12 +163,10 @@ class DesktopApp:
         self.window.setTitle_("SortMeOut")
         self.window.setMinSize_((900, 600))
         self.window.setTitlebarAppearsTransparent_(True)
-        self.window.setTitleVisibility_(NSWindowTitleVisibility.NSWindowTitleHidden)
+        self.window.setTitleVisibility_(NSWindowTitleHidden)
 
         # Dark background
-        bg = NSColor.colorWithRed_green_blue_alpha_(
-            0.067, 0.067, 0.09, 1.0  # #111117
-        )
+        bg = NSColor.colorWithRed_green_blue_alpha_(0.067, 0.067, 0.09, 1.0)  # #111117
         self.window.setBackgroundColor_(bg)
 
         # ── WebView configuration ──
@@ -183,9 +182,7 @@ class DesktopApp:
 
         # ── WebView ──
         content_rect = self.window.contentView().bounds()
-        self.webview = WKWebView.alloc().initWithFrame_configuration_(
-            content_rect, config
-        )
+        self.webview = WKWebView.alloc().initWithFrame_configuration_(content_rect, config)
         self.webview.setAutoresizingMask_(0x12)  # Width + Height flexible
         self.webview.setValue_forKey_(False, "drawsBackground")
 
@@ -220,84 +217,86 @@ class DesktopApp:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-class BridgeHandler(NSObject):
-    """Handles messages from JavaScript (WKScriptMessageHandler)."""
+if HAS_APPKIT:
 
-    webview = objc.ivar()
+    class BridgeHandler(NSObject):
+        """Handles messages from JavaScript (WKScriptMessageHandler)."""
 
-    def userContentController_didReceiveScriptMessage_(self, controller, message):
-        """Called when JS sends: window.webkit.messageHandlers.sortmeout.postMessage(...)"""
-        try:
-            data = message.body()
-            if isinstance(data, str):
-                data = json.loads(data)
+        webview = objc.ivar()
 
-            action = data.get("action", "")
-            payload = data.get("payload", {})
-            callback_id = data.get("callbackId", "")
+        def userContentController_didReceiveScriptMessage_(self, controller, message):
+            """Called when JS sends: window.webkit.messageHandlers.sortmeout.postMessage(...)"""
+            try:
+                data = message.body()
+                if isinstance(data, str):
+                    data = json.loads(data)
 
-            # Process in background thread to avoid blocking UI
-            threading.Thread(
-                target=self._process_message,
-                args=(action, payload, callback_id),
-                daemon=True,
-            ).start()
-        except Exception as e:
-            logger.error("Bridge message error: %s", e)
-            self._send_error(data.get("callbackId", ""), str(e))
+                action = data.get("action", "")
+                payload = data.get("payload", {})
+                callback_id = data.get("callbackId", "")
 
-    def _process_message(self, action: str, payload: dict, callback_id: str):
-        """Process a bridge message and send result back to JS."""
-        try:
-            result = self._handle_action(action, payload)
-            self._send_response(callback_id, result)
-        except Exception as e:
-            logger.error("Bridge action error [%s]: %s", action, e)
-            self._send_error(callback_id, str(e))
+                # Process in background thread to avoid blocking UI
+                threading.Thread(
+                    target=self._process_message,
+                    args=(action, payload, callback_id),
+                    daemon=True,
+                ).start()
+            except Exception as e:
+                logger.error("Bridge message error: %s", e)
+                self._send_error(data.get("callbackId", ""), str(e))
 
-    def _handle_action(self, action: str, payload: dict) -> dict:
-        """Route action to the appropriate Python handler."""
-        from sortmeout.gui.desktop.bridge import handle_bridge_action
+        def _process_message(self, action: str, payload: dict, callback_id: str):
+            """Process a bridge message and send result back to JS."""
+            try:
+                result = self._handle_action(action, payload)
+                self._send_response(callback_id, result)
+            except Exception as e:
+                logger.error("Bridge action error [%s]: %s", action, e)
+                self._send_error(callback_id, str(e))
 
-        return handle_bridge_action(action, payload)
+        def _handle_action(self, action: str, payload: dict) -> dict:
+            """Route action to the appropriate Python handler."""
+            from sortmeout.gui.desktop.bridge import handle_bridge_action
 
-    def _send_response(self, callback_id: str, data: dict):
-        """Send success response back to JavaScript."""
-        js = f"window._bridgeCallback('{callback_id}', {json.dumps(data)}, null);"
-        self._eval_js(js)
+            return handle_bridge_action(action, payload)
 
-    def _send_error(self, callback_id: str, error: str):
-        """Send error response back to JavaScript."""
-        safe_err = json.dumps(error)
-        js = f"window._bridgeCallback('{callback_id}', null, {safe_err});"
-        self._eval_js(js)
+        def _send_response(self, callback_id: str, data: dict):
+            """Send success response back to JavaScript."""
+            js = f"window._bridgeCallback('{callback_id}', {json.dumps(data)}, null);"
+            self._eval_js(js)
 
-    def _eval_js(self, js_code: str):
-        """Evaluate JavaScript in the WebView (thread-safe)."""
-        def run_on_main():
-            if self.webview:
-                self.webview.evaluateJavaScript_completionHandler_(js_code, None)
+        def _send_error(self, callback_id: str, error: str):
+            """Send error response back to JavaScript."""
+            safe_err = json.dumps(error)
+            js = f"window._bridgeCallback('{callback_id}', null, {safe_err});"
+            self._eval_js(js)
 
-        # Dispatch to main thread
-        try:
-            from dispatch import dispatch_async, dispatch_get_main_queue
+        def _eval_js(self, js_code: str):
+            """Evaluate JavaScript in the WebView (thread-safe)."""
 
-            dispatch_async(dispatch_get_main_queue(), run_on_main)
-        except ImportError:
-            # Fallback: just run directly (may not be thread-safe)
-            run_on_main()
+            def run_on_main():
+                if self.webview:
+                    self.webview.evaluateJavaScript_completionHandler_(js_code, None)
 
+            # Dispatch to main thread
+            try:
+                from dispatch import dispatch_async, dispatch_get_main_queue
 
-class WindowDelegate(NSObject):
-    """Handle window events."""
+                dispatch_async(dispatch_get_main_queue(), run_on_main)
+            except ImportError:
+                # Fallback: just run directly (may not be thread-safe)
+                run_on_main()
 
-    def windowWillClose_(self, notification):
-        """Terminate app when window closes."""
-        NSApp.terminate_(self)
+    class WindowDelegate(NSObject):
+        """Handle window events."""
 
-    def windowDidBecomeKey_(self, notification):
-        """Window became active."""
-        pass
+        def windowWillClose_(self, notification):
+            """Terminate app when window closes."""
+            NSApp.terminate_(self)
+
+        def windowDidBecomeKey_(self, notification):
+            """Window became active."""
+            pass
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

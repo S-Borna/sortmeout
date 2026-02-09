@@ -247,15 +247,20 @@ class MailIntegration:
             attachment: File path to attach (optional)
             send: Send immediately if True, otherwise open as draft
         """
+        safe_to = self._escape_applescript(to)
+        safe_subject = self._escape_applescript(subject)
+        safe_body = self._escape_applescript(body)
+
         cc_block = ""
         if cc:
+            safe_cc = self._escape_applescript(cc)
             cc_block = f"""
-            make new cc recipient at end of cc recipients of msg with properties {{address:"{cc}"}}
+            make new cc recipient at end of cc recipients of msg with properties {{address:"{safe_cc}"}}
             """
 
         attach_block = ""
         if attachment:
-            safe_path = attachment.replace('"', '\\"')
+            safe_path = self._escape_applescript(attachment)
             attach_block = f"""
             tell msg
                 make new attachment with properties {{file name:(POSIX file "{safe_path}" as alias)}} at after last paragraph
@@ -267,9 +272,9 @@ class MailIntegration:
 
         script = f"""
         tell application "Mail"
-            set msg to make new outgoing message with properties {{subject:"{subject}", content:"{body}", visible:true}}
+            set msg to make new outgoing message with properties {{subject:"{safe_subject}", content:"{safe_body}", visible:true}}
             tell msg
-                make new to recipient at end of to recipients with properties {{address:"{to}"}}
+                make new to recipient at end of to recipients with properties {{address:"{safe_to}"}}
                 {cc_block}
             end tell
             {attach_block}
@@ -285,6 +290,17 @@ class MailIntegration:
             "subject": subject,
             "attachment": attachment or None,
         }
+
+    @staticmethod
+    def _escape_applescript(s: str) -> str:
+        """Escape a string for safe insertion into AppleScript."""
+        return (
+            s.replace("\\", "\\\\")
+            .replace('"', '\\"')
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t")
+        )
 
     def reply_to_email(
         self, message_id: int, reply_body: str, send: bool = False

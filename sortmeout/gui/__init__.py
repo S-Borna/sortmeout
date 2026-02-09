@@ -8,9 +8,27 @@ Structure:
     - rule_editor.py: Rule creation/editing window
 """
 
-from sortmeout.gui.app import main, MenuBarApp
-from sortmeout.gui.chat_window import show_chat_window
-from sortmeout.gui.rule_editor import show_rule_editor
+
+def __getattr__(name):
+    """Lazy imports to avoid pulling heavy GUI deps unless needed."""
+    if name == "main":
+        from sortmeout.gui.app import main
+
+        return main
+    if name == "MenuBarApp":
+        from sortmeout.gui.app import MenuBarApp
+
+        return MenuBarApp
+    if name == "show_chat_window":
+        from sortmeout.gui.chat_window import show_chat_window
+
+        return show_chat_window
+    if name == "show_rule_editor":
+        from sortmeout.gui.rule_editor import show_rule_editor
+
+        return show_rule_editor
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 __all__ = [
     # Entry points

@@ -64,7 +64,9 @@ def start(ctx, preview: bool, foreground: bool):
 
     folders = app.get_folders()
     if not folders:
-        console.print("[yellow]No folders configured. Use 'sortmeout folder add' to add folders.[/yellow]")
+        console.print(
+            "[yellow]No folders configured. Use 'sortmeout folder add' to add folders.[/yellow]"
+        )
         return
 
     console.print(f"[green]Starting SortMeOut...[/green]")
@@ -105,6 +107,7 @@ def stop(ctx):
         os.kill(pid, signal.SIGTERM)
         # Wait briefly for clean shutdown
         import time
+
         for _ in range(10):
             time.sleep(0.3)
             try:
@@ -136,13 +139,15 @@ def status(ctx):
     running_status = f"Yes (PID {pid})" if pid else "No"
 
     # Status panel
-    console.print(Panel.fit(
-        f"[bold]SortMeOut Status[/bold]\n\n"
-        f"Folders: {len(folders)}\n"
-        f"Running: {running_status}\n"
-        f"Preview Mode: {'Yes' if app.preview_mode else 'No'}",
-        title="Status",
-    ))
+    console.print(
+        Panel.fit(
+            f"[bold]SortMeOut Status[/bold]\n\n"
+            f"Folders: {len(folders)}\n"
+            f"Running: {running_status}\n"
+            f"Preview Mode: {'Yes' if app.preview_mode else 'No'}",
+            title="Status",
+        )
+    )
 
     # Folders table
     if folders:
@@ -177,13 +182,16 @@ def status(ctx):
             for s in schedules:
                 name = s.get("name", s.get("rule_id", "—"))
                 folder_path = s.get("folder", "—")
-                folder_short = os.path.basename(folder_path.rstrip("/")) if folder_path != "—" else "—"
+                folder_short = (
+                    os.path.basename(folder_path.rstrip("/")) if folder_path != "—" else "—"
+                )
                 interval = s.get("interval", "—")
                 last_run = s.get("last_run", "—")
                 if last_run and last_run != "—":
                     # Show relative time
                     try:
                         from datetime import datetime
+
                         lr_dt = datetime.fromisoformat(last_run)
                         delta = datetime.now() - lr_dt
                         if delta.days > 0:
@@ -200,6 +208,7 @@ def status(ctx):
                 if next_run and next_run != "—":
                     try:
                         from datetime import datetime
+
                         nr_dt = datetime.fromisoformat(next_run)
                         delta = nr_dt - datetime.now()
                         if delta.total_seconds() <= 0:
@@ -219,11 +228,19 @@ def status(ctx):
                 status_str = "[green]●[/green]" if enabled else "[red]○[/red]"
 
                 sched_table.add_row(
-                    name, folder_short, interval, last_run, next_run, run_count, status_str,
+                    name,
+                    folder_short,
+                    interval,
+                    last_run,
+                    next_run,
+                    run_count,
+                    status_str,
                 )
 
             console.print(sched_table)
-            sched_status_msg = "[green]running[/green]" if scheduler_running else "[yellow]stopped[/yellow]"
+            sched_status_msg = (
+                "[green]running[/green]" if scheduler_running else "[yellow]stopped[/yellow]"
+            )
             console.print(f"  Scheduler: {sched_status_msg}")
         else:
             console.print("[dim]No scheduled rules configured[/dim]")
@@ -418,14 +435,16 @@ def rule_show(ctx, folder: str, name: str):
         return
 
     # Rule details
-    console.print(Panel.fit(
-        f"[bold]{rule.name}[/bold]\n\n"
-        f"Enabled: {'Yes' if rule.enabled else 'No'}\n"
-        f"Match Mode: {rule.match_mode.value}\n"
-        f"Continue Processing: {'Yes' if rule.continue_processing else 'No'}\n"
-        f"Description: {rule.description or 'None'}",
-        title="Rule Details",
-    ))
+    console.print(
+        Panel.fit(
+            f"[bold]{rule.name}[/bold]\n\n"
+            f"Enabled: {'Yes' if rule.enabled else 'No'}\n"
+            f"Match Mode: {rule.match_mode.value}\n"
+            f"Continue Processing: {'Yes' if rule.continue_processing else 'No'}\n"
+            f"Description: {rule.description or 'None'}",
+            title="Rule Details",
+        )
+    )
 
     # Conditions
     if rule.conditions:
@@ -518,14 +537,16 @@ def trash_status():
     """Show Trash status."""
     info = get_trash_info()
 
-    console.print(Panel.fit(
-        f"[bold]Trash Status[/bold]\n\n"
-        f"Items: {info.item_count}\n"
-        f"Size: {info.size_human}\n"
-        f"Oldest: {info.oldest_item_date.strftime('%Y-%m-%d') if info.oldest_item_date else 'N/A'}\n"
-        f"Newest: {info.newest_item_date.strftime('%Y-%m-%d') if info.newest_item_date else 'N/A'}",
-        title="Trash",
-    ))
+    console.print(
+        Panel.fit(
+            f"[bold]Trash Status[/bold]\n\n"
+            f"Items: {info.item_count}\n"
+            f"Size: {info.size_human}\n"
+            f"Oldest: {info.oldest_item_date.strftime('%Y-%m-%d') if info.oldest_item_date else 'N/A'}\n"
+            f"Newest: {info.newest_item_date.strftime('%Y-%m-%d') if info.newest_item_date else 'N/A'}",
+            title="Trash",
+        )
+    )
 
 
 @trash.command("empty")
@@ -613,6 +634,7 @@ def config_reset(ctx):
 # License management commands
 # ========================================
 
+
 @main.group()
 def license():
     """Manage Pro license."""
@@ -628,29 +650,35 @@ def license_status():
     state = lic.state
 
     if state == LicenseState.PRO_ACTIVE:
-        console.print(Panel.fit(
-            "[bold green]Pro License Active[/bold green]\n\n"
-            f"AI requests remaining today: {lic.get_ai_remaining()}\n"
-            "All features unlocked.",
-            title="License Status",
-        ))
+        console.print(
+            Panel.fit(
+                "[bold green]Pro License Active[/bold green]\n\n"
+                f"AI requests remaining today: {lic.get_ai_remaining()}\n"
+                "All features unlocked.",
+                title="License Status",
+            )
+        )
     elif state == LicenseState.TRIAL_ACTIVE:
         days = lic.trial_days_remaining
-        console.print(Panel.fit(
-            f"[bold yellow]Trial Active — {days} day{'s' if days != 1 else ''} remaining[/bold yellow]\n\n"
-            f"AI requests remaining today: {lic.get_ai_remaining()}\n"
-            "Upgrade to Pro: sortmeout license activate",
-            title="License Status",
-        ))
+        console.print(
+            Panel.fit(
+                f"[bold yellow]Trial Active — {days} day{'s' if days != 1 else ''} remaining[/bold yellow]\n\n"
+                f"AI requests remaining today: {lic.get_ai_remaining()}\n"
+                "Upgrade to Pro: sortmeout license activate",
+                title="License Status",
+            )
+        )
     else:
-        console.print(Panel.fit(
-            "[bold red]Trial Expired[/bold red]\n\n"
-            "File automation still works (freemium).\n"
-            "AI features require Pro license.\n\n"
-            "Activate: sortmeout license activate YOUR-KEY\n"
-            "Purchase: https://sortmeout.saidborna.com/#pricing",
-            title="License Status",
-        ))
+        console.print(
+            Panel.fit(
+                "[bold red]Trial Expired[/bold red]\n\n"
+                "File automation still works (freemium).\n"
+                "AI features require Pro license.\n\n"
+                "Activate: sortmeout license activate YOUR-KEY\n"
+                "Purchase: https://sortmeout.saidborna.com/#pricing",
+                title="License Status",
+            )
+        )
 
 
 @license.command("activate")
@@ -720,13 +748,15 @@ def test_file(ctx, file: str, folder: str, preview: bool):
 
     # Get file info
     file_info = get_file_info(file)
-    console.print(Panel.fit(
-        f"[bold]File: {os.path.basename(file)}[/bold]\n\n"
-        f"Size: {file_info.get('size_human', 'N/A')}\n"
-        f"Extension: {file_info.get('extension', 'N/A')}\n"
-        f"Kind: {file_info.get('kind', 'N/A')}",
-        title="File Info",
-    ))
+    console.print(
+        Panel.fit(
+            f"[bold]File: {os.path.basename(file)}[/bold]\n\n"
+            f"Size: {file_info.get('size_human', 'N/A')}\n"
+            f"Extension: {file_info.get('extension', 'N/A')}\n"
+            f"Kind: {file_info.get('kind', 'N/A')}",
+            title="File Info",
+        )
+    )
 
     # Test rules
     rules = app.get_rules(folder)
@@ -747,6 +777,7 @@ def test_file(ctx, file: str, folder: str, preview: bool):
 # ========================================
 # History management commands
 # ========================================
+
 
 @main.group()
 def history():
@@ -841,14 +872,16 @@ def history_stats(days: int):
     hist = get_history()
     stats = hist.get_statistics(days=days)
 
-    console.print(Panel.fit(
-        f"[bold]Action Statistics — Last {days} days[/bold]\n\n"
-        f"Total actions: {stats['total_actions']}\n"
-        f"Successful: {stats['successful']}\n"
-        f"Errors: {stats['errors']}\n"
-        f"Success rate: {stats['success_rate']}%",
-        title="Statistics",
-    ))
+    console.print(
+        Panel.fit(
+            f"[bold]Action Statistics — Last {days} days[/bold]\n\n"
+            f"Total actions: {stats['total_actions']}\n"
+            f"Successful: {stats['successful']}\n"
+            f"Errors: {stats['errors']}\n"
+            f"Success rate: {stats['success_rate']}%",
+            title="Statistics",
+        )
+    )
 
     if stats.get("by_action_type"):
         console.print("\n[bold]By Action Type:[/bold]")
@@ -908,6 +941,7 @@ def history_undo(entry_id: int):
 # Template commands
 # ========================================
 
+
 @main.group()
 def template():
     """Browse and apply rule templates."""
@@ -957,21 +991,25 @@ def template_show(name: str):
         console.print(f"[red]Template not found: {name}[/red]")
         return
 
-    console.print(Panel.fit(
-        f"[bold]{tmpl['name']}[/bold]\n\n"
-        f"Category: {tmpl['category']}\n"
-        f"Description: {tmpl['description']}\n"
-        f"Match mode: {tmpl.get('match_mode', 'all')}\n"
-        f"Suggested folder: {tmpl.get('folder_hint', '~/Downloads')}\n\n"
-        f"Conditions: {len(tmpl.get('conditions', []))}\n"
-        f"Actions: {len(tmpl.get('actions', []))}",
-        title="Template Details",
-    ))
+    console.print(
+        Panel.fit(
+            f"[bold]{tmpl['name']}[/bold]\n\n"
+            f"Category: {tmpl['category']}\n"
+            f"Description: {tmpl['description']}\n"
+            f"Match mode: {tmpl.get('match_mode', 'all')}\n"
+            f"Suggested folder: {tmpl.get('folder_hint', '~/Downloads')}\n\n"
+            f"Conditions: {len(tmpl.get('conditions', []))}\n"
+            f"Actions: {len(tmpl.get('actions', []))}",
+            title="Template Details",
+        )
+    )
 
     if tmpl.get("conditions"):
         console.print("\n[bold]Conditions:[/bold]")
         for c in tmpl["conditions"]:
-            console.print(f"  • {c.get('attribute', '?')} {c.get('operator', '?')} {c.get('value', '')}")
+            console.print(
+                f"  • {c.get('attribute', '?')} {c.get('operator', '?')} {c.get('value', '')}"
+            )
 
     if tmpl.get("actions"):
         console.print("\n[bold]Actions:[/bold]")
@@ -1010,8 +1048,7 @@ def template_apply(ctx, name: str, folder: str):
             for c in rule_data.get("conditions", [])
         ],
         actions=[
-            Action(a["action_type"], **a.get("params", {}))
-            for a in rule_data.get("actions", [])
+            Action(a["action_type"], **a.get("params", {})) for a in rule_data.get("actions", [])
         ],
     )
 
@@ -1024,6 +1061,7 @@ def template_apply(ctx, name: str, folder: str):
 # ========================================
 # Schedule commands
 # ========================================
+
 
 @main.group()
 def schedule():
@@ -1069,10 +1107,26 @@ def schedule_list(ctx):
 @schedule.command("add")
 @click.argument("rule_id")
 @click.argument("folder", type=click.Path(exists=True))
-@click.option("--interval", "-i", default="daily",
-              type=click.Choice(["5min", "15min", "30min", "hourly", "2hours",
-                                 "6hours", "12hours", "daily", "weekly", "monthly"]),
-              help="Schedule interval")
+@click.option(
+    "--interval",
+    "-i",
+    default="daily",
+    type=click.Choice(
+        [
+            "5min",
+            "15min",
+            "30min",
+            "hourly",
+            "2hours",
+            "6hours",
+            "12hours",
+            "daily",
+            "weekly",
+            "monthly",
+        ]
+    ),
+    help="Schedule interval",
+)
 @click.option("--name", "-n", type=str, help="Display name")
 def schedule_add(rule_id: str, folder: str, interval: str, name: str):
     """Add a scheduled rule."""
@@ -1110,12 +1164,14 @@ def schedule_status():
     sched = Scheduler()
     running = sched.is_running if hasattr(sched, "is_running") else False
 
-    console.print(Panel.fit(
-        f"[bold]Scheduler Status[/bold]\n\n"
-        f"Running: {'Yes' if running else 'No'}\n"
-        f"Scheduled rules: {len(sched.schedules)}",
-        title="Scheduler",
-    ))
+    console.print(
+        Panel.fit(
+            f"[bold]Scheduler Status[/bold]\n\n"
+            f"Running: {'Yes' if running else 'No'}\n"
+            f"Scheduled rules: {len(sched.schedules)}",
+            title="Scheduler",
+        )
+    )
 
 
 @main.command()
