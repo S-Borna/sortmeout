@@ -101,20 +101,47 @@ class MailIntegration:
             return []
         return [m.strip() for m in result.split(",")]
 
-    def get_recent_emails(self, count: int = 10, unread_only: bool = False) -> List[Dict[str, Any]]:
+    def get_recent_emails(
+        self, count: int = 10, unread_only: bool = False, account: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """Get recent emails from inbox.
 
-        Returns list of dicts with: subject, sender, date, read, id, preview.
+        Args:
+            count: Number of emails to fetch.
+            unread_only: Only return unread emails.
+            account: Mail.app account name to filter by (e.g. "iCloud", "Gmail").
+                     If None, reads from unified inbox.
+
+        Returns list of dicts with: subject, sender, date, read, id, from (alias).
+        NOTE: Does NOT read m.content() for speed — use read_email() for body.
         """
-        filter_clause = "whose read status is false" if unread_only else ""
+        # Build account-aware mailbox selector
+        if account:
+            safe_account = account.replace('"', '\\"')
+            mailbox_js = f'''const accts = Mail.accounts().filter(a => a.name() === "{safe_account}");
+            if (accts.length === 0) return JSON.stringify([]);
+            let messages = [];
+            const mbs = accts[0].mailboxes();
+            for (let mb = 0; mb < mbs.length; mb++) {{
+                const nm = (mbs[mb].name() || "").toLowerCase();
+                if (nm === "inbox" || nm === "inkorgen" || nm === "posteingang") {{
+                    messages = mbs[mb].messages();
+                    break;
+                }}
+            }}
+            if (messages.length === 0) {{
+                // Fallback: try first mailbox
+                if (mbs.length > 0) messages = mbs[0].messages();
+            }}'''
+        else:
+            mailbox_js = 'let messages = Mail.inbox().messages();'
 
         jxa_script = f"""
         (() => {{
             const Mail = Application("Mail");
-            const inbox = Mail.inbox();
-            let messages = inbox.messages();
+            {mailbox_js}
 
-            {"messages = messages.filter(m => !m.readStatus());" if unread_only else ""}
+            {"messages = messages.filter(m => {{ try {{ return !m.readStatus(); }} catch(e) {{ return false; }} }});" if unread_only else ""}
 
             const count = Math.min({count}, messages.length);
             const results = [];
@@ -122,15 +149,14 @@ class MailIntegration:
             for (let i = 0; i < count; i++) {{
                 const m = messages[i];
                 try {{
-                    const content = m.content() || "";
                     results.push({{
                         id: m.id(),
                         subject: m.subject() || "(no subject)",
+                        from: m.sender() || "unknown",
                         sender: m.sender() || "unknown",
                         date: m.dateReceived().toISOString(),
                         read: m.readStatus(),
                         flagged: m.flaggedStatus(),
-                        preview: content.substring(0, 300).replace(/\\n/g, " "),
                     }});
                 }} catch(e) {{
                     // skip problematic messages

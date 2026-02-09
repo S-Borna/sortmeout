@@ -155,11 +155,21 @@ def _email_list(payload: dict) -> dict:
     mail = _get("mail")
     count = payload.get("count", 20)
     unread_only = payload.get("unread_only", False)
+    account = payload.get("account") or None
     try:
-        emails = mail.get_recent_emails(count=count, unread_only=unread_only)
+        emails = mail.get_recent_emails(count=count, unread_only=unread_only, account=account)
         return {"emails": emails if isinstance(emails, list) else []}
     except Exception as e:
         return {"emails": [], "error": str(e)}
+
+
+def _email_accounts(payload: dict) -> dict:
+    mail = _get("mail")
+    try:
+        accounts = mail.get_accounts()
+        return {"accounts": accounts if isinstance(accounts, list) else []}
+    except Exception as e:
+        return {"accounts": [], "error": str(e)}
 
 
 def _email_compose(payload: dict) -> dict:
@@ -904,6 +914,7 @@ _HANDLERS: dict[str, Any] = {
     "chat_history": _chat_history,
     # Email
     "email_list": _email_list,
+    "email_accounts": _email_accounts,
     "email_compose": _email_compose,
     "email_reply": _email_reply,
     "email_search": _email_search,

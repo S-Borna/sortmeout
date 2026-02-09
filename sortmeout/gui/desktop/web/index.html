@@ -464,10 +464,17 @@
                 </div>
             </div>
             <div class="content-area">
-                <div class="email-tabs">
+                <div class="email-tabs" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
                     <button class="tab active" data-tab="inbox">Inbox</button>
                     <button class="tab" data-tab="sent">Sent</button>
                     <button class="tab" data-tab="search">Search</button>
+                    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+                        <label style="font-size:12px;color:var(--text-secondary);">Account:</label>
+                        <select id="emailAccountSelect" class="setting-select" style="min-width:140px;font-size:12px;padding:4px 8px;"
+                                onchange="SortMeOut.loadEmails()">
+                            <option value="">All Accounts</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="email-list" id="emailList">
                     <div class="loading-skeleton">
@@ -510,7 +517,7 @@
             <div class="page-header">
                 <div>
                     <h1 class="page-title">Contacts</h1>
-                    <p class="page-subtitle">Powered by Apple Contacts.app</p>
+                    <p class="page-subtitle">Shows all contacts synced in Apple Contacts.app · <a href="#" onclick="SortMeOut.openContactsAccountInfo()" style="color:var(--accent);">Manage accounts</a></p>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-primary" onclick="SortMeOut.addContact()">
@@ -718,6 +725,28 @@
                             <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
                             <option value="claude-3-haiku-20240307">Claude 3 Haiku (fast)</option>
                         </select>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Email & Accounts</h3>
+                    <p class="settings-group-desc">Choose which Mail.app account to use. Contacts are synced from all
+                        accounts in macOS System Settings → Internet Accounts.</p>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-label">Default Email Account</span>
+                            <span class="setting-desc">Select which Mail.app account SortMeOut reads from</span>
+                        </div>
+                        <select class="setting-select" id="settingEmailAccount" style="min-width:160px;">
+                            <option value="">All Accounts (unified inbox)</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-label">Contacts Source</span>
+                            <span class="setting-desc">Manage which accounts sync contacts</span>
+                        </div>
+                        <button class="btn btn-secondary" onclick="SortMeOut.openContactsAccountInfo()">Manage</button>
                     </div>
                 </div>
 

@@ -99,19 +99,20 @@
                 '<p class="text-muted text-sm">Could not load events</p>';
         }
 
-        // Load emails
+        // Load emails (using saved account preference)
         try {
-            const mail = await Bridge.email.list('inbox', null, 3);
+            const savedAccount = localStorage.getItem('email_account') || null;
+            const mail = await Bridge.email.list('inbox', savedAccount, 3);
             const emailsEl = document.getElementById('dashboardEmails');
             if (mail.emails && mail.emails.length) {
                 emailsEl.innerHTML = mail.emails.map((e) => `
                     <div class="list-item" style="border:none;padding:8px 0;">
                         <div class="list-item-content">
                             <div class="list-item-title">${esc(e.subject)}</div>
-                            <div class="list-item-subtitle">${esc(e.from)}</div>
+                            <div class="list-item-subtitle">${esc(e.from || e.sender || '')}</div>
                         </div>
                         <div class="list-item-meta">
-                            <span class="list-item-time">${e.date || ''}</span>
+                            <span class="list-item-time">${formatDate(e.date)}</span>
                         </div>
                     </div>
                 `).join('');
@@ -321,21 +322,45 @@
         const el = document.getElementById('emailList');
         el.innerHTML = loadingSkeleton(4);
 
+        // Populate account picker if not yet done
+        const accountSelect = document.getElementById('emailAccountSelect');
+        if (accountSelect && accountSelect.options.length <= 1) {
+            try {
+                const acctData = await Bridge.email.getAccounts();
+                if (acctData.accounts && acctData.accounts.length) {
+                    acctData.accounts.forEach(name => {
+                        const opt = document.createElement('option');
+                        opt.value = name;
+                        opt.textContent = name;
+                        // Pre-select saved preference
+                        if (name === localStorage.getItem('email_account')) opt.selected = true;
+                        accountSelect.appendChild(opt);
+                    });
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        // Get selected account
+        const account = accountSelect ? accountSelect.value || null : null;
+        if (account) localStorage.setItem('email_account', account);
+
         try {
-            const data = await Bridge.email.list(mailbox, null, 20);
+            const data = await Bridge.email.list(mailbox, account, 20);
             if (data.emails && data.emails.length) {
                 el.innerHTML = data.emails.map((e) => `
                     <div class="list-item" onclick="SortMeOut.viewEmail(${JSON.stringify(e).replace(/"/g, '&quot;')})">
-                        <div class="list-item-icon">✉️</div>
+                        <div class="list-item-icon">${e.read ? '✉️' : '📩'}</div>
                         <div class="list-item-content">
-                            <div class="list-item-title">${esc(e.subject || '(No subject)')}</div>
-                            <div class="list-item-subtitle">${esc(e.from || '')} — ${esc(e.preview || '')}</div>
+                            <div class="list-item-title" style="${e.read ? '' : 'font-weight:700;'}">${esc(e.subject || '(No subject)')}</div>
+                            <div class="list-item-subtitle">${esc(e.from || e.sender || '')}</div>
                         </div>
                         <div class="list-item-meta">
-                            <span class="list-item-time">${esc(e.date || '')}</span>
+                            <span class="list-item-time">${formatDate(e.date)}</span>
                         </div>
                     </div>
                 `).join('');
+            } else if (data.error) {
+                el.innerHTML = emptyState('⚠️', 'Could not load emails', esc(data.error));
             } else {
                 el.innerHTML = emptyState('✉️', 'No emails', 'Your inbox is empty');
             }
@@ -549,21 +574,46 @@
                 ? await Bridge.contacts.search(query)
                 : await Bridge.contacts.search('');
             if (data.contacts && data.contacts.length) {
-                el.innerHTML = data.contacts.map((c) => `
+                el.innerHTML = data.contacts.map((c) => {
+                    const email = (c.emails && c.emails[0]) || c.email || '';
+                    const phone = (c.phones && c.phones[0]) || c.phone || '';
+                    const detail = email || phone || c.organization || '';
+                    return `
                     <div class="contact-card">
                         <div class="contact-avatar">${(c.name || '?')[0].toUpperCase()}</div>
-                        <div>
+                        <div style="min-width:0;">
                             <div class="list-item-title">${esc(c.name)}</div>
-                            <div class="list-item-subtitle">${esc(c.email || c.phone || '')}</div>
+                            ${detail ? `<div class="list-item-subtitle" style="font-size:11px;">${esc(detail)}</div>` : ''}
                         </div>
-                    </div>
-                `).join('');
+                    </div>`;
+                }).join('');
             } else {
                 el.innerHTML = emptyState('👤', 'No contacts found', query ? 'Try a different search' : 'Add your first contact');
             }
         } catch (err) {
             el.innerHTML = emptyState('⚠️', 'Error loading contacts', err.message);
         }
+    }
+
+    function openContactsAccountInfo() {
+        showModal('Contacts — Synced Accounts', `
+            <p style="margin-bottom:12px;">SortMeOut reads contacts from <strong>Apple Contacts.app</strong>,
+            which syncs contacts from all your connected Internet Accounts
+            (iCloud, Google, Outlook/Hotmail, Exchange, etc.).</p>
+
+            <p style="margin-bottom:12px;">If you see contacts from old or unwanted accounts:</p>
+            <ol style="margin-left:18px;margin-bottom:16px;line-height:1.8;">
+                <li>Open <strong>System Settings → Internet Accounts</strong></li>
+                <li>Select the account you want to disable</li>
+                <li>Turn off <strong>Contacts</strong> sync for that account</li>
+            </ol>
+            <p style="margin-bottom:16px;color:var(--text-secondary);font-size:13px;">
+                This will stop those contacts from appearing here and in Contacts.app.</p>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button class="btn btn-secondary" onclick="SortMeOut.closeModal()">Close</button>
+                <button class="btn btn-primary" onclick="SortMeOut.openPrivacySettings()">Open System Settings</button>
+            </div>
+        `);
     }
 
     function addContact() {
@@ -1113,6 +1163,32 @@
             if (keys.openai) oaiEl.placeholder = '••••••••••••• (configured)';
         } catch (e) { }
 
+        // Populate email account picker in settings
+        try {
+            const acctData = await Bridge.email.getAccounts();
+            const sel = document.getElementById('settingEmailAccount');
+            if (sel && acctData.accounts) {
+                // Clear existing options except first
+                while (sel.options.length > 1) sel.remove(1);
+                const saved = localStorage.getItem('email_account') || '';
+                acctData.accounts.forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = name;
+                    if (name === saved) opt.selected = true;
+                    sel.appendChild(opt);
+                });
+                // Sync to email page selector too
+                sel.onchange = () => {
+                    const val = sel.value;
+                    localStorage.setItem('email_account', val);
+                    const pageSelect = document.getElementById('emailAccountSelect');
+                    if (pageSelect) pageSelect.value = val;
+                    toast('Default email account updated', 'success');
+                };
+            }
+        } catch (e) { /* ignore */ }
+
         // Check integration status
         checkIntegrations();
     }
@@ -1355,16 +1431,20 @@
     function formatDate(dateStr) {
         if (!dateStr) return '';
         try {
-            const d = new Date(dateStr + 'T00:00:00');
+            // Handle both "2026-02-09" and "2026-02-09T03:31:41.000Z" formats
+            const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
             const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
             const tomorrow = new Date(today);
             tomorrow.setDate(tomorrow.getDate() + 1);
 
             if (d.toDateString() === today.toDateString()) return 'Today';
+            if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
             if (d.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
 
             return d.toLocaleDateString(undefined, {
-                weekday: 'long', month: 'long', day: 'numeric',
+                weekday: 'short', month: 'short', day: 'numeric',
             });
         } catch {
             return dateStr;
@@ -1486,6 +1566,7 @@
         attachFile: () => toast('Upload coming soon — tell AI what file to use', 'info'),
 
         // Email
+        loadEmails: () => loadEmails(),
         composeEmail,
         doComposeEmail,
         viewEmail: (email) => { navigate('chat'); sendMessage(`Show me the email: "${email.subject}" from ${email.from}`); },
@@ -1501,6 +1582,7 @@
         // Contacts
         addContact,
         doAddContact,
+        openContactsAccountInfo,
 
         // Messages
         newMessage,

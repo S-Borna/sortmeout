@@ -120,7 +120,8 @@
 
         // ── Email ──
         email: {
-            list: (mailbox, account, count) => callBridge('email_list', { mailbox, account, count }),
+            list: (mailbox, account, count) => callBridge('email_list', { mailbox, account, count }, 60000),
+            getAccounts: () => callBridge('email_accounts'),
             compose: (to, subject, body, attachment) => callBridge('email_compose', { to, subject, body, attachment }),
             reply: (to, subject, body) => callBridge('email_reply', { to, subject, body }),
             search: (query) => callBridge('email_search', { query }),
