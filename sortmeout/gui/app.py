@@ -125,8 +125,9 @@ class MenuBarApp:
             rumps.MenuItem(status_msg, callback=None),
             None,
             rumps.MenuItem("💬 AI Assistant...", callback=self._open_ai_assistant),
-            rumps.MenuItem("� Daily Briefing", callback=self._daily_briefing),
-            rumps.MenuItem("�📎 Analyze File...", callback=self._analyze_file),
+            rumps.MenuItem("🎨 Image Studio...", callback=self._open_image_studio),
+            rumps.MenuItem("📋 Daily Briefing", callback=self._daily_briefing),
+            rumps.MenuItem("📎 Analyze File...", callback=self._analyze_file),
             None,
             rumps.MenuItem("Start Watching", callback=self._toggle_watching),
             rumps.MenuItem("Preview Mode", callback=self._toggle_preview),
@@ -355,6 +356,21 @@ class MenuBarApp:
         except Exception as e:
             logger.error("Failed to open AI assistant: %s", e)
             rumps.alert(title="Error", message=f"Could not open AI Assistant:\n{e}")
+
+    def _open_image_studio(self, _) -> None:
+        """Open the Image Studio window for AI image generation and editing."""
+        try:
+            from sortmeout.gui.image_window import show_image_window
+            show_image_window()
+        except ImportError as e:
+            logger.error("Could not import image_window: %s", e)
+            rumps.alert(
+                title="Image Studio",
+                message="Could not open Image Studio.\n\nMake sure PyObjC and Pillow are installed.",
+            )
+        except Exception as e:
+            logger.error("Failed to open Image Studio: %s", e)
+            rumps.alert(title="Error", message=f"Could not open Image Studio:\n{e}")
 
     def _daily_briefing(self, _) -> None:
         """Show a quick daily briefing notification with calendar, mail, and deadlines."""

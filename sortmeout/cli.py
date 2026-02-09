@@ -1189,5 +1189,19 @@ def desktop():
         console.print(f"[red]Error launching desktop: {e}[/red]")
 
 
+# Image Studio
+@main.command("images")
+def images_command():
+    """Open the Image Studio (AI generation + editing)."""
+    try:
+        from sortmeout.gui.image_window import main as image_main
+        image_main()
+    except ImportError as e:
+        console.print(f"[red]Image Studio requires PyObjC: {e}[/red]")
+        console.print("Install with: pip install pyobjc-framework-Cocoa")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+
+
 if __name__ == "__main__":
     main()
