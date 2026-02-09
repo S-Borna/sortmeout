@@ -1,6 +1,6 @@
 """
-AI File Assistant powered by Claude API.
-Analyzes files and helps organize them intelligently.
+AI Personal Assistant powered by Claude API.
+Your ultimate macOS companion — files, email, calendar, messages, presentations, and more.
 """
 
 import os
@@ -21,6 +21,91 @@ from sortmeout.core.license import (
 
 # Core engine integration - all AI actions go through HistoryManager
 from sortmeout.core.history import get_history
+
+# Integrations — lazy loaded to avoid startup cost
+_mail = None
+_calendar = None
+_messages = None
+_contacts = None
+_presentations = None
+_notes = None
+
+
+def _get_mail():
+    global _mail
+    if _mail is None:
+        from sortmeout.integrations.mail import MailIntegration
+
+        _mail = MailIntegration()
+    return _mail
+
+
+def _get_calendar():
+    global _calendar
+    if _calendar is None:
+        from sortmeout.integrations.calendar import CalendarIntegration
+
+        _calendar = CalendarIntegration()
+    return _calendar
+
+
+def _get_messages():
+    global _messages
+    if _messages is None:
+        from sortmeout.integrations.messages import MessagesIntegration
+
+        _messages = MessagesIntegration()
+    return _messages
+
+
+def _get_contacts():
+    global _contacts
+    if _contacts is None:
+        from sortmeout.integrations.contacts import ContactsIntegration
+
+        _contacts = ContactsIntegration()
+    return _contacts
+
+
+def _get_presentations():
+    global _presentations
+    if _presentations is None:
+        from sortmeout.integrations.presentations import PresentationBuilder
+
+        _presentations = PresentationBuilder()
+    return _presentations
+
+
+def _get_notes():
+    global _notes
+    if _notes is None:
+        from sortmeout.integrations.notes import NotesIntegration
+
+        _notes = NotesIntegration()
+    return _notes
+
+
+_image_editor = None
+_image_generator = None
+
+
+def _get_image_editor():
+    global _image_editor
+    if _image_editor is None:
+        from sortmeout.integrations.images import get_editor
+
+        _image_editor = get_editor()
+    return _image_editor
+
+
+def _get_image_generator():
+    global _image_generator
+    if _image_generator is None:
+        from sortmeout.integrations.images import get_generator
+
+        _image_generator = get_generator()
+    return _image_generator
+
 
 # Model selection - economical for all users, premium for Creator
 MODEL_DEFAULT = "claude-sonnet-4-20250514"  # All users — fast, capable, cost-effective
@@ -460,8 +545,151 @@ Respond in English in this JSON format:
 
         return result
 
+    # ── Live context gathering for integrations ──
+
+    def _gather_live_context(self, message: str) -> str:
+        """Gather live context from integrations based on user message keywords.
+
+        Returns a string with relevant context to prepend to the system prompt,
+        so the AI can proactively reference the user's mail, calendar, etc.
+        """
+        parts: list[str] = []
+        msg_lower = message.lower()
+
+        # Keywords that trigger each integration
+        mail_keywords = {
+            "mail",
+            "email",
+            "inbox",
+            "unread",
+            "message from",
+            "reply to",
+            "send email",
+            "e-post",
+            "mejl",
+        }
+        cal_keywords = {
+            "calendar",
+            "event",
+            "meeting",
+            "deadline",
+            "schedule",
+            "today",
+            "tomorrow",
+            "week",
+            "kalender",
+            "möte",
+            "dag",
+            "briefing",
+            "how's my day",
+            "hows my day",
+        }
+        msg_keywords = {
+            "imessage",
+            "sms",
+            "text message",
+            "message",
+            "meddelande",
+            "skicka",
+            "send message",
+        }
+        contact_keywords = {"contact", "phone number", "email address", "kontakt", "telefon"}
+        notes_keywords = {"note", "notes", "anteckning", "anteckningar"}
+        daily_keywords = {
+            "how's my day",
+            "hows my day",
+            "daily briefing",
+            "morning",
+            "what's up",
+            "overview",
+            "summary",
+            "sammanfattning",
+            "hur ser min dag ut",
+            "god morgon",
+            "good morning",
+        }
+
+        # Daily briefing — gather everything
+        if any(kw in msg_lower for kw in daily_keywords):
+            try:
+                cal = _get_calendar()
+                briefing = cal.get_daily_briefing()
+                parts.append(f"\n📅 CALENDAR BRIEFING:\n{briefing}")
+            except Exception as e:
+                parts.append(f"\n📅 Calendar unavailable: {e}")
+
+            try:
+                mail = _get_mail()
+                summary = mail.get_summary()
+                parts.append(f"\n📧 MAIL SUMMARY:\n{summary}")
+            except Exception as e:
+                parts.append(f"\n📧 Mail unavailable: {e}")
+
+            try:
+                msgs = _get_messages()
+                summary = msgs.get_summary()
+                parts.append(f"\n💬 MESSAGES SUMMARY:\n{summary}")
+            except Exception as e:
+                pass  # Messages less critical
+
+        else:
+            # Individual context gathering
+            if any(kw in msg_lower for kw in mail_keywords):
+                try:
+                    mail = _get_mail()
+                    count = mail.get_unread_count()
+                    parts.append(f"\n📧 MAIL CONTEXT: {count} unread email(s)")
+                    if count > 0:
+                        recent = mail.get_recent_emails(3, unread_only=True)
+                        if recent:
+                            parts.append("Recent unread:")
+                            for e in recent[:3]:
+                                parts.append(
+                                    f"  - From: {e.get('sender', '?')} | Subject: {e.get('subject', '?')}"
+                                )
+                except Exception:
+                    pass
+
+            if any(kw in msg_lower for kw in cal_keywords):
+                try:
+                    cal = _get_calendar()
+                    events = cal.get_events_today()
+                    parts.append(f"\n📅 CALENDAR CONTEXT: {len(events)} event(s) today")
+                    for ev in events[:5]:
+                        parts.append(f"  - {ev.get('title', '?')} at {ev.get('start_time', '?')}")
+                except Exception:
+                    pass
+
+            if any(kw in msg_lower for kw in msg_keywords):
+                try:
+                    msgs = _get_messages()
+                    chats = msgs.get_recent_chats(3)
+                    if chats:
+                        parts.append(f"\n💬 RECENT MESSAGES:")
+                        for c in chats[:3]:
+                            parts.append(
+                                f"  - {c.get('name', '?')}: {c.get('last_message', '?')[:60]}"
+                            )
+                except Exception:
+                    pass
+
+            if any(kw in msg_lower for kw in notes_keywords):
+                try:
+                    notes = _get_notes()
+                    recent = notes.get_recent_notes(3)
+                    if recent:
+                        parts.append(f"\n📝 RECENT NOTES:")
+                        for n in recent[:3]:
+                            parts.append(f"  - {n.get('name', '?')}")
+                except Exception:
+                    pass
+
+        if parts:
+            return "\n\n── LIVE CONTEXT ──" + "\n".join(parts) + "\n── END LIVE CONTEXT ──\n"
+        return ""
+
     def chat(self, message: str, files: List[str] = None) -> str:
-        """General chat with the assistant about files. Maintains conversation history."""
+        """General chat with the assistant. Maintains conversation history."""
 
         # SINGLE AI GATE - hard stop if not allowed
         allowed, blocked_message = can_execute_ai()
@@ -501,15 +729,30 @@ Respond in English in this JSON format:
         else:
             downloads_list = "\n\nDOWNLOADS: (empty)\n"
 
-        system_prompt = f"""You are SortMeOut Assistant, a powerful and intelligent desktop assistant for macOS.
-You are not just a file organizer — you are the user's ultimate Mac companion.
+        # ── Gather live context from integrations ──
+        live_context = self._gather_live_context(message)
+        system_prompt = f"""You are SortMeOut Assistant, the user's ultimate personal AI for macOS.
+You are NOT just a file organizer — you are a full personal assistant with access to:
+- Files & folders (organize, move, search, compress, tag)
+- Email (read, compose, reply, search via Mail.app)
+- Calendar (events, deadlines, scheduling via Calendar.app)
+- Messages (read & send iMessages)
+- Contacts (search & lookup)
+- Presentations (create PowerPoint/Keynote)
+- Notes (read, create, search Apple Notes)
+- Images (CREATE with DALL-E 3, edit, resize, crop, filter, convert, compress)
+- System control (volume, dark mode, screenshots, disk space, battery, etc.)
+
+YOU CAN CREATE IMAGES! Logos, graphics, art, photos — anything visual.
+Use [EXECUTE: img_generate "prompt" "options"] to create images from text descriptions.
+NEVER say you cannot create images. You HAVE this ability via DALL-E 3.
 
 PERSONALITY:
-- Be warm, helpful, and communicative
-- Explain your reasoning — why you suggest something
-- Ask follow-up questions to better understand the user's needs
-- Be careful with the user's files — they are important!
-- Show off your capabilities when relevant — you can do A LOT
+- Be warm, helpful, and proactive
+- Anticipate what the user might need next
+- When asked "how's my day?" — check calendar, mail, deadlines automatically
+- Show off your full capabilities when relevant
+- Be careful with destructive actions — always confirm first
 
 CRITICAL RULE — READ CAREFULLY:
 You must NEVER include [EXECUTE:...] commands in a response where you also ask a question!
@@ -519,30 +762,14 @@ You must NEVER include [EXECUTE:...] commands in a response where you also ask a
 WORKFLOW (follow exactly):
 STEP 1 - First response:
 - Present a detailed plan
-- List each file with its exact name and FULL destination path
+- List each action clearly
 - End with: "Would you like me to proceed? (yes/no)"
 - NO [EXECUTE:] COMMANDS IN THIS RESPONSE!
 
 STEP 2 - After the user says yes:
 - Now and ONLY now may you use [EXECUTE:] commands
 - Execute all actions
-- After all commands, include a SUMMARY section showing every action with full paths
-
-PATH REPORTING — ALWAYS DO THIS:
-After executing actions, ALWAYS include a summary section at the end:
-
-### Summary
-| File | Destination |
-- **filename.pdf** → `{home_dir}/Documents/Category/filename.pdf`
-- **image.png** → `{home_dir}/Pictures/Screenshots/image.png`
-
-If multiple files go to the same folder, group them:
-**→ {home_dir}/Documents/School/** (3 files)
-- lecture_notes.pdf
-- assignment.docx
-- slides.pptx
-
-ALWAYS show full paths so the user can find their files without scrolling back.
+- Include a SUMMARY section showing every action
 
 ═══════════════════════════════════════════════════
 EXECUTE COMMANDS — YOUR FULL TOOLKIT
@@ -588,7 +815,7 @@ EXECUTE COMMANDS — YOUR FULL TOOLKIT
 [EXECUTE: notify "Title" "Your task is complete!"]
 
 🗣️ TEXT TO SPEECH:
-[EXECUTE: say "Hello Said, your files are organized!"]
+[EXECUTE: say "Hello, your files are organized!"]
 
 🌓 APPEARANCE:
 [EXECUTE: darkmode ""]
@@ -610,97 +837,342 @@ EXECUTE COMMANDS — YOUR FULL TOOLKIT
 [EXECUTE: eject "USB Drive"]
 [EXECUTE: lockscreen ""]
 
-📐 RULE CREATION (persistent automation):
-[EXECUTE: createrule "Rule Name" "folder|attribute|operator|value|action_type|action_arg"]
-Examples:
-  [EXECUTE: createrule "PDFs to Documents" "~/Downloads|extension|equals|pdf|move|~/Documents/PDFs"]
-  [EXECUTE: createrule "Screenshots to Pictures" "~/Desktop|name|contains|screenshot|move|~/Pictures/Screenshots"]
-  [EXECUTE: createrule "Trash old downloads" "~/Downloads|date_modified|not_within_last|30d|trash|"]
-  [EXECUTE: createrule "Tag large files" "~/Downloads|size|greater_than|100MB|add_tags|Important"]
+═══════════════════════════════════════════════════
+📧 EMAIL (Mail.app)
+═══════════════════════════════════════════════════
 
-Format: "folder|attribute|operator|value|action_type|destination"
-Attributes: name, extension, size, date_created, date_modified, file_type, tags, contents, where_from
-Operators: equals, not_equals, contains, starts_with, ends_with, greater_than, less_than, matches_glob, within_last, not_within_last
-Actions: move, copy, rename, trash, delete, add_tags, archive
+[EXECUTE: mail_unread ""]
+  → Get unread email count
+
+[EXECUTE: mail_recent "5"]
+  → Get 5 most recent emails (subject, sender, date, preview)
+
+[EXECUTE: mail_read "MESSAGE_ID"]
+  → Read full email content by ID
+
+[EXECUTE: mail_search "invoice"]
+  → Search emails by keyword
+
+[EXECUTE: mail_search_all "invoice"]
+  → Search emails across ALL mailboxes (Inbox, Sent, Archive, Drafts)
+
+[EXECUTE: mail_compose "to@example.com" "Subject|Body text here"]
+  → Compose and open as draft (pipe separates subject and body)
+
+[EXECUTE: mail_send "to@example.com" "Subject|Body text here"]
+  → Compose and SEND immediately
+
+[EXECUTE: mail_compose "to@example.com" "Subject|Body text|/path/to/file.pdf"]
+  → Compose with ATTACHMENT (subject|body|attachment_path)
+
+[EXECUTE: mail_reply "MESSAGE_ID" "Reply body text"]
+  → Reply to an email (opens as draft)
+
+[EXECUTE: mail_reply_send "MESSAGE_ID" "Reply body text"]
+  → Reply and SEND immediately
+
+[EXECUTE: mail_flag "MESSAGE_ID"]
+  → Flag an email
+
+[EXECUTE: mail_markread "MESSAGE_ID"]
+  → Mark email as read
+
+═══════════════════════════════════════════════════
+📅 CALENDAR (Calendar.app)
+═══════════════════════════════════════════════════
+
+[EXECUTE: cal_today ""]
+  → Get today's events
+
+[EXECUTE: cal_tomorrow ""]
+  → Get tomorrow's events
+
+[EXECUTE: cal_week ""]
+  → Get this week's events
+
+[EXECUTE: cal_upcoming "14"]
+  → Get events for the next 14 days
+
+[EXECUTE: cal_search "meeting"]
+  → Search events by keyword
+
+[EXECUTE: cal_deadlines ""]
+  → Find upcoming deadlines (exams, due dates, submissions)
+
+[EXECUTE: cal_create "Meeting Title" "2026-02-10T14:00|2026-02-10T15:00|Office|Discussion notes"]
+  → Create event (start|end|location|notes — end/location/notes optional)
+
+[EXECUTE: cal_edit "Meeting Title" "new_title|new_start|new_end|new_location|new_notes"]
+  → Edit existing event (any field can be empty to keep unchanged)
+  Example: [EXECUTE: cal_edit "Old Title" "New Title|||New Location|"]
+
+[EXECUTE: cal_delete "Meeting Title"]
+  → Delete a calendar event by title
+
+[EXECUTE: cal_briefing ""]
+  → Full daily briefing (today's events, tomorrow preview, deadlines)
+
+═══════════════════════════════════════════════════
+💬 MESSAGES (iMessage)
+═══════════════════════════════════════════════════
+
+[EXECUTE: msg_chats ""]
+  → List recent conversations
+
+[EXECUTE: msg_send "+46701234567" "Message text"]
+  → Send an iMessage to a phone number or email
+
+[EXECUTE: msg_read "+46701234567" "10"]
+  → Read last 10 messages from a contact (phone/email)
+  Shows message text, sender, and timestamp
+
+═══════════════════════════════════════════════════
+👤 CONTACTS
+═══════════════════════════════════════════════════
+
+[EXECUTE: contact_search "John"]
+  → Search contacts by name, email, or phone
+
+[EXECUTE: contact_groups ""]
+  → List contact groups
+
+[EXECUTE: contact_create "John|Doe|+46701234567|john@email.com|Company AB|Notes"]
+  → Create new contact (first|last|phone|email|org|note — only first name required)
+
+[EXECUTE: contact_edit "John Doe" "new_phone|new_email|new_org|new_note"]
+  → Edit existing contact (any field can be empty to skip)
+
+[EXECUTE: contact_delete "John Doe"]
+  → Delete a contact by name
+
+═══════════════════════════════════════════════════
+📊 PRESENTATIONS
+═══════════════════════════════════════════════════
+
+[EXECUTE: pres_create "Presentation Title" "OUTLINE"]
+  → Create a presentation from markdown outline
+  The outline format (use \\n for newlines):
+    # Title\\n## Slide 1\\n- Point A\\n- Point B\\n## Slide 2\\n- Point C
+
+═══════════════════════════════════════════════════
+📝 NOTES (Apple Notes)
+═══════════════════════════════════════════════════
+
+[EXECUTE: notes_recent "5"]
+  → Get 5 most recent notes
+
+[EXECUTE: notes_read "Note Title"]
+  → Read a note's full content
+
+[EXECUTE: notes_create "Title" "Body content"]
+  → Create a new note
+
+[EXECUTE: notes_search "keyword"]
+  → Search notes
+
+[EXECUTE: notes_append "Note Title" "Text to add"]
+  → Append text to existing note
+
+[EXECUTE: notes_edit "Note Title" "New full body content"]
+  → Replace note body with new content
+
+[EXECUTE: notes_delete "Note Title"]
+  → Delete a note by title
+
+═══════════════════════════════════════════════════
+🎨 IMAGES (Create & Edit)
+═══════════════════════════════════════════════════
+
+🤖 AI IMAGE GENERATION (DALL-E 3 — high quality):
+[EXECUTE: img_generate "A futuristic city at sunset with flying cars, photorealistic" "1024x1024|hd|vivid"]
+  → Generate image from text (size|quality|style — all optional)
+  Sizes: 1024x1024 (square), 1024x1792 (portrait), 1792x1024 (landscape)
+  Quality: hd (default, detailed) or standard
+  Style: vivid (dramatic, default) or natural (realistic)
+  TIP: Be VERY detailed in prompts for best results!
+
+[EXECUTE: img_edit_ai "/path/to/image.png" "Add a rainbow in the sky"]
+  → AI-edit an existing image with a text prompt
+
+✂️ IMAGE EDITING (local, instant):
+[EXECUTE: img_resize "/path/to/image.png" "800|0"]
+  → Resize (width|height — 0 = auto-calculate to keep aspect ratio)
+
+[EXECUTE: img_crop "/path/to/image.png" "100|100|800|600"]
+  → Crop to box (left|top|right|bottom)
+
+[EXECUTE: img_rotate "/path/to/image.png" "90"]
+  → Rotate counter-clockwise by degrees
+
+[EXECUTE: img_flip "/path/to/image.png" "horizontal"]
+  → Flip horizontally or vertically
+
+[EXECUTE: img_filter "/path/to/image.png" "grayscale|1.0"]
+  → Apply filter (name|intensity)
+  Filters: blur, sharpen, detail, edge_enhance, emboss, contour, smooth,
+           grayscale, sepia, invert, brightness, contrast, saturation,
+           auto_contrast, equalize
+
+[EXECUTE: img_text "/path/to/image.png" "© SortMeOut 2026|bottom-right|30|white"]
+  → Add text overlay (text|position|font_size|color)
+  Positions: top-left, top-right, bottom-left, bottom-right, center
+
+[EXECUTE: img_convert "/path/to/image.png" "webp|90"]
+  → Convert format (format|quality)
+  Formats: png, jpeg, webp, tiff, bmp, gif
+
+[EXECUTE: img_compress "/path/to/image.png" "70|1200"]
+  → Compress image (quality|max_width — max_width 0 = no resize)
+
+[EXECUTE: img_info "/path/to/image.png" ""]
+  → Get image details (dimensions, format, size, color mode)
+
+═══════════════════════════════════════════════════
+📐 RULE CREATION (persistent automation)
+═══════════════════════════════════════════════════
+
+[EXECUTE: createrule "Rule Name" "folder|attribute|operator|value|action_type|action_arg"]
+[EXECUTE: renameai "Jarvis"]
 
 ═══════════════════════════════════════════════════
 
 IMPORTANT RULES FOR EXECUTE:
 - NEVER use wildcards (*) — they don't work
-- ALWAYS use exact filenames from the file list below
-- One EXECUTE per file
+- ALWAYS use exact filenames
+- One EXECUTE per action
 - Always use full paths (starting with {home_dir})
 - Commands with no argument still need empty quotes: [EXECUTE: battery ""]
-- Use "open" to open a file in its default app
-- Use "openapp" to launch an application by name (e.g. "Safari", "Finder", "Terminal")
-- Use "createrule" to create persistent rules that the user dictates in chat
+- Write ALL commands in ONE response after confirmation
+- Write ALL mkdir commands first, then other actions
 
-CRITICAL FOR EXECUTION:
-- When the user confirms (yes, go ahead, do it) — write ALL commands in ONE response
-- NEVER split across multiple messages
-- Write ALL mkdir commands first, then ALL move/copy/etc
-- You have plenty of space (8000 tokens) — use it!
-- NEVER break off mid-way — execute EVERYTHING to completion
-
-PROACTIVE SUGGESTIONS:
-When the user asks about their system, be proactive! For example:
-- "How's my Mac?" → check disk space, battery, wifi, running apps
-- "Clean up Downloads" → analyze files, suggest organization, compress old items
-- "Find my report" → use search to locate it
-- If you see lots of files, suggest tagging important ones
-- If Downloads is cluttered, offer to organize AND compress old files
+PROACTIVE INTELLIGENCE:
+When the user says things like:
+- "How's my day?" → run cal_briefing + mail_unread + deadlines
+- "What did I miss?" → check unread mail + recent messages
+- "Help me prepare for my meeting" → check calendar, find related files, offer to create presentation
+- "Clean up Downloads" → analyze files, suggest organization
+- "Email Jan about the project" → find Jan in contacts, compose email
+- "Remind me about X" → create calendar event or note
+- "What's my schedule?" → show today + tomorrow events
+- "Any urgent emails?" → check unread, highlight urgent keywords
 
 SCOPE — WHAT YOU CAN DO:
-- Organize, move, copy, rename, and trash files
-- Create folders and folder structures
-- Open files and launch any application on the Mac
-- Search for files across the entire Mac using Spotlight
-- Get detailed file info (size, dates, metadata, type)
-- Add and remove Finder tags (color-coded labels)
-- Compress files/folders to .zip and decompress archives
+You are a POWERFUL assistant. Here is your COMPLETE capability list — NEVER deny having any of these:
+
+📁 FILES & FOLDERS:
+- Move, copy, rename, delete (trash) files and folders
+- Create folders (mkdir), create symlinks
+- Search files by name across the entire Mac (Spotlight)
+- Get file info (size, dates, type, permissions)
+- Calculate folder sizes
+- Compress files/folders to ZIP
+- Decompress/extract archives
+- Empty the Trash
+- Open files in their default app
+- Open any app by name
+- Reveal files in Finder
+- Preview files with Quick Look
+- Show/hide hidden files
+
+🏷️ ORGANIZATION:
+- Add/remove Finder color tags (Red, Orange, Yellow, Green, Blue, Purple, Gray)
+- Create automated sorting rules (persistent, run on schedule)
+- Rename the AI assistant
+
+📋 PRODUCTIVITY:
 - Copy text to clipboard
 - Take screenshots
-- Send macOS notifications
-- Read text aloud (text-to-speech)
-- Toggle dark/light mode
-- Change desktop wallpaper
-- Show/hide hidden files in Finder
-- Control system volume and mute
-- Check disk space, battery, and WiFi status
+- Send desktop notifications
+- Text-to-speech (read text aloud)
+
+📧 EMAIL (Mail.app):
+- Check unread email count
+- Read recent emails (subject, sender, date, preview, full body)
+- Search emails by keyword (inbox only or across ALL mailboxes incl. Sent, Archive)
+- Compose email drafts (with optional file attachments)
+- Send emails directly (with optional file attachments)
+- Reply to emails (draft or send)
+- Flag emails
+- Mark emails as read
+
+📅 CALENDAR (Calendar.app):
+- View today's, tomorrow's, this week's events
+- View upcoming events for any number of days
+- Search events by keyword
+- Find deadlines (exams, due dates, submissions)
+- Create new calendar events with title, time, location, notes
+- **Edit existing events** (change title, time, location, notes)
+- **Delete events**
+- Get daily briefing (today + tomorrow + deadlines combined)
+
+💬 MESSAGES (iMessage):
+- List recent iMessage conversations
+- **Read message history** from any contact (text, sender, timestamps)
+- Send iMessages to any phone number or email
+
+👤 CONTACTS:
+- Search contacts by name, phone, or email
+- List contact groups
+- **Create new contacts** (name, phone, email, organization, notes)
+- **Edit existing contacts** (add phone, email, change org/notes)
+- **Delete contacts**
+
+📊 PRESENTATIONS:
+- Create PowerPoint/Keynote presentations from text outlines
+- Generate slide content with professional formatting
+
+📝 NOTES (Apple Notes):
+- List recent notes
+- Read full note content
+- Create new notes
+- Search notes by keyword
+- Append text to existing notes
+- **Edit/replace note content**
+- **Delete notes**
+
+🎨 IMAGES — YOU CAN CREATE AND EDIT IMAGES:
+- **GENERATE images from text descriptions** using DALL-E 3 (logos, art, photos, graphics, concept art, illustrations — ANYTHING visual)
+- AI-edit existing images with text prompts
+- Resize images (with aspect ratio preservation)
+- Crop images to specific dimensions
+- Rotate images any number of degrees
+- Flip images horizontally or vertically
+- Apply 15+ filters: blur, sharpen, detail, edge enhance, emboss, contour, smooth, grayscale, sepia, invert, brightness, contrast, saturation, auto contrast, equalize
+- Add text overlays and watermarks (custom font, size, color, position)
+- Convert between formats: PNG, JPEG, WEBP, TIFF, BMP, GIF
+- Compress images to reduce file size
+- Get image info (dimensions, format, file size, color mode)
+
+💻 SYSTEM CONTROL:
+- Toggle Dark Mode
+- Set wallpaper
+- Adjust volume (0-100)
+- Mute/unmute
+- Check disk space
+- Check battery status
+- Check WiFi info
 - List running applications
-- Kill processes
-- Eject drives and volumes
-- Create symbolic links
-- Lock the screen
-- Calculate folder sizes
-- Reveal files in Finder
-- Quick Look preview files
-- Empty the Trash
-- **Create persistent automation rules** that survive app restarts
+- Kill/quit processes
+- Eject external drives
+- Lock screen
 
-RULE CREATION — HOW IT WORKS:
-When the user asks you to create a rule, sorting pattern, or automation:
-1. Discuss what they want (what files, what condition, what action)
-2. Use [EXECUTE: createrule ...] to create it
-3. Rules are saved permanently — they persist across app restarts
-4. Rules run automatically when the user starts watching folders
-5. Be proactive: if you see a pattern in how they organize files, suggest a rule!
+🧠 PROACTIVE INTELLIGENCE:
+- Daily briefing combining calendar + email + deadlines
+- Suggest file organization based on patterns
+- Cross-reference contacts with emails
+- Create meeting agendas from calendar events
+- Summarize email threads
+- Plan your day based on schedule + deadlines
+- Learn user patterns and preferences over time
 
-ASSISTANT NAMING:
-The user can rename you using [EXECUTE: renameai "NewName"]. When the user says something like:
-- "Call yourself Jarvis", "Your name is Nova", "I want to name you X"
-Respond warmly and include the command. Example:
-"Love it! I'm now **Jarvis** — your personal file assistant. ✨
-[EXECUTE: renameai "Jarvis"]"
-
-SCOPE — WHAT YOU CANNOT DO (be honest about this):
-- Create document contents (PowerPoints, Word docs, spreadsheets)
-- Browse the internet or download files
-- Install software or manage packages
-- Access cloud services, email, or messaging
-- Change system security settings or manage users
-If the user asks for something outside your scope, politely explain what you CAN do instead.
-For example: "I can't create a PowerPoint, but I can find your existing presentations, organize them, and open PowerPoint for you!"
+SCOPE — WHAT YOU CANNOT DO (be honest):
+- Browse the internet or download files from the web
+- Install software or system updates
+- Access cloud services directly (Google Drive, Dropbox, iCloud Drive files)
+- Modify system security settings or passwords
+- Access other users' accounts
+NOTE: You CAN create images, logos, art, and graphics! NEVER list image creation as something you cannot do.
+If asked about something you can't do, politely explain what you CAN do instead and suggest alternatives.
 
 USER'S HOME DIRECTORY: {home_dir}
 
@@ -709,6 +1181,8 @@ USER'S FOLDER STRUCTURE:
 {downloads_list}
 
 {f"FILES BEING DISCUSSED:{files_context}" if files_context else ""}
+
+{live_context}
 
 IMPORTANT:
 - ALWAYS reference exact filenames from the list above
@@ -803,19 +1277,51 @@ IMPORTANT:
         message_lower = message.lower().strip()
         return message_lower in confirmations or message_lower.startswith("yes ")
 
+    # ──────────────────────────────────────────────────────────────
+    # ALL KNOWN COMMANDS — single source of truth for regex
+    # ──────────────────────────────────────────────────────────────
+    _ALL_COMMANDS = (
+        # Files
+        "move|copy|rename|mkdir|trash|open|openapp|search|tag|untag|reveal|"
+        "compress|decompress|getinfo|emptytrash|notify|clipboard|screenshot|"
+        "darkmode|volume|preview|killprocess|diskspace|battery|wifi|lockscreen|"
+        "say|eject|symlink|wallpaper|hiddenfiles|runningapps|foldersize|mute|"
+        "createrule|renameai|"
+        # Mail
+        "mail_unread|mail_recent|mail_read|mail_search|mail_search_all|mail_compose|mail_send|"
+        "mail_reply|mail_reply_send|mail_flag|mail_markread|"
+        # Calendar
+        "cal_today|cal_tomorrow|cal_week|cal_upcoming|cal_search|cal_deadlines|"
+        "cal_create|cal_briefing|cal_edit|cal_delete|"
+        # Messages
+        "msg_chats|msg_send|msg_read|"
+        # Contacts
+        "contact_search|contact_groups|contact_create|contact_edit|contact_delete|"
+        # Presentations
+        "pres_create|"
+        # Notes
+        "notes_recent|notes_read|notes_create|notes_search|notes_append|"
+        "notes_edit|notes_delete|"
+        # Images
+        "img_generate|img_edit_ai|img_resize|img_crop|img_rotate|img_flip|"
+        "img_filter|img_text|img_convert|img_compress|img_info"
+    )
+
+    @property
+    def _command_pattern(self) -> str:
+        return rf'\[EXECUTE:\s*({self._ALL_COMMANDS})\s*(?:"([^"]*)")?(?:\s+"([^"]*)")?\]'
+
     def _extract_commands(self, response: str) -> list:
         """Extract EXECUTE commands from the response without running them."""
         import re
 
-        pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash|open|openapp|search|tag|untag|reveal|compress|decompress|getinfo|emptytrash|notify|clipboard|screenshot|darkmode|volume|preview|killprocess|diskspace|battery|wifi|lockscreen|say|eject|symlink|wallpaper|hiddenfiles|runningapps|foldersize|mute|createrule|renameai)\s*(?:"([^"]*)")?(?:\s+"([^"]*)")?\]'
-        return re.findall(pattern, response)
+        return re.findall(self._command_pattern, response)
 
     def _remove_execute_commands(self, response: str) -> str:
         """Remove EXECUTE commands from the AI response."""
         import re
 
-        pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash|open|openapp|search|tag|untag|reveal|compress|decompress|getinfo|emptytrash|notify|clipboard|screenshot|darkmode|volume|preview|killprocess|diskspace|battery|wifi|lockscreen|say|eject|symlink|wallpaper|hiddenfiles|runningapps|foldersize|mute|createrule|renameai)\s*(?:"([^"]*)")?(?:\s+"([^"]*)")?\]'
-        clean = re.sub(pattern, "", response)
+        clean = re.sub(self._command_pattern, "", response)
         # Remove extra blank lines
         clean = re.sub(r"\n{3,}", "\n\n", clean)
         return clean.strip()
@@ -837,7 +1343,9 @@ IMPORTANT:
 
             parts = rule_spec.split("|")
             if len(parts) < 6:
-                return f"❌ Invalid rule spec: need folder|attribute|operator|value|action|destination"
+                return (
+                    f"❌ Invalid rule spec: need folder|attribute|operator|value|action|destination"
+                )
 
             folder = os.path.expanduser(parts[0])
             attribute = parts[1]
@@ -893,7 +1401,7 @@ IMPORTANT:
             # Check for duplicate name
             for existing in folder_entry["rules"]:
                 if existing.get("name") == rule_name:
-                    return f"⚠️ A rule named \"{rule_name}\" already exists for {parts[0]}"
+                    return f'⚠️ A rule named "{rule_name}" already exists for {parts[0]}'
 
             folder_entry["rules"].append(rule.to_dict())
             config_mgr.save_config(config)
@@ -901,7 +1409,7 @@ IMPORTANT:
             return (
                 f"✅ Rule created: **{rule_name}**\n"
                 f"  📂 Folder: `{parts[0]}`\n"
-                f"  🔍 When: {attribute} {operator} \"{value}\"\n"
+                f'  🔍 When: {attribute} {operator} "{value}"\n'
                 f"  ⚡ Then: {action_type}"
                 + (f" → `{action_arg}`" if action_arg else "")
                 + f"\n\n*Rule is saved and will activate when watching starts.*"
@@ -909,6 +1417,593 @@ IMPORTANT:
 
         except Exception as e:
             return f"❌ Could not create rule: {str(e)}"
+
+    # ── Shared integration command executor ──
+
+    def _run_integration_command(self, action: str, arg1: str, arg2: str | None) -> str | None:
+        """Execute an integration command and return result string, or None if not an integration command."""
+        try:
+            # ── Mail commands ──
+            if action == "mail_unread":
+                mail = _get_mail()
+                count = mail.get_unread_count()
+                return f"📧 You have **{count}** unread email(s)"
+
+            elif action == "mail_recent":
+                mail = _get_mail()
+                count = int(arg1) if arg1 and arg1.isdigit() else 5
+                emails = mail.get_recent_emails(count, unread_only=False)
+                if emails:
+                    lines = [f"📧 **{len(emails)} recent email(s):**"]
+                    for e in emails:
+                        flag = "🔵" if e.get("unread") else "  "
+                        lines.append(
+                            f"{flag} **{e.get('subject', '(no subject)')}** — {e.get('sender', '?')}"
+                        )
+                    return "\n".join(lines)
+                return "📧 No recent emails found"
+
+            elif action == "mail_read":
+                mail = _get_mail()
+                detail = mail.read_email(arg1)
+                if "error" not in detail:
+                    lines = [
+                        f"📧 **{detail.get('subject', '(no subject)')}**",
+                        f"From: {detail.get('sender', '?')}",
+                        f"Date: {detail.get('date', '?')}",
+                        f"",
+                        detail.get("body", "(empty)")[:2000],
+                    ]
+                    return "\n".join(lines)
+                return f"❌ {detail.get('error', 'Could not read email')}"
+
+            elif action == "mail_search":
+                mail = _get_mail()
+                results = mail.search_emails(arg1)
+                if results:
+                    lines = [f'🔍 Found **{len(results)}** email(s) matching "{arg1}":']
+                    for e in results[:10]:
+                        lines.append(f"  - **{e.get('subject', '?')}** — {e.get('sender', '?')}")
+                    return "\n".join(lines)
+                return f'🔍 No emails found matching "{arg1}"'
+
+            elif action == "mail_search_all":
+                mail = _get_mail()
+                results = mail.search_all_mailboxes(arg1)
+                if results:
+                    lines = [f'🔍 Found **{len(results)}** email(s) matching "{arg1}" across all mailboxes:']
+                    for e in results[:10]:
+                        mailbox = e.get('mailbox', '?')
+                        lines.append(f"  - [{mailbox}] **{e.get('subject', '?')}** — {e.get('sender', '?')}")
+                    return "\n".join(lines)
+                return f'🔍 No emails found matching "{arg1}" in any mailbox'
+
+            elif action == "mail_compose":
+                mail = _get_mail()
+                # arg1 = "to" address, arg2 = "subject|body|attachment" (pipe separated)
+                subject, body, attachment = "", "", None
+                if arg2:
+                    parts = arg2.split("|", 2)
+                    subject = parts[0] if len(parts) >= 1 else ""
+                    body = parts[1] if len(parts) >= 2 else ""
+                    attachment = parts[2] if len(parts) >= 3 else None
+                result = mail.compose_email(to=arg1, subject=subject, body=body,
+                                            attachment=attachment, send=False)
+                if result.get("success"):
+                    attach_str = f"\n  📎 Attachment: `{attachment}`" if attachment else ""
+                    return f"📝 Draft created for **{arg1}** — subject: \"{subject}\"{attach_str}"
+                return f"❌ Could not create draft: {result.get('error', '?')}"
+
+            elif action == "mail_send":
+                mail = _get_mail()
+                subject, body, attachment = "", "", None
+                if arg2:
+                    parts = arg2.split("|", 2)
+                    subject = parts[0] if len(parts) >= 1 else ""
+                    body = parts[1] if len(parts) >= 2 else ""
+                    attachment = parts[2] if len(parts) >= 3 else None
+                result = mail.compose_email(to=arg1, subject=subject, body=body,
+                                            attachment=attachment, send=True)
+                if result.get("success"):
+                    attach_str = f" (📎 with attachment)" if attachment else ""
+                    return f"📨 Email sent to **{arg1}**{attach_str}"
+                return f"❌ Could not send email: {result.get('error', '?')}"
+
+            elif action == "mail_reply":
+                mail = _get_mail()
+                result = mail.reply_to_email(arg1, arg2 or "", send=False)
+                if result.get("success"):
+                    return f"📝 Reply draft created"
+                return f"❌ Could not create reply: {result.get('error', '?')}"
+
+            elif action == "mail_reply_send":
+                mail = _get_mail()
+                result = mail.reply_to_email(arg1, arg2 or "", send=True)
+                if result.get("success"):
+                    return f"📨 Reply sent"
+                return f"❌ Could not send reply: {result.get('error', '?')}"
+
+            elif action == "mail_flag":
+                mail = _get_mail()
+                result = mail.mark_as_flagged(arg1)
+                if result.get("success"):
+                    return f"🚩 Email flagged"
+                return f"❌ Could not flag email: {result.get('error', '?')}"
+
+            elif action == "mail_markread":
+                mail = _get_mail()
+                result = mail.mark_as_read(arg1)
+                if result.get("success"):
+                    return f"✅ Email marked as read"
+                return f"❌ Could not mark as read: {result.get('error', '?')}"
+
+            # ── Calendar commands ──
+            elif action == "cal_today":
+                cal = _get_calendar()
+                events = cal.get_events_today()
+                if events:
+                    lines = [f"📅 **{len(events)} event(s) today:**"]
+                    for ev in events:
+                        time_str = ev.get("start_time", "")
+                        lines.append(f"  • {time_str} — **{ev.get('title', '?')}**")
+                        if ev.get("location"):
+                            lines.append(f"    📍 {ev['location']}")
+                    return "\n".join(lines)
+                return "📅 No events today — your day is clear!"
+
+            elif action == "cal_tomorrow":
+                cal = _get_calendar()
+                events = cal.get_events_tomorrow()
+                if events:
+                    lines = [f"📅 **{len(events)} event(s) tomorrow:**"]
+                    for ev in events:
+                        lines.append(f"  • {ev.get('start_time', '')} — **{ev.get('title', '?')}**")
+                    return "\n".join(lines)
+                return "📅 No events tomorrow"
+
+            elif action == "cal_week":
+                cal = _get_calendar()
+                events = cal.get_events_this_week()
+                if events:
+                    lines = [f"📅 **{len(events)} event(s) this week:**"]
+                    for ev in events:
+                        lines.append(
+                            f"  • {ev.get('date', '')} {ev.get('start_time', '')} — **{ev.get('title', '?')}**"
+                        )
+                    return "\n".join(lines)
+                return "📅 No events this week"
+
+            elif action == "cal_upcoming":
+                cal = _get_calendar()
+                days = int(arg1) if arg1 and arg1.isdigit() else 7
+                events = cal.get_upcoming_events(days)
+                if events:
+                    lines = [f"📅 **{len(events)} upcoming event(s) ({days} days):**"]
+                    for ev in events:
+                        lines.append(
+                            f"  • {ev.get('date', '')} {ev.get('start_time', '')} — **{ev.get('title', '?')}**"
+                        )
+                    return "\n".join(lines)
+                return f"📅 No upcoming events in the next {days} days"
+
+            elif action == "cal_search":
+                cal = _get_calendar()
+                events = cal.search_events(arg1)
+                if events:
+                    lines = [f'🔍 Found **{len(events)}** event(s) matching "{arg1}":']
+                    for ev in events:
+                        lines.append(f"  • {ev.get('date', '')} — **{ev.get('title', '?')}**")
+                    return "\n".join(lines)
+                return f'🔍 No events found matching "{arg1}"'
+
+            elif action == "cal_deadlines":
+                cal = _get_calendar()
+                days = int(arg1) if arg1 and arg1.isdigit() else 7
+                deadlines = cal.get_deadlines(days)
+                if deadlines:
+                    lines = [f"⏰ **{len(deadlines)} deadline(s) in {days} days:**"]
+                    for d in deadlines:
+                        lines.append(f"  • {d.get('date', '')} — **{d.get('title', '?')}**")
+                    return "\n".join(lines)
+                return f"⏰ No deadlines in the next {days} days"
+
+            elif action == "cal_create":
+                cal = _get_calendar()
+                # arg1 = title, arg2 = start datetime string
+                result = cal.create_event(title=arg1, start=arg2 or "")
+                if result.get("success"):
+                    return f"📅 Event created: **{arg1}**"
+                return f"❌ Could not create event: {result.get('error', '?')}"
+
+            elif action == "cal_briefing":
+                cal = _get_calendar()
+                briefing = cal.get_daily_briefing()
+                return f"📅 **Daily Briefing:**\n{briefing}"
+
+            elif action == "cal_edit":
+                cal = _get_calendar()
+                # arg1 = event title, arg2 = "new_title|new_start|new_end|new_location|new_notes"
+                new_title, new_start, new_end, new_location, new_notes = None, None, None, None, None
+                if arg2:
+                    parts = arg2.split("|")
+                    if len(parts) >= 1 and parts[0].strip():
+                        new_title = parts[0].strip()
+                    if len(parts) >= 2 and parts[1].strip():
+                        new_start = parts[1].strip()
+                    if len(parts) >= 3 and parts[2].strip():
+                        new_end = parts[2].strip()
+                    if len(parts) >= 4 and parts[3].strip():
+                        new_location = parts[3].strip()
+                    if len(parts) >= 5 and parts[4].strip():
+                        new_notes = parts[4].strip()
+                result = cal.edit_event(arg1, new_title=new_title, new_start=new_start,
+                                        new_end=new_end, new_location=new_location,
+                                        new_notes=new_notes)
+                if result.get("success"):
+                    return f"✏️ Event edited: **{arg1}**"
+                return f"❌ {result.get('error', 'Could not edit event')}"
+
+            elif action == "cal_delete":
+                cal = _get_calendar()
+                result = cal.delete_event(arg1)
+                if result.get("success"):
+                    return f"🗑️ Event deleted: **{arg1}**"
+                return f"❌ {result.get('error', 'Could not delete event')}"
+
+            # ── Messages commands ──
+            elif action == "msg_chats":
+                msgs = _get_messages()
+                count = int(arg1) if arg1 and arg1.isdigit() else 5
+                chats = msgs.get_recent_chats(count)
+                if chats:
+                    lines = [f"💬 **{len(chats)} recent chat(s):**"]
+                    for c in chats:
+                        preview = c.get("last_message", "")[:60]
+                        lines.append(f"  • **{c.get('name', '?')}**: {preview}")
+                    return "\n".join(lines)
+                return "💬 No recent chats"
+
+            elif action == "msg_send":
+                msgs = _get_messages()
+                result = msgs.send_message(arg1, arg2 or "")
+                if result.get("success"):
+                    return f"💬 Message sent to **{arg1}**"
+                return f"❌ Could not send message: {result.get('error', '?')}"
+
+            elif action == "msg_read":
+                msgs = _get_messages()
+                count = 10
+                if arg2 and arg2.isdigit():
+                    count = int(arg2)
+                messages = msgs.read_messages(contact=arg1, count=count)
+                if messages:
+                    lines = [f"💬 **Last {len(messages)} message(s) with {arg1}:**"]
+                    for m in messages:
+                        who = "🟢 Me" if m.get("is_from_me") else f"🔵 {m.get('sender', '?')}"
+                        lines.append(f"  {m.get('date', '')} | {who}: {m.get('text', '')[:200]}")
+                    return "\n".join(lines)
+                return f"💬 No messages found with {arg1}"
+
+            # ── Contacts commands ──
+            elif action == "contact_search":
+                contacts = _get_contacts()
+                results = contacts.search(arg1)
+                if results:
+                    lines = [f'👤 Found **{len(results)}** contact(s) matching "{arg1}":']
+                    for c in results[:10]:
+                        info_parts = [c.get("name", "?")]
+                        if c.get("phone"):
+                            info_parts.append(f"📱 {c['phone']}")
+                        if c.get("email"):
+                            info_parts.append(f"✉️ {c['email']}")
+                        lines.append(f"  • {' | '.join(info_parts)}")
+                    return "\n".join(lines)
+                return f'👤 No contacts found matching "{arg1}"'
+
+            elif action == "contact_groups":
+                contacts = _get_contacts()
+                groups = contacts.get_groups()
+                if groups:
+                    lines = [f"👥 **Contact groups ({len(groups)}):**"]
+                    for g in groups:
+                        lines.append(f"  • {g}")
+                    return "\n".join(lines)
+                return "👥 No contact groups found"
+
+            elif action == "contact_create":
+                contacts = _get_contacts()
+                # arg1 = "first|last|phone|email|org|note" (pipe separated)
+                first, last, phone, email, org, note = "", "", "", "", "", ""
+                if arg1:
+                    parts = arg1.split("|")
+                    if len(parts) >= 1:
+                        first = parts[0].strip()
+                    if len(parts) >= 2:
+                        last = parts[1].strip()
+                    if len(parts) >= 3:
+                        phone = parts[2].strip()
+                    if len(parts) >= 4:
+                        email = parts[3].strip()
+                    if len(parts) >= 5:
+                        org = parts[4].strip()
+                    if len(parts) >= 6:
+                        note = parts[5].strip()
+                if not first:
+                    return "❌ First name is required to create a contact"
+                result = contacts.create_contact(
+                    first_name=first, last_name=last, phone=phone,
+                    email=email, organization=org, note=note
+                )
+                if result.get("success"):
+                    return f"👤 Contact created: **{result.get('name', first)}**"
+                return f"❌ Could not create contact: {result.get('error', '?')}"
+
+            elif action == "contact_edit":
+                contacts = _get_contacts()
+                # arg1 = name to search, arg2 = "new_phone|new_email|new_org|new_note"
+                new_phone, new_email, new_org, new_note = "", "", "", ""
+                if arg2:
+                    parts = arg2.split("|")
+                    if len(parts) >= 1:
+                        new_phone = parts[0].strip()
+                    if len(parts) >= 2:
+                        new_email = parts[1].strip()
+                    if len(parts) >= 3:
+                        new_org = parts[2].strip()
+                    if len(parts) >= 4:
+                        new_note = parts[3].strip()
+                result = contacts.edit_contact(
+                    search_name=arg1, new_phone=new_phone, new_email=new_email,
+                    new_organization=new_org, new_note=new_note
+                )
+                if result.get("success"):
+                    return f"✏️ Contact edited: **{arg1}**"
+                return f"❌ {result.get('error', 'Could not edit contact')}"
+
+            elif action == "contact_delete":
+                contacts = _get_contacts()
+                result = contacts.delete_contact(arg1)
+                if result.get("success"):
+                    return f"🗑️ Contact deleted: **{arg1}**"
+                return f"❌ {result.get('error', 'Could not delete contact')}"
+
+            # ── Presentations commands ──
+            elif action == "pres_create":
+                pres = _get_presentations()
+                # arg1 = title, arg2 = outline (markdown-style, newlines as \n)
+                if arg2:
+                    result = pres.create_from_outline(arg2)
+                else:
+                    result = pres.create_presentation(title=arg1, slides=[])
+                if result.get("success"):
+                    path = result.get("path", "")
+                    return f"📊 Presentation created: **{arg1}**\n  → `{path}`"
+                return f"❌ Could not create presentation: {result.get('error', '?')}"
+
+            # ── Notes commands ──
+            elif action == "notes_recent":
+                notes = _get_notes()
+                count = int(arg1) if arg1 and arg1.isdigit() else 5
+                recent = notes.get_recent_notes(count)
+                if recent:
+                    lines = [f"📝 **{len(recent)} recent note(s):**"]
+                    for n in recent:
+                        lines.append(f"  • **{n.get('name', '?')}** — {n.get('snippet', '')[:60]}")
+                    return "\n".join(lines)
+                return "📝 No recent notes"
+
+            elif action == "notes_read":
+                notes = _get_notes()
+                content = notes.read_note(arg1)
+                if content and "error" not in content:
+                    body = content.get("body", "(empty)")[:3000]
+                    return f"📝 **{arg1}**\n\n{body}"
+                return f"❌ Could not read note: {content.get('error', '?') if content else 'not found'}"
+
+            elif action == "notes_create":
+                notes = _get_notes()
+                result = notes.create_note(title=arg1, body=arg2 or "")
+                if result.get("success"):
+                    return f"📝 Note created: **{arg1}**"
+                return f"❌ Could not create note: {result.get('error', '?')}"
+
+            elif action == "notes_search":
+                notes = _get_notes()
+                results = notes.search_notes(arg1)
+                if results:
+                    lines = [f'🔍 Found **{len(results)}** note(s) matching "{arg1}":']
+                    for n in results[:10]:
+                        lines.append(f"  • **{n.get('name', '?')}**")
+                    return "\n".join(lines)
+                return f'🔍 No notes found matching "{arg1}"'
+
+            elif action == "notes_append":
+                notes = _get_notes()
+                result = notes.append_to_note(arg1, arg2 or "")
+                if result.get("success"):
+                    return f"📝 Appended to note: **{arg1}**"
+                return f"❌ Could not append to note: {result.get('error', '?')}"
+
+            elif action == "notes_edit":
+                notes = _get_notes()
+                result = notes.edit_note(arg1, arg2 or "")
+                if result.get("success"):
+                    return f"📝 Note edited: **{arg1}**"
+                return f"❌ Could not edit note: {result.get('error', '?')}"
+
+            elif action == "notes_delete":
+                notes = _get_notes()
+                result = notes.delete_note(arg1)
+                if result.get("success"):
+                    return f"🗑️ Note deleted: **{arg1}**"
+                return f"❌ {result.get('error', 'Could not delete note')}"
+
+            # ── Image commands ──
+            elif action == "img_generate":
+                gen = _get_image_generator()
+                if not gen.is_available:
+                    return "❌ AI image generation unavailable — set OPENAI_API_KEY environment variable"
+                # arg1 = prompt, arg2 = "size|quality|style" (optional)
+                size, quality, style = "1024x1024", "hd", "vivid"
+                if arg2:
+                    parts = arg2.split("|")
+                    if len(parts) >= 1 and parts[0]:
+                        size = parts[0]
+                    if len(parts) >= 2 and parts[1]:
+                        quality = parts[1]
+                    if len(parts) >= 3 and parts[2]:
+                        style = parts[2]
+                result = gen.generate(prompt=arg1, size=size, quality=quality, style=style)
+                if result.get("success"):
+                    return (
+                        f"🎨 **Image generated!**\n"
+                        f"  → `{result['path']}`\n"
+                        f"  Size: {result.get('size', '?')} | Quality: {result.get('quality', '?')}\n"
+                        f"  File: {result.get('file_size', '?')}\n"
+                        f"  Revised prompt: _{result.get('revised_prompt', '')[:150]}_"
+                    )
+                return f"❌ Image generation failed: {result.get('error', '?')}"
+
+            elif action == "img_edit_ai":
+                gen = _get_image_generator()
+                if not gen.is_available:
+                    return "❌ AI image editing unavailable — set OPENAI_API_KEY environment variable"
+                result = gen.edit_with_ai(path=arg1, prompt=arg2 or "")
+                if result.get("success"):
+                    return f"🎨 **Image edited with AI!**\n  → `{result['path']}`"
+                return f"❌ AI image edit failed: {result.get('error', '?')}"
+
+            elif action == "img_resize":
+                editor = _get_image_editor()
+                # arg1 = path, arg2 = "width|height"
+                w, h = 0, 0
+                if arg2:
+                    parts = arg2.split("|")
+                    w = int(parts[0]) if len(parts) >= 1 and parts[0].isdigit() else 0
+                    h = int(parts[1]) if len(parts) >= 2 and parts[1].isdigit() else 0
+                result = editor.resize(arg1, width=w, height=h)
+                if result.get("success"):
+                    return f"📐 Resized: {result['original_size']} → {result['new_size']}\n  → `{result['path']}`"
+                return f"❌ Resize failed: {result.get('error', '?')}"
+
+            elif action == "img_crop":
+                editor = _get_image_editor()
+                # arg2 = "left|top|right|bottom"
+                if not arg2:
+                    return "❌ Crop requires coordinates: left|top|right|bottom"
+                parts = arg2.split("|")
+                if len(parts) < 4:
+                    return "❌ Crop requires 4 values: left|top|right|bottom"
+                left, top, right, bottom = int(parts[0]), int(parts[1]), int(parts[2]), int(parts[3])
+                result = editor.crop(arg1, left, top, right, bottom)
+                if result.get("success"):
+                    return f"✂️ Cropped to {result['new_size']}\n  → `{result['path']}`"
+                return f"❌ Crop failed: {result.get('error', '?')}"
+
+            elif action == "img_rotate":
+                editor = _get_image_editor()
+                degrees = float(arg2) if arg2 else 90.0
+                result = editor.rotate(arg1, degrees)
+                if result.get("success"):
+                    return f"🔄 Rotated {result['degrees']}° → {result['new_size']}\n  → `{result['path']}`"
+                return f"❌ Rotate failed: {result.get('error', '?')}"
+
+            elif action == "img_flip":
+                editor = _get_image_editor()
+                direction = arg2 or "horizontal"
+                result = editor.flip(arg1, direction)
+                if result.get("success"):
+                    return f"🔃 Flipped {result['direction']}\n  → `{result['path']}`"
+                return f"❌ Flip failed: {result.get('error', '?')}"
+
+            elif action == "img_filter":
+                editor = _get_image_editor()
+                # arg2 = "filter_name|intensity"
+                filter_name = "grayscale"
+                intensity = 1.0
+                if arg2:
+                    parts = arg2.split("|")
+                    filter_name = parts[0].strip()
+                    if len(parts) >= 2:
+                        try:
+                            intensity = float(parts[1])
+                        except ValueError:
+                            pass
+                result = editor.apply_filter(arg1, filter_name, intensity)
+                if result.get("success"):
+                    return f"🎨 Filter **{result['filter']}** applied (intensity: {result['intensity']})\n  → `{result['path']}`"
+                return f"❌ Filter failed: {result.get('error', '?')}"
+
+            elif action == "img_text":
+                editor = _get_image_editor()
+                # arg2 = "text|position|font_size|color"
+                text, position, font_size, color = "SortMeOut", "bottom-right", 40, "white"
+                if arg2:
+                    parts = arg2.split("|")
+                    if len(parts) >= 1:
+                        text = parts[0]
+                    if len(parts) >= 2:
+                        position = parts[1].strip()
+                    if len(parts) >= 3 and parts[2].strip().isdigit():
+                        font_size = int(parts[2])
+                    if len(parts) >= 4:
+                        color = parts[3].strip()
+                result = editor.add_text(arg1, text, position=position, font_size=font_size, color=color)
+                if result.get("success"):
+                    return f"✏️ Text overlay added: \"{text}\"\n  → `{result['path']}`"
+                return f"❌ Text overlay failed: {result.get('error', '?')}"
+
+            elif action == "img_convert":
+                editor = _get_image_editor()
+                # arg2 = "format|quality"
+                fmt = "png"
+                quality = 95
+                if arg2:
+                    parts = arg2.split("|")
+                    fmt = parts[0].strip()
+                    if len(parts) >= 2 and parts[1].strip().isdigit():
+                        quality = int(parts[1])
+                result = editor.convert(arg1, fmt, quality=quality)
+                if result.get("success"):
+                    return f"🔄 Converted to **{result['format']}** ({result['size']})\n  → `{result['path']}`"
+                return f"❌ Convert failed: {result.get('error', '?')}"
+
+            elif action == "img_compress":
+                editor = _get_image_editor()
+                # arg2 = "quality|max_width"
+                quality = 70
+                max_width = 0
+                if arg2:
+                    parts = arg2.split("|")
+                    if len(parts) >= 1 and parts[0].strip().isdigit():
+                        quality = int(parts[0])
+                    if len(parts) >= 2 and parts[1].strip().isdigit():
+                        max_width = int(parts[1])
+                result = editor.compress(arg1, quality=quality, max_width=max_width)
+                if result.get("success"):
+                    return (
+                        f"📦 Compressed: {result['original_size']} → {result['new_size']} "
+                        f"(−{result['reduction']})\n  → `{result['path']}`"
+                    )
+                return f"❌ Compress failed: {result.get('error', '?')}"
+
+            elif action == "img_info":
+                editor = _get_image_editor()
+                info = editor.get_info(arg1)
+                if "error" not in info:
+                    return (
+                        f"🖼️ **Image Info:**\n"
+                        f"  Format: {info['format']} | Mode: {info['mode']}\n"
+                        f"  Dimensions: {info['width']}×{info['height']}\n"
+                        f"  Size: {info['size_human']}\n"
+                        f"  Alpha: {'Yes' if info.get('has_alpha') else 'No'}"
+                    )
+                return f"❌ Could not read image: {info.get('error', '?')}"
+
+        except Exception as e:
+            return f"❌ {action} failed: {str(e)[:100]}"
+
+        return None  # Not an integration command
 
     def _execute_pending_commands(self) -> str:
         """Execute all pending commands."""
@@ -1004,6 +2099,7 @@ IMPORTANT:
                         )
                 elif action == "open":
                     import subprocess
+
                     if os.path.exists(path1):
                         subprocess.Popen(["open", path1])
                         successful.append(f"📂 Opened: `{path1}`")
@@ -1011,6 +2107,7 @@ IMPORTANT:
                         failed.append(f"❌ {Path(path1).name} (not found)")
                 elif action == "openapp":
                     import subprocess
+
                     subprocess.Popen(["open", "-a", path1])
                     successful.append(f"🚀 Launched: {path1}")
 
@@ -1018,7 +2115,7 @@ IMPORTANT:
                 elif action == "search":
                     results = macos_sys.search_files(path1)
                     if results:
-                        lines = [f"🔍 Found {len(results)} result(s) for \"{path1}\":"]
+                        lines = [f'🔍 Found {len(results)} result(s) for "{path1}":']
                         for r in results[:15]:
                             icon = "📁" if r.get("is_dir") else "📄"
                             lines.append(f"  {icon} `{r['path']}`")
@@ -1026,21 +2123,23 @@ IMPORTANT:
                             lines.append(f"  ... and {len(results) - 15} more")
                         successful.append("\n".join(lines))
                     else:
-                        successful.append(f"🔍 No results for \"{path1}\"")
+                        successful.append(f'🔍 No results for "{path1}"')
 
                 elif action == "tag" and path2:
                     from sortmeout.macos.tags import add_tags
+
                     if os.path.exists(path1):
                         add_tags(path1, [path2])
-                        successful.append(f"🏷️ Tagged `{Path(path1).name}` with \"{path2}\"")
+                        successful.append(f'🏷️ Tagged `{Path(path1).name}` with "{path2}"')
                     else:
                         failed.append(f"❌ {Path(path1).name} (not found)")
 
                 elif action == "untag" and path2:
                     from sortmeout.macos.tags import remove_tags
+
                     if os.path.exists(path1):
                         remove_tags(path1, [path2])
-                        successful.append(f"🏷️ Removed tag \"{path2}\" from `{Path(path1).name}`")
+                        successful.append(f'🏷️ Removed tag "{path2}" from `{Path(path1).name}`')
                     else:
                         failed.append(f"❌ {Path(path1).name} (not found)")
 
@@ -1085,12 +2184,12 @@ IMPORTANT:
                     title = path1 or "SortMeOut"
                     msg = path2 or ""
                     macos_sys.send_notification(title, msg)
-                    successful.append(f"🔔 Notification sent: \"{title}\"")
+                    successful.append(f'🔔 Notification sent: "{title}"')
 
                 elif action == "clipboard":
                     if macos_sys.clipboard_copy(path1):
                         preview = path1[:50] + "..." if len(path1) > 50 else path1
-                        successful.append(f"📋 Copied to clipboard: \"{preview}\"")
+                        successful.append(f'📋 Copied to clipboard: "{preview}"')
                     else:
                         failed.append("❌ Could not copy to clipboard")
 
@@ -1143,9 +2242,9 @@ IMPORTANT:
                 elif action == "battery":
                     info = macos_sys.get_battery_info()
                     if info:
-                        pct = info.get('percentage', '?')
-                        src = info.get('power_source', '?')
-                        remaining = info.get('time_remaining', '')
+                        pct = info.get("percentage", "?")
+                        src = info.get("power_source", "?")
+                        remaining = info.get("time_remaining", "")
                         icon = "🔌" if src == "AC Power" else "🔋"
                         msg = f"{icon} Battery: {pct}% ({src})"
                         if remaining:
@@ -1167,7 +2266,7 @@ IMPORTANT:
 
                 elif action == "say":
                     macos_sys.text_to_speech(path1)
-                    successful.append(f"🗣️ Speaking: \"{path1[:50]}\"")
+                    successful.append(f'🗣️ Speaking: "{path1[:50]}"')
 
                 elif action == "eject":
                     if macos_sys.eject_volume(path1):
@@ -1217,10 +2316,22 @@ IMPORTANT:
 
                 elif action == "renameai" and path1:
                     from sortmeout.gui.chat_window import _save_ai_name
+
                     if _save_ai_name(path1):
-                        successful.append(f"✅ Assistant renamed to **{path1}** — restart chat to see the change")
+                        successful.append(
+                            f"✅ Assistant renamed to **{path1}** — restart chat to see the change"
+                        )
                     else:
                         failed.append(f"❌ Could not save assistant name")
+
+                else:
+                    # ── Integration commands (mail, calendar, messages, etc.) ──
+                    integration_result = self._run_integration_command(action, path1, path2)
+                    if integration_result is not None:
+                        if integration_result.startswith("❌"):
+                            failed.append(integration_result)
+                        else:
+                            successful.append(integration_result)
 
             except Exception as e:
                 failed.append(f"❌ {action} {Path(path1).name if path1 else ''}: {str(e)[:50]}")
@@ -1264,8 +2375,7 @@ IMPORTANT:
         from sortmeout.macos import system as macos_sys
 
         # Find all EXECUTE commands
-        pattern = r'\[EXECUTE:\s*(move|copy|rename|mkdir|trash|open|openapp|search|tag|untag|reveal|compress|decompress|getinfo|emptytrash|notify|clipboard|screenshot|darkmode|volume|preview|killprocess|diskspace|battery|wifi|lockscreen|say|eject|symlink|wallpaper|hiddenfiles|runningapps|foldersize|mute|createrule|renameai)\s*(?:"([^"]*)")?(?:\s+"([^"]*)")?\]'
-        matches = re.findall(pattern, response)
+        matches = re.findall(self._command_pattern, response)
 
         if not matches:
             return response  # No commands to run
@@ -1369,6 +2479,7 @@ IMPORTANT:
 
                 elif action == "open":
                     import subprocess
+
                     if os.path.exists(path1):
                         subprocess.Popen(["open", path1])
                         successful.append(f"📂 Opened: `{path1}`")
@@ -1377,6 +2488,7 @@ IMPORTANT:
 
                 elif action == "openapp":
                     import subprocess
+
                     subprocess.Popen(["open", "-a", path1])
                     successful.append(f"🚀 Launched: {path1}")
 
@@ -1384,7 +2496,7 @@ IMPORTANT:
                 elif action == "search":
                     results = macos_sys.search_files(path1)
                     if results:
-                        lines = [f"🔍 Found {len(results)} result(s) for \"{path1}\":"]
+                        lines = [f'🔍 Found {len(results)} result(s) for "{path1}":']
                         for r in results[:15]:
                             icon = "📁" if r.get("is_dir") else "📄"
                             lines.append(f"  {icon} `{r['path']}`")
@@ -1392,21 +2504,23 @@ IMPORTANT:
                             lines.append(f"  ... and {len(results) - 15} more")
                         successful.append("\n".join(lines))
                     else:
-                        successful.append(f"🔍 No results for \"{path1}\"")
+                        successful.append(f'🔍 No results for "{path1}"')
 
                 elif action == "tag" and path2:
                     from sortmeout.macos.tags import add_tags
+
                     if os.path.exists(path1):
                         add_tags(path1, [path2])
-                        successful.append(f"🏷️ Tagged `{Path(path1).name}` with \"{path2}\"")
+                        successful.append(f'🏷️ Tagged `{Path(path1).name}` with "{path2}"')
                     else:
                         failed.append(f"❌ {Path(path1).name} (not found)")
 
                 elif action == "untag" and path2:
                     from sortmeout.macos.tags import remove_tags
+
                     if os.path.exists(path1):
                         remove_tags(path1, [path2])
-                        successful.append(f"🏷️ Removed tag \"{path2}\" from `{Path(path1).name}`")
+                        successful.append(f'🏷️ Removed tag "{path2}" from `{Path(path1).name}`')
                     else:
                         failed.append(f"❌ {Path(path1).name} (not found)")
 
@@ -1451,12 +2565,12 @@ IMPORTANT:
                     title = path1 or "SortMeOut"
                     msg = path2 or ""
                     macos_sys.send_notification(title, msg)
-                    successful.append(f"🔔 Notification sent: \"{title}\"")
+                    successful.append(f'🔔 Notification sent: "{title}"')
 
                 elif action == "clipboard":
                     if macos_sys.clipboard_copy(path1):
                         preview = path1[:50] + "..." if len(path1) > 50 else path1
-                        successful.append(f"📋 Copied to clipboard: \"{preview}\"")
+                        successful.append(f'📋 Copied to clipboard: "{preview}"')
                     else:
                         failed.append("❌ Could not copy to clipboard")
 
@@ -1509,9 +2623,9 @@ IMPORTANT:
                 elif action == "battery":
                     info = macos_sys.get_battery_info()
                     if info:
-                        pct = info.get('percentage', '?')
-                        src = info.get('power_source', '?')
-                        remaining = info.get('time_remaining', '')
+                        pct = info.get("percentage", "?")
+                        src = info.get("power_source", "?")
+                        remaining = info.get("time_remaining", "")
                         icon = "🔌" if src == "AC Power" else "🔋"
                         msg = f"{icon} Battery: {pct}% ({src})"
                         if remaining:
@@ -1533,7 +2647,7 @@ IMPORTANT:
 
                 elif action == "say":
                     macos_sys.text_to_speech(path1)
-                    successful.append(f"🗣️ Speaking: \"{path1[:50]}\"")
+                    successful.append(f'🗣️ Speaking: "{path1[:50]}"')
 
                 elif action == "eject":
                     if macos_sys.eject_volume(path1):
@@ -1583,16 +2697,28 @@ IMPORTANT:
 
                 elif action == "renameai" and path1:
                     from sortmeout.gui.chat_window import _save_ai_name
+
                     if _save_ai_name(path1):
-                        successful.append(f"✅ Assistant renamed to **{path1}** — restart chat to see the change")
+                        successful.append(
+                            f"✅ Assistant renamed to **{path1}** — restart chat to see the change"
+                        )
                     else:
                         failed.append("❌ Could not save assistant name")
+
+                else:
+                    # ── Integration commands (mail, calendar, messages, etc.) ──
+                    integration_result = self._run_integration_command(action, path1, path2)
+                    if integration_result is not None:
+                        if integration_result.startswith("❌"):
+                            failed.append(integration_result)
+                        else:
+                            successful.append(integration_result)
 
             except Exception as e:
                 failed.append(f"❌ {action} {Path(path1).name if path1 else ''}: {str(e)[:50]}")
 
         # Remove EXECUTE commands from the AI response
-        clean_response = re.sub(pattern, "", response).strip()
+        clean_response = re.sub(self._command_pattern, "", response).strip()
         # Remove leftover blank lines
         clean_response = re.sub(r"\n{3,}", "\n\n", clean_response)
 
@@ -1618,7 +2744,9 @@ IMPORTANT:
                             result_lines.append(f"  - {name}")
 
             # Non-move actions (system commands, search results, etc.)
-            non_move = [s for s in successful if not s.startswith("✅ ") and not s.startswith("📋 ")]
+            non_move = [
+                s for s in successful if not s.startswith("✅ ") and not s.startswith("📋 ")
+            ]
             for item in non_move:
                 result_lines.append(f"\n{item}")
 

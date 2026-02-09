@@ -17,3 +17,9 @@ rumps>=0.4.0
 
 # AI dependencies (optional but required for AI Assistant)
 anthropic>=0.39.0
+
+# Image editing (optional but required for image features)
+Pillow>=10.0.0
+
+# AI image generation (optional, requires OpenAI API key)
+openai>=1.0.0

@@ -85,6 +85,15 @@ class MenuBarApp:
         self._status_timer = rumps.Timer(self._update_status, 30)
         self._status_timer.start()
 
+        # Start proactive monitor (background thread for mail/calendar alerts)
+        try:
+            from sortmeout.integrations.monitor import get_monitor
+            self._monitor = get_monitor()
+            self._monitor.start()
+        except Exception as e:
+            logger.debug(f"Could not start proactive monitor: {e}")
+            self._monitor = None
+
         # Trigger onboarding after a short delay if first-run
         if self._first_run:
             rumps.Timer(self._run_onboarding, 1).start()
@@ -116,7 +125,8 @@ class MenuBarApp:
             rumps.MenuItem(status_msg, callback=None),
             None,
             rumps.MenuItem("💬 AI Assistant...", callback=self._open_ai_assistant),
-            rumps.MenuItem("📎 Analyze File...", callback=self._analyze_file),
+            rumps.MenuItem("� Daily Briefing", callback=self._daily_briefing),
+            rumps.MenuItem("�📎 Analyze File...", callback=self._analyze_file),
             None,
             rumps.MenuItem("Start Watching", callback=self._toggle_watching),
             rumps.MenuItem("Preview Mode", callback=self._toggle_preview),
@@ -345,6 +355,56 @@ class MenuBarApp:
         except Exception as e:
             logger.error("Failed to open AI assistant: %s", e)
             rumps.alert(title="Error", message=f"Could not open AI Assistant:\n{e}")
+
+    def _daily_briefing(self, _) -> None:
+        """Show a quick daily briefing notification with calendar, mail, and deadlines."""
+        def _run_briefing():
+            try:
+                lines = ["☀️ Good " + (
+                    "morning" if __import__("datetime").datetime.now().hour < 12
+                    else "afternoon" if __import__("datetime").datetime.now().hour < 17
+                    else "evening"
+                ) + "!\n"]
+
+                # Calendar
+                try:
+                    from sortmeout.integrations.calendar import CalendarIntegration
+                    cal = CalendarIntegration()
+                    events = cal.get_events_today()
+                    if events:
+                        lines.append(f"📅 {len(events)} event(s) today:")
+                        for ev in events[:3]:
+                            lines.append(f"  • {ev.get('start_time', '')} — {ev.get('title', '?')}")
+                    else:
+                        lines.append("📅 No events today — your day is clear!")
+                except Exception:
+                    lines.append("📅 Calendar unavailable")
+
+                # Mail
+                try:
+                    from sortmeout.integrations.mail import MailIntegration
+                    mail = MailIntegration()
+                    count = mail.get_unread_count()
+                    lines.append(f"\n📧 {count} unread email(s)")
+                except Exception:
+                    lines.append("\n📧 Mail unavailable")
+
+                # Deadlines
+                try:
+                    from sortmeout.integrations.calendar import CalendarIntegration
+                    cal = CalendarIntegration()
+                    deadlines = cal.get_deadlines(3)
+                    if deadlines:
+                        lines.append(f"\n⏰ {len(deadlines)} upcoming deadline(s)")
+                except Exception:
+                    pass
+
+                briefing_text = "\n".join(lines)
+                rumps.notification("SortMeOut — Daily Briefing", "", briefing_text)
+            except Exception as e:
+                rumps.notification("SortMeOut", "Briefing Error", str(e)[:100])
+
+        threading.Thread(target=_run_briefing, daemon=True).start()
 
     def _analyze_file(self, _) -> None:
         """Analyze a file with AI."""
@@ -810,6 +870,12 @@ class MenuBarApp:
         """Quit the application."""
         if self._running:
             self.sortmeout.stop()
+        # Stop proactive monitor
+        if hasattr(self, '_monitor') and self._monitor:
+            try:
+                self._monitor.stop()
+            except Exception:
+                pass
         rumps.quit_application()
 
     def run(self) -> None:

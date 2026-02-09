@@ -486,6 +486,31 @@ def load_api_key():
     return os.environ.get("ANTHROPIC_API_KEY")
 
 
+def load_openai_api_key():
+    """Load OpenAI API key from .env file or environment."""
+    if os.path.exists(ENV_FILE):
+        try:
+            with open(ENV_FILE, "r") as f:
+                for line in f:
+                    if line.startswith("OPENAI_API_KEY="):
+                        return line.split("=", 1)[1].strip()
+        except Exception:
+            pass
+    # Try dedicated config file
+    config_file = os.path.expanduser(
+        "~/Documents/Config/OpenAI/openai_api_key.txt"
+    )
+    if os.path.exists(config_file):
+        try:
+            with open(config_file, "r") as f:
+                key = f.read().strip()
+                if key:
+                    return key
+        except Exception:
+            pass
+    return os.environ.get("OPENAI_API_KEY")
+
+
 def format_time(dt=None):
     if dt is None:
         dt = datetime.now()
