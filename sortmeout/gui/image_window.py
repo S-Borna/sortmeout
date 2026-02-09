@@ -314,7 +314,7 @@ class ImageWindow:
         self.quality_popup = NSPopUpButton.alloc().initWithFrame_pullsDown_(
             NSMakeRect(q_x + 48, opt_y, 90, 24), False
         )
-        self.quality_popup.addItemsWithTitles_(["HD", "Standard"])
+        self.quality_popup.addItemsWithTitles_(["Standard", "HD"])
         self.quality_popup.setFont_(Fonts.caption())
         section.addSubview_(self.quality_popup)
 
@@ -590,6 +590,14 @@ class ImageWindow:
         if self.is_generating:
             return
 
+        # License gate — check image generation limit
+        from sortmeout.core.license import can_generate_image, record_image_generation
+
+        allowed, message = can_generate_image()
+        if not allowed:
+            self._set_status(f"🔒 {message}", Colors.WARNING)
+            return
+
         prompt = self.prompt_field.string().strip()
         if not prompt:
             self._set_status("⚠️ Enter a prompt to generate an image", Colors.WARNING)
@@ -601,11 +609,11 @@ class ImageWindow:
             1: "1792x1024",
             2: "1024x1792",
         }
-        quality_map = {0: "hd", 1: "standard"}
+        quality_map = {0: "standard", 1: "hd"}
         style_map = {0: "vivid", 1: "natural"}
 
         size = size_map.get(self.size_popup.indexOfSelectedItem(), "1024x1024")
-        quality = quality_map.get(self.quality_popup.indexOfSelectedItem(), "hd")
+        quality = quality_map.get(self.quality_popup.indexOfSelectedItem(), "standard")
         style = style_map.get(self.style_popup.indexOfSelectedItem(), "vivid")
 
         self.is_generating = True
@@ -643,6 +651,10 @@ class ImageWindow:
         if result.get("error"):
             self._set_status(f"❌ {result['error'][:100]}", Colors.ERROR)
         elif result.get("success"):
+            # Record successful generation for rate limiting
+            from sortmeout.core.license import record_image_generation
+            record_image_generation()
+
             path = result.get("path", "")
             self._set_status(f"✅ Saved to {os.path.basename(path)}", Colors.SUCCESS)
             self.prompt_field.setString_("")

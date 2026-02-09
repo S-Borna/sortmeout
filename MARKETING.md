@@ -14,7 +14,7 @@ You've tried folders. You've tried naming conventions. They last about a week.
 
 **SortMeOut watches your folders and organizes files automatically** — the moment they appear. Set rules once, and your Mac stays clean forever.
 
-But SortMeOut is more than a file organizer. It comes with a **built-in AI assistant** that understands your Mac, your files, and what you need — and can actually do something about it.
+But SortMeOut is more than a file organizer. It comes with a **built-in AI assistant powered by Claude**, an **Image Studio powered by DALL·E 3**, and deep macOS integrations for email, calendar, contacts, and system control — all in a single menu bar app.
 
 ---
 
@@ -77,6 +77,26 @@ Talk to your Mac in plain language. The AI assistant is powered by Claude and ca
 | Show/hide hidden files | Toggle in Finder |
 | Empty trash | With confirmation |
 | Create symlinks | File system links |
+| Read/send emails | Apple Mail integration |
+| View/create calendar events | Apple Calendar |
+| Search contacts | Apple Contacts |
+| Create presentations | PowerPoint (.pptx) |
+| Create notes & reminders | Apple Notes & Reminders |
+| Toggle Bluetooth & WiFi | System connectivity |
+| Adjust brightness | Display control |
+
+### 🎨 Image Studio (DALL·E 3)
+
+Generate stunning images right inside SortMeOut — powered by OpenAI's DALL·E 3.
+
+- **Text-to-image** — Describe what you want, get a professional image in seconds
+- **Multiple sizes** — Square, landscape, or portrait
+- **Gallery** — All your generated images saved locally with full browsing history
+- **Built-in editor** — Resize, crop, filter, watermark, and convert formats
+- **Batch processing** — Apply edits to multiple images at once
+- **Format conversion** — PNG, JPEG, WebP, BMP, TIFF
+
+Included with Trial and Pro — 3 images per day.
 
 ### ⏰ Scheduled Rules
 
@@ -149,6 +169,7 @@ sortmeout ai chat        # Talk to the AI
 
 - Your files never leave your Mac — processing is 100% local
 - AI conversations use the Claude API (Anthropic) — no data stored on third-party servers
+- Image generation uses OpenAI DALL·E 3 — prompts processed via API, images stored locally
 - No telemetry, no analytics, no tracking
 - License verification is minimal — a single API call to confirm your key
 
@@ -163,7 +184,10 @@ sortmeout ai chat        # Talk to the AI
 | **Rule automation** | ✅ | ✅ |
 | **Folder watching** | ✅ | ✅ |
 | **AI Assistant** | 5/day | 30/day |
-| **All 31 AI commands** | ✅ | ✅ |
+| **Image Studio** | 3/day | 3/day |
+| **Email, Calendar, Contacts** | ✅ | ✅ |
+| **Presentation Builder** | ✅ | ✅ |
+| **All 31+ AI commands** | ✅ | ✅ |
 | **Templates** | ✅ | ✅ |
 | **History & Undo** | ✅ | ✅ |
 
@@ -173,28 +197,29 @@ sortmeout ai chat        # Talk to the AI
 
 ### vs. Hazel ($42 one-time)
 
-Hazel is great at rules. SortMeOut does rules **and** has an AI assistant that can search, tag, compress, control system settings, and talk to you in natural language. Hazel can't do that.
+Hazel is great at rules. SortMeOut does rules **and** has an AI assistant that can search, tag, compress, control system settings, generate images, manage email, create presentations, and talk to you in natural language. Hazel can't do that.
 
 ### vs. Raycast AI
 
-Raycast is a launcher with AI. SortMeOut is a file automation system with AI. We don't replace your launcher — we organize your files and give you system control from a chat window.
+Raycast is a launcher with AI. SortMeOut is a file automation system with AI, image generation, and full desktop management. We don't replace your launcher — we organize your files, generate images, manage emails, and give you system control from a chat window.
 
 ### vs. Keyboard Maestro
 
-Keyboard Maestro is powerful but complex. SortMeOut is focused: files and desktop management, done simply. Create a rule in 30 seconds, not 30 minutes.
+Keyboard Maestro is powerful but complex. SortMeOut is focused: files, images, email, calendar, and desktop management, done simply. Create a rule in 30 seconds, not 30 minutes.
 
 ### What makes SortMeOut unique
 
-No other Mac app combines **rule-based file automation** with a **full AI desktop assistant** in a single, lightweight menu bar app. That's the product.
+No other Mac app combines **rule-based file automation** with a **full AI desktop assistant**, **AI image generation**, **email/calendar/contacts management**, and **presentation creation** in a single, lightweight menu bar app. That's the product.
 
 ---
 
 ## Technical Highlights
 
 - **15,900 lines** of Python
-- **207 tests** passing
+- **301 tests** passing
 - **Native macOS** — AppKit/PyObjC, not Electron
-- **Claude Sonnet 4** — latest Anthropic model
+- **Claude AI** — Anthropic's latest model
+- **DALL·E 3** — OpenAI's best image generation
 - **SQLite** history with full undo
 - **Thread-safe** concurrent file processing
 - **FSEvents** — real-time, zero-latency file detection

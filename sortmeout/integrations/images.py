@@ -775,7 +775,7 @@ class ImageGenerator:
         self,
         prompt: str,
         size: str = "1024x1024",
-        quality: str = "hd",
+        quality: str = "standard",
         style: str = "vivid",
         filename: Optional[str] = None,
         n: int = 1,
@@ -794,7 +794,7 @@ class ImageGenerator:
                   - "1024x1024" (square, default)
                   - "1024x1792" (portrait)
                   - "1792x1024" (landscape)
-            quality: "hd" (detailed, higher cost) or "standard"
+            quality: "standard" (default, cost-effective) or "hd" (detailed, 2× cost)
             style: "vivid" (dramatic, hyper-real) or "natural" (more realistic)
             filename: Output filename (auto-generated if not provided)
             n: Number of images (DALL-E 3 only supports 1 per call)

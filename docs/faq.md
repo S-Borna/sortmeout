@@ -8,11 +8,11 @@ Common questions and answers about SortMeOut.
 
 ### What is SortMeOut?
 
-SortMeOut is an intelligent file automation tool for macOS. It watches folders you specify and automatically organizes, renames, moves, or processes files based on rules you create. It includes an AI-powered assistant to help you organize files conversationally.
+SortMeOut is an intelligent file automation and AI desktop assistant for macOS. It watches folders you specify and automatically organizes, renames, moves, or processes files based on rules you create. It includes an AI assistant powered by Claude for conversational file management, email, calendar, contacts, presentations, and system control — plus an Image Studio powered by DALL·E 3 for generating and editing images.
 
 ### Is SortMeOut free?
 
-SortMeOut offers a **7-day free trial** with full access to all features. After the trial, a **Pro subscription ($9.99/month)** unlocks unlimited AI assistance (30 requests/day), priority support, and continued access to all features.
+SortMeOut offers a **7-day free trial** with full access to all features (5 AI requests/day, 3 image generations/day). After the trial, a **Pro subscription ($9.99/month)** unlocks 30 AI requests/day, 3 image generations/day, priority support, and continued access to all features.
 
 ### What macOS versions are supported?
 
@@ -301,6 +301,33 @@ sortmeout config set trash.auto_empty_after "7 days"
 ```
 
 Files older than the specified age will be permanently deleted.
+
+---
+
+## AI Assistant & Image Studio
+
+### What AI model does SortMeOut use?
+
+SortMeOut uses Anthropic's Claude AI for the assistant and OpenAI's DALL·E 3 for image generation. Both are included with Trial and Pro at no extra cost.
+
+### What can the AI assistant do?
+
+The AI assistant can organize files, search via Spotlight, manage Finder tags, compress archives, control system settings (volume, dark mode, brightness, Bluetooth, WiFi), read and send emails, view and create calendar events, search contacts, create PowerPoint presentations, manage notes and reminders, and 30+ other commands — all from natural language chat.
+
+### How many AI requests do I get?
+
+- **Trial:** 5 AI requests per day + 3 image generations per day
+- **Pro:** 30 AI requests per day + 3 image generations per day
+
+Limits reset at midnight UTC. Unused requests don't roll over.
+
+### What is Image Studio?
+
+Image Studio is SortMeOut's built-in image generation and editing suite. Generate images from text prompts using DALL·E 3, then resize, crop, apply filters, add watermarks, and convert between formats — all without leaving the app.
+
+### Is my data sent to external servers?
+
+Only when you explicitly use AI features. File names and your questions are sent to Anthropic's Claude API. Image prompts are sent to OpenAI's DALL·E 3 API. **File contents are never sent.** Generated images are stored locally on your device.
 
 ---
 

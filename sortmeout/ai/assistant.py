@@ -107,18 +107,19 @@ def _get_image_generator():
     return _image_generator
 
 
-# Model selection - economical for all users, premium for Creator
-MODEL_DEFAULT = "claude-sonnet-4-20250514"  # All users — fast, capable, cost-effective
+# Model selection — cost-optimized per tier
+MODEL_DEFAULT = "claude-3-5-haiku-20241022"  # All users — fast & cheap ($0.25/$1.25 per MTok)
 MODEL_CREATOR = "claude-sonnet-4-5-20250929"  # Creator only — most capable
 
 
 def get_model() -> str:
     """Get appropriate model based on license state."""
     license = get_license()
-    # Only Creator gets the premium model
+    # Creator gets the premium model
     if license._pro_license_key and "CREATOR" in license._pro_license_key:
         return MODEL_CREATOR
-    return MODEL_DEFAULT  # Everyone else gets the default model
+    # Everyone else gets Haiku
+    return MODEL_DEFAULT
 
 
 try:

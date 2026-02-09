@@ -5,10 +5,10 @@
 [![Version](https://img.shields.io/badge/version-1.0.1-6366F1.svg)](https://sortmeout.saidborna.com)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![macOS](https://img.shields.io/badge/platform-macOS-lightgrey.svg)](https://www.apple.com/macos/)
-[![Tests](https://img.shields.io/badge/tests-207%20passing-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-301%20passing-brightgreen.svg)](#testing)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](#license)
 
-> Rule-based file automation + an AI-powered desktop assistant that can search, tag, compress, control system settings, and more — all from the menu bar.
+> Rule-based file automation + an AI-powered desktop assistant that can search, tag, compress, generate images, manage email, calendar, contacts, create presentations, control system settings, and more — all from the menu bar.
 
 **Website:** [sortmeout.saidborna.com](https://sortmeout.saidborna.com)
 **Author:** Said Borna
@@ -32,6 +32,7 @@
   - [AI Architecture](#ai-architecture)
   - [31 System Commands](#31-system-commands)
   - [Chat Window](#chat-window)
+- [Image Studio](#image-studio)
 - [macOS Integration](#macos-integration)
   - [Spotlight](#spotlight)
   - [Finder Tags](#finder-tags)
@@ -59,7 +60,9 @@ SortMeOut is a macOS desktop application that automatically organizes files base
 
 The app runs in the macOS menu bar, watches folders in real-time, and applies rules that match conditions (file name, type, size, date, content, tags, etc.) to actions (move, copy, rename, tag, archive, trash, open, run scripts, and more).
 
-On top of the rule engine, the AI assistant acts as a full desktop companion — it can search files via Spotlight, manage Finder tags, compress/decompress archives, take screenshots, toggle dark mode, check battery/disk/WiFi status, control volume, send notifications, speak text aloud, and 20+ other system operations.
+On top of the rule engine, the AI assistant acts as a full desktop companion — it can search files via Spotlight, manage Finder tags, compress/decompress archives, take screenshots, toggle dark mode, check battery/disk/WiFi status, control volume, send notifications, speak text aloud, manage emails, access calendar events, browse contacts, create PowerPoint presentations, and 20+ other system operations.
+
+The built-in Image Studio powered by DALL·E 3 lets you generate images from text prompts plus resize, crop, filter, watermark, and convert images — all without leaving the app.
 
 ### Key Numbers
 
@@ -68,7 +71,7 @@ On top of the rule engine, the AI assistant acts as a full desktop companion —
 | Python source files | 34 |
 | Lines of code (app) | ~15,900 |
 | Lines of code (tests) | ~2,400 |
-| Test cases | 207 (all passing) |
+| Test cases | 301 (all passing) |
 | AI commands | 31 |
 | Rule conditions | 17 attribute types |
 | Rule actions | 22 action types |
@@ -356,7 +359,8 @@ Singleton `LicenseAuthority` — the single source of truth for all license logi
 - Machine fingerprint (hardware UUID) for tamper resistance
 - API-based license verification via `api.sortmeout.saidborna.com`
 - Rate limiting: Trial = 5 AI calls/day, Pro = 30 AI calls/day
-- Feature gates: `can_execute_ai()`, `can_execute_automation()`, `can_watch_filesystem()`
+- Image generation limits: Trial = 3/day, Pro = 3/day
+- Feature gates: `can_execute_ai()`, `can_execute_automation()`, `can_watch_filesystem()`, `can_generate_image()`
 - Stripe integration for payment processing
 
 ---
@@ -371,8 +375,10 @@ The `FileAssistant` class provides an AI-powered desktop companion using the Ant
 
 **Models:**
 
-- Default (all users): `claude-sonnet-4-20250514`
-- Creator tier: `claude-sonnet-4-5-20250929`
+- Default (all users): Claude (Anthropic) — optimized for speed and cost-efficiency
+- Creator tier: Claude Sonnet 4.5 (`claude-sonnet-4-5-20250929`)
+
+> **Technical detail:** The default model uses `claude-3-5-haiku-20241022` for optimal latency and cost across all Trial and Pro users. Creator tier uses Sonnet 4.5 for maximum capability.
 
 **How it works:**
 
@@ -456,6 +462,40 @@ A premium native macOS chat interface built entirely with AppKit/PyObjC.
 - macOS traffic-light button compatibility (centered header to avoid collision)
 - Auto-scroll to latest message
 - Thread-safe message queue for background API calls
+
+---
+
+## Image Studio
+
+**File:** `gui/image_window.py` (~923 lines) + `integrations/images.py` (~973 lines)
+
+A full-featured image generation and editing suite built into SortMeOut.
+
+### Image Generation (DALL·E 3)
+
+- Generate images from text prompts using OpenAI's DALL·E 3
+- Sizes: Square (1024×1024), Landscape (1792×1024), Portrait (1024×1792)
+- Quality: Standard (default) and HD modes
+- Gallery with browsing history of all generated images
+
+### Image Editing Tools
+
+- **Resize** — Custom dimensions or presets
+- **Crop** — Interactive or coordinate-based cropping
+- **Filters** — Blur, sharpen, grayscale, sepia, edge detection, emboss, contour, smooth
+- **Watermark** — Text or image watermarks with positioning/opacity control
+- **Format conversion** — PNG, JPEG, WebP, BMP, TIFF
+- **Batch processing** — Apply operations to multiple images
+- **Metadata** — EXIF data viewing
+
+### Usage Limits
+
+| Plan | Images/Day |
+|------|-----------|
+| Trial | 3 |
+| Pro | 3 |
+
+Limits are enforced through the `LicenseAuthority` system (`can_generate_image()` / `record_image_generation()`).
 
 ---
 
@@ -713,7 +753,8 @@ Pre-built rule templates for quick setup:
 | Menu Bar | rumps |
 | CLI | click + rich |
 | File Watching | watchdog (FSEvents backend) |
-| AI | Anthropic Claude API (Sonnet 4) |
+| AI | Anthropic Claude API |
+| Image Generation | OpenAI DALL·E 3 API |
 | Database | SQLite (history) |
 | Config | YAML / JSON |
 | macOS APIs | mdfind, mdls, xattr, osascript, System Events |
@@ -745,7 +786,7 @@ appdirs>=1.4.0           # OS-specific directories
 
 ## Testing
 
-**207 tests, all passing.**
+**301 tests, all passing.**
 
 ```
 tests/test_action.py      ─  31 tests   (file operations, tags, scripts, archiving)

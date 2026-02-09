@@ -25,7 +25,11 @@ import hashlib
 
 # Rate limits per license tier
 TRIAL_AI_DAILY_LIMIT = 5  # Trial: 5/day
-PRO_AI_DAILY_LIMIT = 30  # Pro: 30/day (Haiku)
+PRO_AI_DAILY_LIMIT = 30  # Pro: 30/day
+
+# Image generation limits per license tier
+TRIAL_IMAGE_DAILY_LIMIT = 3  # Trial: 3 images/day
+PRO_IMAGE_DAILY_LIMIT = 3  # Pro: 3 images/day
 
 # ========================================
 # PRICING
@@ -81,9 +85,11 @@ class LicenseAuthority:
         self._trial_consumed: bool = False  # True if trial was used and Pro was later deactivated
         self._machine_id: Optional[str] = None  # Hardware fingerprint
 
-        # Rate limit tracking (trial only)
+        # Rate limit tracking
         self._ai_usage_date: Optional[str] = None  # ISO date string
         self._ai_usage_count: int = 0
+        self._image_usage_date: Optional[str] = None
+        self._image_usage_count: int = 0
 
         self._ensure_license_dir()
         self._machine_id = self._get_machine_fingerprint()
@@ -212,6 +218,8 @@ class LicenseAuthority:
             # Load rate limit tracking
             self._ai_usage_date = data.get("ai_usage_date")
             self._ai_usage_count = data.get("ai_usage_count", 0)
+            self._image_usage_date = data.get("image_usage_date")
+            self._image_usage_count = data.get("image_usage_count", 0)
 
             # Determine current state
             self._evaluate_state()
@@ -229,6 +237,8 @@ class LicenseAuthority:
             "last_check": datetime.now().isoformat(),
             "ai_usage_date": self._ai_usage_date,
             "ai_usage_count": self._ai_usage_count,
+            "image_usage_date": self._image_usage_date,
+            "image_usage_count": self._image_usage_count,
         }
 
         with open(self._license_file, "w") as f:
@@ -557,6 +567,78 @@ class LicenseAuthority:
             return max(0, TRIAL_AI_DAILY_LIMIT - self._ai_usage_count)
         return 0
 
+    def can_generate_image(self) -> Tuple[bool, str]:
+        """
+        IMAGE GENERATION GATE - ALL DALL-E calls MUST pass through this.
+
+        Returns:
+            Tuple of (allowed: bool, message: str)
+
+        Rules:
+        - TRIAL_ACTIVE: 5 images/day
+        - PRO_ACTIVE: 10 images/day
+        - TRIAL_EXPIRED: never allowed
+        - CREATOR: unlimited
+        """
+        state = self.state
+
+        # Creator = unlimited
+        if self._pro_license_key and "CREATOR" in self._pro_license_key:
+            return (True, "")
+
+        if state == LicenseState.PRO_ACTIVE:
+            if self._check_image_rate_limit(PRO_IMAGE_DAILY_LIMIT):
+                return (True, "")
+            return (False, f"Daily image limit reached ({PRO_IMAGE_DAILY_LIMIT}/day). Resets at midnight.")
+
+        if state == LicenseState.TRIAL_ACTIVE:
+            if self._check_image_rate_limit(TRIAL_IMAGE_DAILY_LIMIT):
+                return (True, "")
+            return (False, f"Daily image limit reached ({TRIAL_IMAGE_DAILY_LIMIT}/day). Upgrade to Pro for {PRO_IMAGE_DAILY_LIMIT}/day!")
+
+        return (False, AI_BLOCKED_MESSAGE)
+
+    def _check_image_rate_limit(self, limit: int) -> bool:
+        """Check if user is under daily image generation limit."""
+        today = date.today().isoformat()
+
+        if self._image_usage_date != today:
+            self._image_usage_date = today
+            self._image_usage_count = 0
+            self._save_license()
+
+        return self._image_usage_count < limit
+
+    def record_image_generation(self) -> None:
+        """Record an image generation for rate limiting."""
+        today = date.today().isoformat()
+
+        if self._image_usage_date != today:
+            self._image_usage_date = today
+            self._image_usage_count = 0
+
+        self._image_usage_count += 1
+        self._save_license()
+
+    def get_images_remaining(self) -> int:
+        """Get remaining image generations for today."""
+        if self._pro_license_key and "CREATOR" in self._pro_license_key:
+            return 999
+
+        today = date.today().isoformat()
+        if self._image_usage_date != today:
+            if self.state == LicenseState.PRO_ACTIVE:
+                return PRO_IMAGE_DAILY_LIMIT
+            elif self.state == LicenseState.TRIAL_ACTIVE:
+                return TRIAL_IMAGE_DAILY_LIMIT
+            return 0
+
+        if self.state == LicenseState.PRO_ACTIVE:
+            return max(0, PRO_IMAGE_DAILY_LIMIT - self._image_usage_count)
+        elif self.state == LicenseState.TRIAL_ACTIVE:
+            return max(0, TRIAL_IMAGE_DAILY_LIMIT - self._image_usage_count)
+        return 0
+
     def can_execute_automation(self) -> bool:
         """
         Check if automation execution is allowed.
@@ -642,6 +724,16 @@ def record_ai_execution() -> None:
 def get_ai_blocked_message() -> str:
     """Get the standard AI blocked message."""
     return AI_BLOCKED_MESSAGE
+
+
+def can_generate_image() -> Tuple[bool, str]:
+    """Check if image generation is allowed."""
+    return get_license().can_generate_image()
+
+
+def record_image_generation() -> None:
+    """Record an image generation for rate limiting."""
+    get_license().record_image_generation()
 
 
 def can_execute_automation() -> bool:
