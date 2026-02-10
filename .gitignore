@@ -129,3 +129,7 @@ config/local.yaml
 # Test artifacts
 test_output/
 test_folders/
+
+# Guardian MCP server venv
+Claude/.venv/
+Claude/*.pyc
