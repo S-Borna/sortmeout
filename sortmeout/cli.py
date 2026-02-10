@@ -105,7 +105,9 @@ def stop(ctx):
     console.print(f"[yellow]Stopping SortMeOut (PID {pid})...[/yellow]")
     try:
         os.kill(pid, signal.SIGTERM)
-        # Wait briefly for clean shutdown
+        # Poll for process exit: 0.3s interval × 10 iterations = 3s max
+        # graceful-shutdown window. 0.3s balances responsive CLI feedback
+        # against unnecessary CPU spinning.
         import time
 
         for _ in range(10):

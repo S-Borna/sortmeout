@@ -455,7 +455,8 @@ class ImageWindow:
                                 "modified": stat.st_mtime,
                             }
                         )
-                    except Exception:
+                    except (OSError, PermissionError) as e:
+                        # Broken symlink or permission issue — skip this gallery item
                         pass
 
         self._render_gallery()

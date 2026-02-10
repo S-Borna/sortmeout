@@ -373,7 +373,8 @@ class FileAssistant:
                 try:
                     with open(path, "r", encoding="utf-8", errors="ignore") as f:
                         content_preview = f.read(2000)  # First 2000 chars
-                except Exception:
+                except (OSError, UnicodeDecodeError) as e:
+                    # File unreadable — preview stays empty, non-critical
                     pass
 
         info["content_preview"] = content_preview
@@ -692,7 +693,7 @@ Respond in English in this JSON format:
                 summary = msgs.get_summary()
                 parts.append(f"\n💬 MESSAGES SUMMARY:\n{summary}")
             except Exception as e:
-                pass  # Messages less critical
+                logger.debug("Messages context unavailable: %s", e)
 
         else:
             # Individual context gathering
