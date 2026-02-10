@@ -51,7 +51,9 @@ def _try_record_history(
         # in logs for diagnosing undo/audit-trail issues.
         logger.warning(
             "Failed to record action for rule '%s' on %s: %s",
-            rule_name, action_result.source_path, e
+            rule_name,
+            action_result.source_path,
+            e,
         )
 
 
@@ -334,8 +336,7 @@ class RuleEngine:
                     # If we can't read the new file, subsequent rules will
                     # operate on stale data. Log and stop processing this file.
                     logger.error(
-                        "Cannot read moved file %s for subsequent rules: %s",
-                        current_path, e
+                        "Cannot read moved file %s for subsequent rules: %s", current_path, e
                     )
                     result.errors.append(f"Could not re-read file after move: {e}")
                     break

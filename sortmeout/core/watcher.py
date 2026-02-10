@@ -115,7 +115,9 @@ class FileEventHandler(FileSystemEventHandler):
 
         return True
 
-    def _process_event(self, event_type: str = "modified", src_path: str = None, is_directory: bool = False) -> None:
+    def _process_event(
+        self, event_type: str = "modified", src_path: str = None, is_directory: bool = False
+    ) -> None:
         """Process a file system event."""
         if src_path is None:
             # Called with just a path argument
@@ -229,20 +231,21 @@ class FolderWatcher:
     def should_process(self, filename: str) -> bool:
         """Check if a file should be processed based on filters."""
         import fnmatch as fnmatch_mod
+
         name = os.path.basename(filename)
 
-        if self.ignore_hidden and name.startswith('.'):
+        if self.ignore_hidden and name.startswith("."):
             return False
 
         if self.include_extensions:
             ext = os.path.splitext(name)[1]
-            normalized = [e if e.startswith('.') else f'.{e}' for e in self.include_extensions]
+            normalized = [e if e.startswith(".") else f".{e}" for e in self.include_extensions]
             if ext not in normalized:
                 return False
 
         if self.exclude_extensions:
             ext = os.path.splitext(name)[1]
-            normalized = [e if e.startswith('.') else f'.{e}' for e in self.exclude_extensions]
+            normalized = [e if e.startswith(".") else f".{e}" for e in self.exclude_extensions]
             if ext in normalized:
                 return False
 

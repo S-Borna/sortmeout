@@ -23,6 +23,7 @@ logger = get_logger(__name__)
 # Finder integration
 # ---------------------------------------------------------------------------
 
+
 def reveal_in_finder(path: str) -> bool:
     """Reveal a file or folder in Finder (select it)."""
     path = os.path.expanduser(path)
@@ -42,8 +43,9 @@ def quick_look(path: str) -> bool:
     if not os.path.exists(path):
         return False
     try:
-        subprocess.Popen(["qlmanage", "-p", path],
-                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.Popen(
+            ["qlmanage", "-p", path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
         return True
     except Exception as e:
         logger.error("quick_look failed: %s", e)
@@ -53,6 +55,7 @@ def quick_look(path: str) -> bool:
 # ---------------------------------------------------------------------------
 # Compression
 # ---------------------------------------------------------------------------
+
 
 def compress(path: str) -> Optional[str]:
     """Compress a file or folder to a .zip archive. Returns archive path."""
@@ -66,7 +69,8 @@ def compress(path: str) -> Optional[str]:
         # Use ditto for proper macOS zip (preserves resource forks, metadata)
         subprocess.run(
             ["ditto", "-c", "-k", "--sequesterRsrc", path, archive_path],
-            check=True, capture_output=True,
+            check=True,
+            capture_output=True,
         )
         return archive_path
     except Exception as e:
@@ -85,7 +89,8 @@ def decompress(path: str, destination: Optional[str] = None) -> Optional[str]:
         os.makedirs(dest, exist_ok=True)
         subprocess.run(
             ["ditto", "-x", "-k", path, dest],
-            check=True, capture_output=True,
+            check=True,
+            capture_output=True,
         )
         return dest
     except Exception as e:
@@ -97,6 +102,7 @@ def decompress(path: str, destination: Optional[str] = None) -> Optional[str]:
 # Notifications
 # ---------------------------------------------------------------------------
 
+
 def send_notification(title: str, message: str = "", sound: str = "default") -> bool:
     """Send a macOS notification via osascript."""
     try:
@@ -105,7 +111,9 @@ def send_notification(title: str, message: str = "", sound: str = "default") -> 
             script += f' sound name "{sound}"'
         subprocess.run(
             ["osascript", "-e", script],
-            check=True, capture_output=True, timeout=5,
+            check=True,
+            capture_output=True,
+            timeout=5,
         )
         return True
     except Exception as e:
@@ -117,11 +125,13 @@ def send_notification(title: str, message: str = "", sound: str = "default") -> 
 # Clipboard
 # ---------------------------------------------------------------------------
 
+
 def clipboard_copy(text: str) -> bool:
     """Copy text to the macOS clipboard."""
     try:
         process = subprocess.Popen(
-            ["pbcopy"], stdin=subprocess.PIPE,
+            ["pbcopy"],
+            stdin=subprocess.PIPE,
         )
         process.communicate(input=text.encode("utf-8"))
         return process.returncode == 0
@@ -134,7 +144,10 @@ def clipboard_paste() -> Optional[str]:
     """Get current clipboard contents."""
     try:
         result = subprocess.run(
-            ["pbpaste"], capture_output=True, text=True, timeout=5,
+            ["pbpaste"],
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         return result.stdout if result.returncode == 0 else None
     except Exception as e:
@@ -146,11 +159,13 @@ def clipboard_paste() -> Optional[str]:
 # Screenshot
 # ---------------------------------------------------------------------------
 
+
 def take_screenshot(save_path: Optional[str] = None, region: bool = False) -> Optional[str]:
     """Take a screenshot. Returns the file path."""
     try:
         if not save_path:
             from datetime import datetime
+
             desktop = os.path.expanduser("~/Desktop")
             ts = datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
             save_path = os.path.join(desktop, f"Screenshot_{ts}.png")
@@ -173,20 +188,23 @@ def take_screenshot(save_path: Optional[str] = None, region: bool = False) -> Op
 # System appearance
 # ---------------------------------------------------------------------------
 
+
 def toggle_dark_mode() -> str:
     """Toggle between dark and light mode. Returns the new mode."""
     try:
-        script = '''
+        script = """
         tell application "System Events"
             tell appearance preferences
                 set dark mode to not dark mode
                 return dark mode as text
             end tell
         end tell
-        '''
+        """
         result = subprocess.run(
             ["osascript", "-e", script],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         mode = result.stdout.strip()
         return "dark" if mode == "true" else "light"
@@ -200,7 +218,9 @@ def get_dark_mode() -> bool:
     try:
         result = subprocess.run(
             ["defaults", "read", "-g", "AppleInterfaceStyle"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         return result.stdout.strip() == "Dark"
     except (subprocess.SubprocessError, OSError):
@@ -214,6 +234,7 @@ def get_dark_mode() -> bool:
 # Volume
 # ---------------------------------------------------------------------------
 
+
 def set_volume(level: int) -> bool:
     """Set system volume (0-100)."""
     level = max(0, min(100, level))
@@ -221,7 +242,9 @@ def set_volume(level: int) -> bool:
         # macOS volume is 0-7 in osascript, map 0-100 → 0-100 output volume
         subprocess.run(
             ["osascript", "-e", f"set volume output volume {level}"],
-            check=True, capture_output=True, timeout=5,
+            check=True,
+            capture_output=True,
+            timeout=5,
         )
         return True
     except Exception as e:
@@ -234,7 +257,9 @@ def get_volume() -> Optional[int]:
     try:
         result = subprocess.run(
             ["osascript", "-e", "output volume of (get volume settings)"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         return int(result.stdout.strip())
     except (subprocess.SubprocessError, OSError, ValueError) as e:
@@ -248,13 +273,17 @@ def toggle_mute() -> bool:
         # Check current mute state
         result = subprocess.run(
             ["osascript", "-e", "output muted of (get volume settings)"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         is_muted = result.stdout.strip() == "true"
         new_state = "false" if is_muted else "true"
         subprocess.run(
             ["osascript", "-e", f"set volume output muted {new_state}"],
-            check=True, capture_output=True, timeout=5,
+            check=True,
+            capture_output=True,
+            timeout=5,
         )
         return True
     except Exception as e:
@@ -266,12 +295,15 @@ def toggle_mute() -> bool:
 # System info
 # ---------------------------------------------------------------------------
 
+
 def get_disk_space() -> Dict[str, Any]:
     """Get disk usage for the main volume."""
     try:
         result = subprocess.run(
             ["df", "-H", "/"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         lines = result.stdout.strip().split("\n")
         if len(lines) >= 2:
@@ -294,13 +326,16 @@ def get_battery_info() -> Dict[str, Any]:
     try:
         result = subprocess.run(
             ["pmset", "-g", "batt"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         output = result.stdout
         info: Dict[str, Any] = {}
 
         # Parse percentage
         import re
+
         pct_match = re.search(r"(\d+)%", output)
         if pct_match:
             info["percentage"] = int(pct_match.group(1))
@@ -342,7 +377,9 @@ def get_wifi_info() -> Dict[str, Any]:
         # Use networksetup for reliable info
         result = subprocess.run(
             ["networksetup", "-getairportnetwork", "en0"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         info: Dict[str, Any] = {}
         if "Current Wi-Fi Network" in result.stdout:
@@ -365,13 +402,17 @@ def get_wifi_info() -> Dict[str, Any]:
 # System actions
 # ---------------------------------------------------------------------------
 
+
 def lock_screen() -> bool:
     """Lock the screen."""
     try:
-        subprocess.Popen([
-            "osascript", "-e",
-            'tell application "System Events" to keystroke "q" using {command down, control down}'
-        ])
+        subprocess.Popen(
+            [
+                "osascript",
+                "-e",
+                'tell application "System Events" to keystroke "q" using {command down, control down}',
+            ]
+        )
         return True
     except Exception as e:
         logger.error("lock_screen failed: %s", e)
@@ -397,7 +438,8 @@ def kill_process(name: str) -> bool:
     try:
         subprocess.run(
             ["pkill", "-f", name],
-            capture_output=True, timeout=5,
+            capture_output=True,
+            timeout=5,
         )
         return True
     except Exception as e:
@@ -411,15 +453,22 @@ def eject_volume(volume_name: str) -> bool:
         # Try diskutil first
         result = subprocess.run(
             ["diskutil", "eject", volume_name],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         if result.returncode == 0:
             return True
         # Fallback to osascript
         subprocess.run(
-            ["osascript", "-e",
-             f'tell application "Finder" to eject disk "{_escape(volume_name)}"'],
-            check=True, capture_output=True, timeout=10,
+            [
+                "osascript",
+                "-e",
+                f'tell application "Finder" to eject disk "{_escape(volume_name)}"',
+            ],
+            check=True,
+            capture_output=True,
+            timeout=10,
         )
         return True
     except Exception as e:
@@ -445,16 +494,18 @@ def set_wallpaper(image_path: str) -> bool:
     if not os.path.exists(image_path):
         return False
     try:
-        script = f'''
+        script = f"""
         tell application "System Events"
             tell every desktop
                 set picture to "{image_path}"
             end tell
         end tell
-        '''
+        """
         subprocess.run(
             ["osascript", "-e", script],
-            check=True, capture_output=True, timeout=10,
+            check=True,
+            capture_output=True,
+            timeout=10,
         )
         return True
     except Exception as e:
@@ -467,13 +518,17 @@ def toggle_hidden_files() -> str:
     try:
         result = subprocess.run(
             ["defaults", "read", "com.apple.finder", "AppleShowAllFiles"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         currently_showing = result.stdout.strip().upper() in ("YES", "TRUE", "1")
         new_value = "NO" if currently_showing else "YES"
         subprocess.run(
             ["defaults", "write", "com.apple.finder", "AppleShowAllFiles", new_value],
-            check=True, capture_output=True, timeout=5,
+            check=True,
+            capture_output=True,
+            timeout=5,
         )
         subprocess.run(["killall", "Finder"], capture_output=True, timeout=5)
         return "visible" if new_value == "YES" else "hidden"
@@ -485,7 +540,7 @@ def toggle_hidden_files() -> str:
 def get_running_apps() -> list[str]:
     """Get a list of currently running applications."""
     try:
-        script = '''
+        script = """
         tell application "System Events"
             set appNames to name of every application process whose background only is false
             set output to ""
@@ -494,10 +549,12 @@ def get_running_apps() -> list[str]:
             end repeat
             return output
         end tell
-        '''
+        """
         result = subprocess.run(
             ["osascript", "-e", script],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         apps = [a.strip() for a in result.stdout.strip().split("\n") if a.strip()]
         return sorted(apps)
@@ -514,7 +571,9 @@ def get_folder_size(path: str) -> Optional[str]:
     try:
         result = subprocess.run(
             ["du", "-sh", path],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         if result.returncode == 0:
             return result.stdout.split("\t")[0].strip()
@@ -528,9 +587,10 @@ def empty_trash_system() -> bool:
     """Empty the Trash using Finder AppleScript."""
     try:
         subprocess.run(
-            ["osascript", "-e",
-             'tell application "Finder" to empty trash'],
-            check=True, capture_output=True, timeout=30,
+            ["osascript", "-e", 'tell application "Finder" to empty trash'],
+            check=True,
+            capture_output=True,
+            timeout=30,
         )
         return True
     except Exception as e:
@@ -572,13 +632,20 @@ def get_file_info_detailed(path: str) -> Dict[str, Any]:
         # Get Spotlight metadata for files
         try:
             from sortmeout.macos.spotlight import get_metadata
+
             md = get_metadata(str(p))
             if md:
-                for key in ["kMDItemKind", "kMDItemContentType",
-                             "kMDItemPixelWidth", "kMDItemPixelHeight",
-                             "kMDItemDurationSeconds", "kMDItemAuthors",
-                             "kMDItemTitle", "kMDItemWhereFroms",
-                             "kMDItemPageCount"]:
+                for key in [
+                    "kMDItemKind",
+                    "kMDItemContentType",
+                    "kMDItemPixelWidth",
+                    "kMDItemPixelHeight",
+                    "kMDItemDurationSeconds",
+                    "kMDItemAuthors",
+                    "kMDItemTitle",
+                    "kMDItemWhereFroms",
+                    "kMDItemPageCount",
+                ]:
                     if key in md and md[key] is not None:
                         clean_key = key.replace("kMDItem", "")
                         info[clean_key] = md[key]
@@ -589,6 +656,7 @@ def get_file_info_detailed(path: str) -> Dict[str, Any]:
     # Get Finder tags
     try:
         from sortmeout.macos.tags import get_tags
+
         tags = get_tags(str(p))
         if tags:
             info["tags"] = tags
@@ -608,18 +676,23 @@ def search_files(query: str, folder: Optional[str] = None, limit: int = 20) -> l
         cmd.append(query)
 
         result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=15,
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=15,
         )
 
         paths = [p.strip() for p in result.stdout.strip().split("\n") if p.strip()]
         results = []
         for p in paths[:limit]:
             path_obj = Path(p)
-            results.append({
-                "name": path_obj.name,
-                "path": str(path_obj),
-                "is_dir": path_obj.is_dir(),
-            })
+            results.append(
+                {
+                    "name": path_obj.name,
+                    "path": str(path_obj),
+                    "is_dir": path_obj.is_dir(),
+                }
+            )
         return results
     except Exception as e:
         logger.error("search_files failed: %s", e)
@@ -630,9 +703,10 @@ def search_files(query: str, folder: Optional[str] = None, limit: int = 20) -> l
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _escape(s: str) -> str:
     """Escape string for AppleScript."""
-    return s.replace('\\', '\\\\').replace('"', '\\"')
+    return s.replace("\\", "\\\\").replace('"', '\\"')
 
 
 def _human_size(size: int) -> str:

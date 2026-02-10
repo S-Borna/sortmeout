@@ -472,13 +472,22 @@ Respond in English in this JSON format:
 
         except anthropic.AuthenticationError as e:
             logger.error("Anthropic API key invalid: %s", e)
-            return {"error": "Invalid API key. Check your Anthropic API key.", "file_info": file_info}
+            return {
+                "error": "Invalid API key. Check your Anthropic API key.",
+                "file_info": file_info,
+            }
         except anthropic.RateLimitError as e:
             logger.warning("Anthropic rate limit hit: %s", e)
-            return {"error": "AI rate limit reached. Please try again in a moment.", "file_info": file_info}
+            return {
+                "error": "AI rate limit reached. Please try again in a moment.",
+                "file_info": file_info,
+            }
         except anthropic.APIConnectionError as e:
             logger.warning("Cannot reach Anthropic API: %s", e)
-            return {"error": "Cannot connect to AI service. Check your internet connection.", "file_info": file_info}
+            return {
+                "error": "Cannot connect to AI service. Check your internet connection.",
+                "file_info": file_info,
+            }
         except Exception as e:
             logger.error("Unexpected AI error in suggest_organization: %s", e, exc_info=True)
             return {"error": f"AI error: {str(e)}", "file_info": file_info}
@@ -1258,7 +1267,7 @@ IMPORTANT:
             response = self.client.messages.create(
                 model=get_model(),
                 max_tokens=8000,  # High limit: chat responses may include multi-step plans
-                                  # with embedded EXECUTE commands (avg ~2000, peak ~6000 tokens)
+                # with embedded EXECUTE commands (avg ~2000, peak ~6000 tokens)
                 system=system_prompt,
                 messages=self.conversation_history,
             )

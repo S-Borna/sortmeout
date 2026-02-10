@@ -179,7 +179,8 @@ class LicenseAuthority:
             logger.error(
                 "Failed to write trial fingerprint to %s: %s. "
                 "Fraud prevention may be compromised.",
-                self._fingerprint_file, e
+                self._fingerprint_file,
+                e,
             )
 
     def _load_or_initialize(self):

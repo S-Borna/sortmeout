@@ -93,8 +93,7 @@ def run_onboarding(
         if templates:
             # Overview of available templates
             template_overview = "\n".join(
-                f"  • {t['name']} — {t['description']}"
-                for t in templates
+                f"  • {t['name']} — {t['description']}" for t in templates
             )
 
             response = rumps.alert(
@@ -227,13 +226,13 @@ def run_onboarding(
 
 def _pick_folder() -> Optional[str]:
     """Open a native folder picker and return the selected path."""
-    script = '''
+    script = """
         tell application "System Events"
             activate
             set theFolder to choose folder with prompt "Choose a folder to watch (e.g., Downloads):"
             return POSIX path of theFolder
         end tell
-    '''
+    """
     try:
         result = subprocess.run(
             ["osascript", "-e", script],

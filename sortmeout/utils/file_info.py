@@ -39,17 +39,18 @@ def get_file_info(file_path: str) -> Dict[str, Any]:
         "full_name": path.name,
         "parent_folder": path.parent.name,
         "parent_path": str(path.parent),
-
         # Size
         "size": stat.st_size,
         "size_bytes": stat.st_size,
         "size_human": _format_size(stat.st_size),
-
         # Dates
-        "date_created": datetime.fromtimestamp(stat.st_birthtime) if hasattr(stat, "st_birthtime") else datetime.fromtimestamp(stat.st_ctime),
+        "date_created": (
+            datetime.fromtimestamp(stat.st_birthtime)
+            if hasattr(stat, "st_birthtime")
+            else datetime.fromtimestamp(stat.st_ctime)
+        ),
         "date_modified": datetime.fromtimestamp(stat.st_mtime),
         "date_accessed": datetime.fromtimestamp(stat.st_atime),
-
         # Type
         "is_file": path.is_file(),
         "is_directory": path.is_dir(),
@@ -105,7 +106,6 @@ def _get_file_kind(extension: str, mime_type: Optional[str]) -> str:
         "pages": "Pages Document",
         "numbers": "Numbers Spreadsheet",
         "key": "Keynote Presentation",
-
         # Images
         "jpg": "JPEG Image",
         "jpeg": "JPEG Image",
@@ -122,7 +122,6 @@ def _get_file_kind(extension: str, mime_type: Optional[str]) -> str:
         "raw": "RAW Image",
         "psd": "Photoshop Document",
         "ai": "Illustrator Document",
-
         # Audio
         "mp3": "MP3 Audio",
         "wav": "WAV Audio",
@@ -132,7 +131,6 @@ def _get_file_kind(extension: str, mime_type: Optional[str]) -> str:
         "ogg": "OGG Audio",
         "wma": "WMA Audio",
         "aiff": "AIFF Audio",
-
         # Video
         "mp4": "MP4 Video",
         "mov": "QuickTime Movie",
@@ -142,7 +140,6 @@ def _get_file_kind(extension: str, mime_type: Optional[str]) -> str:
         "flv": "FLV Video",
         "webm": "WebM Video",
         "m4v": "M4V Video",
-
         # Archives
         "zip": "ZIP Archive",
         "rar": "RAR Archive",
@@ -152,7 +149,6 @@ def _get_file_kind(extension: str, mime_type: Optional[str]) -> str:
         "bz2": "Bzip2 Archive",
         "dmg": "Disk Image",
         "iso": "ISO Image",
-
         # Code
         "py": "Python Script",
         "js": "JavaScript",
@@ -172,12 +168,10 @@ def _get_file_kind(extension: str, mime_type: Optional[str]) -> str:
         "rb": "Ruby Script",
         "go": "Go Source",
         "rs": "Rust Source",
-
         # Applications
         "app": "Application",
         "exe": "Windows Executable",
         "pkg": "Installer Package",
-
         # Other
         "torrent": "Torrent File",
         "ics": "Calendar Event",
@@ -226,6 +220,7 @@ def _get_macos_metadata(file_path: str) -> Dict[str, Any]:
 
         if result.returncode == 0:
             import plistlib
+
             metadata = plistlib.loads(result.stdout.encode())
 
             # Extract useful attributes
