@@ -77,7 +77,9 @@ class ProactiveMonitor:
 
     def _run_loop(self):
         """Main monitoring loop."""
-        # Wait a bit for app to fully initialize
+        # Wait 10s for the app to fully initialize (menu bar, config loading,
+        # integration imports). Checking integrations before runLoop is active
+        # causes CoreFoundation errors on macOS.
         time.sleep(10)
 
         while self._running:
@@ -188,7 +190,9 @@ class ProactiveMonitor:
                         )
                         self._last_notified_events.add(event_id)
 
-                except Exception:
+                except (ValueError, TypeError) as e:
+                    # Unparseable event time — skip this event, don't crash the loop
+                    logger.debug("Could not parse event time '%s': %s", start_str, e)
                     continue
 
             # Clean old event IDs (from previous days)

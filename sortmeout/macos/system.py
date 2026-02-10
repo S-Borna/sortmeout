@@ -203,8 +203,11 @@ def get_dark_mode() -> bool:
             capture_output=True, text=True, timeout=5,
         )
         return result.stdout.strip() == "Dark"
-    except Exception:
-        return False  # Light mode (no AppleInterfaceStyle key)
+    except (subprocess.SubprocessError, OSError):
+        # `defaults read` returns non-zero when AppleInterfaceStyle key
+        # doesn't exist, which means the system is in Light mode.
+        # This is expected behavior, not an error.
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -234,7 +237,8 @@ def get_volume() -> Optional[int]:
             capture_output=True, text=True, timeout=5,
         )
         return int(result.stdout.strip())
-    except Exception:
+    except (subprocess.SubprocessError, OSError, ValueError) as e:
+        logger.debug("Could not read system volume: %s", e)
         return None
 
 
@@ -578,8 +582,9 @@ def get_file_info_detailed(path: str) -> Dict[str, Any]:
                     if key in md and md[key] is not None:
                         clean_key = key.replace("kMDItem", "")
                         info[clean_key] = md[key]
-        except Exception:
-            pass
+        except Exception as e:
+            # Spotlight metadata is optional enrichment — don't fail the whole info request
+            logger.debug("Could not read Spotlight metadata for %s: %s", p, e)
 
     # Get Finder tags
     try:
@@ -587,8 +592,8 @@ def get_file_info_detailed(path: str) -> Dict[str, Any]:
         tags = get_tags(str(p))
         if tags:
             info["tags"] = tags
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Could not read Finder tags for %s: %s", p, e)
 
     return info
 

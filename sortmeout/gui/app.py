@@ -201,8 +201,8 @@ class MenuBarApp:
             if not folders:
                 try:
                     folders_menu.add(rumps.MenuItem("No folders configured", callback=None))
-                except Exception:
-                    pass
+                except (AttributeError, TypeError):
+                    pass  # rumps menu API inconsistency
             else:
                 for folder in folders:
                     rules = self.sortmeout.get_rules(folder)
@@ -213,14 +213,14 @@ class MenuBarApp:
                     )
                     try:
                         folders_menu.add(item)
-                    except Exception:
-                        pass
+                    except (AttributeError, TypeError):
+                        pass  # rumps menu API inconsistency
 
             try:
                 folders_menu.add(None)
                 folders_menu.add(rumps.MenuItem("Add Folder...", callback=self._add_folder))
-            except Exception:
-                pass
+            except (AttributeError, TypeError):
+                pass  # rumps menu API inconsistency
         except Exception as e:
             logger.warning("Could not update folders menu: %s", e)
 
@@ -403,7 +403,8 @@ class MenuBarApp:
                             lines.append(f"  • {ev.get('start_time', '')} — {ev.get('title', '?')}")
                     else:
                         lines.append("📅 No events today — your day is clear!")
-                except Exception:
+                except Exception as e:
+                    logger.debug("Calendar unavailable for briefing: %s", e)
                     lines.append("📅 Calendar unavailable")
 
                 # Mail
@@ -413,7 +414,8 @@ class MenuBarApp:
                     mail = MailIntegration()
                     count = mail.get_unread_count()
                     lines.append(f"\n📧 {count} unread email(s)")
-                except Exception:
+                except Exception as e:
+                    logger.debug("Mail unavailable for briefing: %s", e)
                     lines.append("\n📧 Mail unavailable")
 
                 # Deadlines
@@ -424,8 +426,8 @@ class MenuBarApp:
                     deadlines = cal.get_deadlines(3)
                     if deadlines:
                         lines.append(f"\n⏰ {len(deadlines)} upcoming deadline(s)")
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Deadlines unavailable for briefing: %s", e)
 
                 briefing_text = "\n".join(lines)
                 rumps.notification("SortMeOut — Daily Briefing", "", briefing_text)
@@ -622,7 +624,9 @@ class MenuBarApp:
                 title="Recent Activity",
                 message=summary + "\n".join(lines[:10]),
             )
-        except Exception:
+        except Exception as e:
+            # Fallback to basic stats if history DB is unavailable
+            logger.debug("History unavailable, showing basic stats: %s", e)
             stats = self.sortmeout.get_stats()
             rumps.alert(
                 title="Recent Activity",
@@ -899,8 +903,8 @@ class MenuBarApp:
         if hasattr(self, "_monitor") and self._monitor:
             try:
                 self._monitor.stop()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Monitor stop error during quit: %s", e)
         rumps.quit_application()
 
     def run(self) -> None:

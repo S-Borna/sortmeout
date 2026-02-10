@@ -7,6 +7,7 @@ AI personality, user identity, and website-matched design system.
 import os
 import re
 import subprocess
+import logging
 import threading
 import queue
 from datetime import datetime
@@ -304,16 +305,16 @@ def _get_user_name():
             name = cfg.get("user_name", "").strip()
             if name:
                 return name.split()[0]
-        except Exception:
-            pass
+        except (json.JSONDecodeError, OSError, KeyError):
+            pass  # Config missing or corrupt — fall through to macOS lookup
     # 2. macOS full name
     try:
         r = subprocess.run(["id", "-F"], capture_output=True, text=True, timeout=2)
         name = r.stdout.strip()
         if name:
             return name.split()[0]
-    except Exception:
-        pass
+    except (subprocess.TimeoutExpired, OSError):
+        pass  # id -F unavailable — fall through to env var
     return os.environ.get("USER", "You").capitalize()
 
 
@@ -329,8 +330,8 @@ def _get_ai_name():
             name = cfg.get("assistant_name", "").strip()
             if name:
                 return name
-        except Exception:
-            pass
+        except (json.JSONDecodeError, OSError, KeyError):
+            pass  # Config missing or corrupt — use default
     return "SortMeOut AI"
 
 
@@ -349,7 +350,8 @@ def _save_ai_name(name):
         with open(config_path, "w") as f:
             json.dump(cfg, f, indent=2)
         return True
-    except Exception:
+    except (json.JSONDecodeError, OSError) as e:
+        logging.getLogger(__name__).warning("Cannot save AI name: %s", e)
         return False
 
 
@@ -360,8 +362,8 @@ def load_api_key():
                 for line in f:
                     if line.startswith("ANTHROPIC_API_KEY="):
                         return line.split("=", 1)[1].strip()
-        except Exception:
-            pass
+        except (IOError, OSError):
+            pass  # .env unreadable — fall through to env var
     return os.environ.get("ANTHROPIC_API_KEY")
 
 
@@ -373,8 +375,8 @@ def load_openai_api_key():
                 for line in f:
                     if line.startswith("OPENAI_API_KEY="):
                         return line.split("=", 1)[1].strip()
-        except Exception:
-            pass
+        except (IOError, OSError):
+            pass  # .env unreadable — fall through to config file
     # Try dedicated config file
     config_file = os.path.expanduser("~/Documents/Config/OpenAI/openai_api_key.txt")
     if os.path.exists(config_file):
@@ -383,8 +385,8 @@ def load_openai_api_key():
                 key = f.read().strip()
                 if key:
                     return key
-        except Exception:
-            pass
+        except (IOError, OSError):
+            pass  # Config file unreadable — fall through to env var
     return os.environ.get("OPENAI_API_KEY")
 
 
@@ -471,7 +473,7 @@ class ChatWindow:
 
                 self.assistant = FileAssistant(api_key=api_key)
             except Exception as e:
-                print(f"Assistant init error: {e}")
+                logging.getLogger(__name__).error("Assistant initialization failed: %s", e)
 
         self._create_window()
         self._start_timer()

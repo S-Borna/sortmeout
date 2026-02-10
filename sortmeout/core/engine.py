@@ -46,8 +46,13 @@ def _try_record_history(
             preview=preview,
             metadata=action_result.metadata if hasattr(action_result, "metadata") else None,
         )
-    except Exception:
-        pass  # History is best-effort
+    except Exception as e:
+        # History recording is best-effort but failures should be visible
+        # in logs for diagnosing undo/audit-trail issues.
+        logger.warning(
+            "Failed to record action for rule '%s' on %s: %s",
+            rule_name, action_result.source_path, e
+        )
 
 
 @dataclass
@@ -325,8 +330,15 @@ class RuleEngine:
                 # Update file_info for subsequent rules
                 try:
                     file_info = get_file_info(current_path)
-                except Exception:
-                    pass
+                except Exception as e:
+                    # If we can't read the new file, subsequent rules will
+                    # operate on stale data. Log and stop processing this file.
+                    logger.error(
+                        "Cannot read moved file %s for subsequent rules: %s",
+                        current_path, e
+                    )
+                    result.errors.append(f"Could not re-read file after move: {e}")
+                    break
 
             # Check if we should stop processing
             if stop or not rule.continue_processing:

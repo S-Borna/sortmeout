@@ -213,8 +213,9 @@ def run_onboarding(
     if refresh_callback:
         try:
             refresh_callback()
-        except Exception:
-            pass
+        except Exception as e:
+            # Menu refresh is non-critical — app still works, just won't show updated state
+            logger.warning("Post-onboarding refresh callback failed: %s", e)
 
     if response == 1:
         # Auto-start watching

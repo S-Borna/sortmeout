@@ -5,10 +5,13 @@ Your ultimate macOS companion — files, email, calendar, messages, presentation
 
 import os
 import json
+import logging
 import mimetypes
 from pathlib import Path
 from typing import Optional, Dict, List, Any
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 # License gate import - SINGLE AI GATE
 from sortmeout.core.license import (
@@ -172,8 +175,8 @@ class FileAssistant:
                             key = line.split("=", 1)[1].strip()
                             if key:
                                 return key
-            except Exception:
-                pass
+            except (IOError, OSError) as e:
+                logger.debug("Cannot read API key from .env: %s", e)
 
         # 2. Try dedicated config file
         config_file = os.path.expanduser("~/Documents/Config/Anthropic/anthropic_api_key.txt")
@@ -183,8 +186,8 @@ class FileAssistant:
                     key = f.read().strip()
                     if key:
                         return key
-            except Exception:
-                pass
+            except (IOError, OSError) as e:
+                logger.debug("Cannot read API key from config file: %s", e)
 
         # 3. Fall back to environment variable (works in terminal, not in .app)
         return os.environ.get("ANTHROPIC_API_KEY")
@@ -218,8 +221,8 @@ class FileAssistant:
         try:
             with open(structure_file, "w") as f:
                 json.dump(structure, f, indent=2)
-        except Exception:
-            pass
+        except OSError as e:
+            logger.debug("Could not cache folder structure: %s", e)
 
     def _scan_directory(self, path: str, max_depth: int = 2, current_depth: int = 0) -> Dict:
         """Recursively scan directory structure."""
@@ -276,7 +279,8 @@ class FileAssistant:
             try:
                 with open(history_file, "r") as f:
                     self.file_history = json.load(f)
-            except Exception:
+            except (json.JSONDecodeError, OSError) as e:
+                logger.warning("Corrupt history file, starting fresh: %s", e)
                 self.file_history = []
 
     def _load_conversation_history(self):
@@ -289,7 +293,8 @@ class FileAssistant:
                 if isinstance(data, list):
                     # Keep last 20 messages
                     self.conversation_history = data[-20:]
-            except Exception:
+            except (json.JSONDecodeError, OSError) as e:
+                logger.warning("Corrupt chat history, starting fresh: %s", e)
                 self.conversation_history = []
 
     def _save_conversation_history(self):
@@ -299,8 +304,9 @@ class FileAssistant:
             os.makedirs(self.config_path, exist_ok=True)
             with open(chat_file, "w") as f:
                 json.dump(self.conversation_history[-20:], f, indent=2, ensure_ascii=False)
-        except Exception:
-            pass  # Don't let history persistence break the flow
+        except OSError as e:
+            # Non-fatal: conversation still works, just won't persist across sessions
+            logger.debug("Cannot persist chat history: %s", e)
 
     def _save_history(self, entry: Dict):
         """Save a history entry to core engine's SQLite database.
@@ -321,8 +327,9 @@ class FileAssistant:
                 rule_name="AI Assistant",
                 metadata={"via": "ai_chat", "timestamp": entry.get("timestamp", "")},
             )
-        except Exception:
-            pass  # Don't let history failures break the AI flow
+        except Exception as e:
+            # Non-fatal: AI actions still work but won't appear in `sortmeout history`
+            logger.debug("Failed to record AI action to history DB: %s", e)
 
         # Also keep local cache for session context
         self.file_history.append(entry)
@@ -442,7 +449,7 @@ Respond in English in this JSON format:
         try:
             response = self.client.messages.create(
                 model=get_model(),
-                max_tokens=1000,
+                max_tokens=1000,  # Suggestion responses are structured JSON, rarely exceed 500 tokens
                 messages=[{"role": "user", "content": prompt}],
             )
 
@@ -463,7 +470,17 @@ Respond in English in this JSON format:
             else:
                 return {"analysis": response_text, "suggestions": [], "file_info": file_info}
 
+        except anthropic.AuthenticationError as e:
+            logger.error("Anthropic API key invalid: %s", e)
+            return {"error": "Invalid API key. Check your Anthropic API key.", "file_info": file_info}
+        except anthropic.RateLimitError as e:
+            logger.warning("Anthropic rate limit hit: %s", e)
+            return {"error": "AI rate limit reached. Please try again in a moment.", "file_info": file_info}
+        except anthropic.APIConnectionError as e:
+            logger.warning("Cannot reach Anthropic API: %s", e)
+            return {"error": "Cannot connect to AI service. Check your internet connection.", "file_info": file_info}
         except Exception as e:
+            logger.error("Unexpected AI error in suggest_organization: %s", e, exc_info=True)
             return {"error": f"AI error: {str(e)}", "file_info": file_info}
 
     def execute_action(self, filepath: str, action: str, destination: str = None, **kwargs) -> Dict:
@@ -683,8 +700,8 @@ Respond in English in this JSON format:
                                 parts.append(
                                     f"  - From: {e.get('sender', '?')} | Subject: {e.get('subject', '?')}"
                                 )
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Mail context unavailable: %s", e)
 
             if any(kw in msg_lower for kw in cal_keywords):
                 try:
@@ -693,8 +710,8 @@ Respond in English in this JSON format:
                     parts.append(f"\n📅 CALENDAR CONTEXT: {len(events)} event(s) today")
                     for ev in events[:5]:
                         parts.append(f"  - {ev.get('title', '?')} at {ev.get('start_time', '?')}")
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Calendar context unavailable: %s", e)
 
             if any(kw in msg_lower for kw in msg_keywords):
                 try:
@@ -706,8 +723,8 @@ Respond in English in this JSON format:
                             parts.append(
                                 f"  - {c.get('name', '?')}: {c.get('last_message', '?')[:60]}"
                             )
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Messages context unavailable: %s", e)
 
             if any(kw in msg_lower for kw in notes_keywords):
                 try:
@@ -717,8 +734,8 @@ Respond in English in this JSON format:
                         parts.append(f"\n📝 RECENT NOTES:")
                         for n in recent[:3]:
                             parts.append(f"  - {n.get('name', '?')}")
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Notes context unavailable: %s", e)
 
         if parts:
             return "\n\n── LIVE CONTEXT ──" + "\n".join(parts) + "\n── END LIVE CONTEXT ──\n"
@@ -1240,7 +1257,8 @@ IMPORTANT:
         try:
             response = self.client.messages.create(
                 model=get_model(),
-                max_tokens=8000,  # High limit to run all commands in one pass
+                max_tokens=8000,  # High limit: chat responses may include multi-step plans
+                                  # with embedded EXECUTE commands (avg ~2000, peak ~6000 tokens)
                 system=system_prompt,
                 messages=self.conversation_history,
             )
@@ -1271,7 +1289,14 @@ IMPORTANT:
 
             return executed_response
 
+        except anthropic.AuthenticationError:
+            return "Error: Invalid API key. Please check your Anthropic API key in settings."
+        except anthropic.RateLimitError:
+            return "Error: AI rate limit reached. Please wait a moment and try again."
+        except anthropic.APIConnectionError:
+            return "Error: Cannot connect to AI service. Check your internet connection."
         except Exception as e:
+            logger.error("Unexpected error in chat(): %s", e, exc_info=True)
             return f"Error communicating with AI: {str(e)}"
 
     def _is_asking_for_confirmation(self, response: str) -> bool:

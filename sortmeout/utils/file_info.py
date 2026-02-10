@@ -7,12 +7,15 @@ including standard file system attributes and macOS-specific metadata.
 
 from __future__ import annotations
 
+import logging
 import mimetypes
 import os
 import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 
 def get_file_info(file_path: str) -> Dict[str, Any]:
@@ -66,8 +69,9 @@ def get_file_info(file_path: str) -> Dict[str, Any]:
     try:
         macos_info = _get_macos_metadata(file_path)
         info.update(macos_info)
-    except Exception:
-        pass
+    except Exception as e:
+        # macOS metadata is supplementary — non-fatal if unavailable
+        logger.debug("macOS metadata unavailable for %s: %s", file_path, e)
 
     return info
 
@@ -251,9 +255,9 @@ def _get_macos_metadata(file_path: str) -> Dict[str, Any]:
                     info[our_key] = value
 
     except (subprocess.TimeoutExpired, subprocess.SubprocessError):
-        pass
-    except Exception:
-        pass
+        pass  # Spotlight database may be rebuilding or unavailable
+    except Exception as e:
+        logger.debug("Metadata extraction failed for %s: %s", file_path, e)
 
     # Get tags using xattr if not found via mdls
     if "tags" not in info:
@@ -261,8 +265,8 @@ def _get_macos_metadata(file_path: str) -> Dict[str, Any]:
             tags = _get_finder_tags(file_path)
             if tags:
                 info["tags"] = tags
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Tag reading failed for %s: %s", file_path, e)
 
     return info
 
@@ -290,8 +294,8 @@ def _get_finder_tags(file_path: str) -> List[str]:
             # Parse the binary plist
             tags_data = plistlib.loads(result.stdout)
             return [tag.split("\n")[0] for tag in tags_data if tag]
-    except Exception:
-        pass
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError, ValueError):
+        pass  # xattr not available or plist parse failure — file simply has no tags
 
     return []
 
@@ -310,7 +314,7 @@ def get_file_contents(file_path: str, max_bytes: int = 1024 * 1024) -> Optional[
     try:
         with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
             return f.read(max_bytes)
-    except Exception:
+    except (OSError, UnicodeDecodeError):
         return None
 
 

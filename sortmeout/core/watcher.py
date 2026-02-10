@@ -140,7 +140,11 @@ class FileEventHandler(FileSystemEventHandler):
 
     def on_created(self, event) -> None:
         """Handle file/directory created event."""
-        # Wait a bit for file to be fully written
+        # Brief pause to allow the OS to finish writing the file.
+        # FSEvents fires on inode creation before the write is complete.
+        # 100ms covers most small-to-medium file writes; large files are
+        # handled by the debounce mechanism in _debounce() which waits
+        # for event quiescence before processing.
         time.sleep(0.1)
         self._process_event("created", event.src_path, event.is_directory)
 

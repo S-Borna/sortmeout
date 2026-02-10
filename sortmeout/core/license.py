@@ -10,6 +10,7 @@ This is the SINGLE SOURCE OF TRUTH for all license-related logic.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import subprocess
 from datetime import datetime, timedelta, date
@@ -17,6 +18,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional, Tuple
 import hashlib
+
+logger = logging.getLogger(__name__)
 
 
 # ========================================
@@ -125,8 +128,10 @@ class LicenseAuthority:
                         uuid = line.split('"')[-2]
                         # Hash it for privacy
                         return hashlib.sha256(uuid.encode()).hexdigest()[:32]
-        except Exception:
-            pass
+        except Exception as e:
+            # Fingerprint failure is non-fatal — fallback below.
+            # Logged at debug because ioreg may legitimately fail in sandboxed envs.
+            logger.debug("Hardware UUID retrieval failed, using fallback: %s", e)
 
         # Fallback: use hostname + username hash
         fallback = f"{os.uname().nodename}-{os.getenv('USER', 'unknown')}"
@@ -151,8 +156,10 @@ class LicenseAuthority:
             # If same machine and trial was used, it's fraud attempt
             if stored_id == self._machine_id and trial_used:
                 return True
-        except Exception:
-            pass
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.warning("Corrupt fingerprint file, resetting fraud detection: %s", e)
+        except OSError as e:
+            logger.warning("Cannot read fingerprint file %s: %s", self._fingerprint_file, e)
 
         return False
 
@@ -166,8 +173,14 @@ class LicenseAuthority:
         try:
             with open(self._fingerprint_file, "w") as f:
                 json.dump(data, f)
-        except Exception:
-            pass
+        except OSError as e:
+            # Critical: if we can't mark trial as used, users could get infinite trials.
+            # Log at error level so this surfaces in diagnostics.
+            logger.error(
+                "Failed to write trial fingerprint to %s: %s. "
+                "Fraud prevention may be compromised.",
+                self._fingerprint_file, e
+            )
 
     def _load_or_initialize(self):
         """Load existing license or initialize trial on first launch."""
@@ -410,8 +423,10 @@ class LicenseAuthority:
         def _verify():
             try:
                 self.verify_license_online(license_key)
-            except Exception:
-                pass  # Offline is fine — checksum validation is sufficient
+            except Exception as e:
+                # Offline is acceptable — local checksum validation is sufficient.
+                # Logged at debug because network unavailability is a normal condition.
+                logger.debug("Background license verification skipped (offline): %s", e)
 
         thread = threading.Thread(target=_verify, daemon=True)
         thread.start()
@@ -451,10 +466,13 @@ class LicenseAuthority:
 
             return result
 
-        except (urllib.error.URLError, urllib.error.HTTPError, OSError):
+        except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
             # Server unreachable — offline mode, keep current state
+            logger.debug("License server unreachable: %s", e)
             return None
-        except Exception:
+        except (json.JSONDecodeError, KeyError) as e:
+            # Server returned unexpected data
+            logger.warning("License server returned invalid response: %s", e)
             return None
 
     # ========================================

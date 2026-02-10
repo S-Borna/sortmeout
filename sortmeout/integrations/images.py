@@ -616,13 +616,17 @@ class ImageEditor:
             if os.path.exists(fp):
                 try:
                     return ImageFont.truetype(fp, size)
-                except Exception:
+                except (IOError, OSError) as e:
+                    # Font file exists but is unreadable or corrupt — try next
+                    logger.debug("Font %s unavailable: %s", fp, e)
                     continue
 
         # Fallback to default
         try:
             return ImageFont.truetype("Helvetica", size)
-        except Exception:
+        except (IOError, OSError) as e:
+            # Helvetica not found by name — use Pillow's built-in bitmap font
+            logger.debug("Helvetica font not found, using default: %s", e)
             return ImageFont.load_default()
 
     def _calc_text_position(
@@ -732,8 +736,8 @@ class ImageGenerator:
                             key = line.split("=", 1)[1].strip()
                             if key:
                                 return key
-            except Exception:
-                pass
+            except (IOError, OSError) as e:
+                logger.debug("Could not read .env file %s: %s", env_file, e)
 
         # 2. Try dedicated config file
         config_file = os.path.expanduser("~/Documents/Config/OpenAI/openai_api_key.txt")
@@ -743,8 +747,8 @@ class ImageGenerator:
                     key = f.read().strip()
                     if key:
                         return key
-            except Exception:
-                pass
+            except (IOError, OSError) as e:
+                logger.debug("Could not read config file %s: %s", config_file, e)
 
         # 3. Fall back to environment variable
         return os.environ.get("OPENAI_API_KEY", "")
@@ -931,12 +935,12 @@ class ImageGenerator:
 
             urllib.request.urlretrieve(image_url, out_path)
 
-            # Clean up temp file
+            # Clean up temp file — best-effort, non-critical since the output is already saved
             try:
                 if os.path.exists(temp_path) and "_temp_" in temp_path:
                     os.remove(temp_path)
-            except Exception:
-                pass
+            except OSError as e:
+                logger.debug("Could not remove temp file %s: %s", temp_path, e)
 
             subprocess.Popen(["open", out_path])
 
