@@ -96,7 +96,7 @@ Generate stunning images right inside SortMeOut — powered by OpenAI's DALL·E 
 - **Batch processing** — Apply edits to multiple images at once
 - **Format conversion** — PNG, JPEG, WebP, BMP, TIFF
 
-Included with Trial and Pro — 3 images per day.
+Included with Trial and Pro — Trial: 3 images/day, Pro: 20 images/day.
 
 ### ⏰ Scheduled Rules
 
@@ -184,7 +184,7 @@ sortmeout ai chat        # Talk to the AI
 | **Rule automation** | ✅ | ✅ |
 | **Folder watching** | ✅ | ✅ |
 | **AI Assistant** | 5/day | 30/day |
-| **Image Studio** | 3/day | 3/day |
+| **Image Studio** | 3/day | 20/day |
 | **Email, Calendar, Contacts** | ✅ | ✅ |
 | **Presentation Builder** | ✅ | ✅ |
 | **All 31+ AI commands** | ✅ | ✅ |

@@ -10,7 +10,7 @@ SortMeOut is a native macOS AI-powered personal assistant that deeply integrates
 
 ---
 
-## Current State (v0.9-beta)
+## Current State (v1.0.1)
 
 | Feature | Status | Notes |
 |---------|--------|-------|
@@ -254,4 +254,4 @@ main ─────────────────────────
 
 ---
 
-*Last updated: June 2025*
+*Last updated: February 2026*

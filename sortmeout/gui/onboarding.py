@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+from datetime import datetime
 from typing import Callable, Optional
 
 try:
@@ -46,6 +47,8 @@ def run_onboarding(
     if rumps is None:
         logger.warning("Onboarding requires rumps; skipping.")
         return
+
+    _mark_onboarding_done(config_manager, mark_complete=False)
 
     # ─── Step 1: Welcome ──────────────────────────────────────────
 
@@ -82,6 +85,8 @@ def run_onboarding(
     folder_name = os.path.basename(folder.rstrip("/"))
 
     # ─── Step 3: Choose templates ─────────────────────────────────
+
+    applied_templates = 0
 
     try:
         from sortmeout.core.templates import get_onboarding_templates, template_to_rule_dict
@@ -145,6 +150,7 @@ def run_onboarding(
                             logger.warning("Failed to apply template '%s': %s", tmpl["name"], e)
 
                 if applied:
+                    applied_templates = applied
                     rumps.notification(
                         "SortMeOut",
                         "Templates Applied",
@@ -182,6 +188,7 @@ def run_onboarding(
                         logger.warning("Failed to apply template '%s': %s", tmpl["name"], e)
 
                 if applied:
+                    applied_templates = applied
                     rumps.notification(
                         "SortMeOut",
                         "Templates Applied",
@@ -207,7 +214,11 @@ def run_onboarding(
         cancel="I'll Start Later",
     )
 
-    _mark_onboarding_done(config_manager)
+    _mark_onboarding_done(
+        config_manager,
+        selected_folder=folder,
+        templates_applied=applied_templates,
+    )
 
     if refresh_callback:
         try:
@@ -247,13 +258,31 @@ def _pick_folder() -> Optional[str]:
     return None
 
 
-def _mark_onboarding_done(config_manager) -> None:
-    """Record that onboarding has been completed."""
+def _mark_onboarding_done(
+    config_manager,
+    selected_folder: Optional[str] = None,
+    templates_applied: Optional[int] = None,
+    mark_complete: bool = True,
+) -> None:
+    """Record onboarding lifecycle metadata in config."""
     try:
         config = config_manager.load_config()
         if not isinstance(config, dict):
             config = {}
-        config["onboarding_completed"] = True
+
+        if not config.get("onboarding_started_at"):
+            config["onboarding_started_at"] = datetime.now().isoformat()
+
+        if selected_folder:
+            config["onboarding_selected_folder"] = selected_folder
+
+        if templates_applied is not None:
+            config["onboarding_templates_applied"] = templates_applied
+
+        if mark_complete:
+            config["onboarding_completed"] = True
+            config["onboarding_completed_at"] = datetime.now().isoformat()
+
         config_manager.save_config(config)
     except Exception as e:
         logger.warning("Could not save onboarding flag: %s", e)

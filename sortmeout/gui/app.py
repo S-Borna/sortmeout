@@ -15,6 +15,7 @@ import threading
 import time
 import webbrowser
 from collections import deque
+from datetime import datetime
 from typing import Optional
 
 try:
@@ -257,6 +258,7 @@ class MenuBarApp:
 
             self.sortmeout.start_background()
             self._running = True
+            self._record_watching_activation()
             sender.title = "Stop Watching"
             self.app.title = "SortMeOut ●"
             rumps.notification(
@@ -264,6 +266,22 @@ class MenuBarApp:
                 "Started",
                 f"Watching {len(folders)} folder(s).",
             )
+
+    def _record_watching_activation(self) -> None:
+        """Persist first/last watch start timestamps for activation tracking."""
+        try:
+            config = self._config_manager.load_config()
+            if not isinstance(config, dict):
+                config = {}
+
+            now = datetime.now().isoformat()
+            config["last_watching_started_at"] = now
+            if not config.get("first_watching_started_at"):
+                config["first_watching_started_at"] = now
+
+            self._config_manager.save_config(config)
+        except Exception as e:
+            logger.debug("Could not persist watching activation metrics: %s", e)
 
     def _toggle_preview(self, sender: rumps.MenuItem) -> None:
         """Toggle preview mode."""

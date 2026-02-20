@@ -32,7 +32,7 @@ PRO_AI_DAILY_LIMIT = 30  # Pro: 30/day
 
 # Image generation limits per license tier
 TRIAL_IMAGE_DAILY_LIMIT = 3  # Trial: 3 images/day
-PRO_IMAGE_DAILY_LIMIT = 3  # Pro: 3 images/day
+PRO_IMAGE_DAILY_LIMIT = 20  # Pro: 20 images/day
 
 # ========================================
 # PRICING
@@ -597,8 +597,8 @@ class LicenseAuthority:
             Tuple of (allowed: bool, message: str)
 
         Rules:
-        - TRIAL_ACTIVE: 5 images/day
-        - PRO_ACTIVE: 10 images/day
+        - TRIAL_ACTIVE: 3 images/day
+        - PRO_ACTIVE: 20 images/day
         - TRIAL_EXPIRED: never allowed
         - CREATOR: unlimited
         """

@@ -171,7 +171,7 @@ sortmeout/
 │       ├── file_info.py        # File metadata extraction (363 lines)
 │       └── logger.py           # Logging setup
 │
-├── tests/                      # Test suite (207 tests)
+├── tests/                      # Test suite (301 tests)
 │   ├── test_action.py          # Action tests
 │   ├── test_condition.py       # Condition tests
 │   ├── test_engine.py          # Engine tests
@@ -359,7 +359,7 @@ Singleton `LicenseAuthority` — the single source of truth for all license logi
 - Machine fingerprint (hardware UUID) for tamper resistance
 - API-based license verification via `api.sortmeout.saidborna.com`
 - Rate limiting: Trial = 5 AI calls/day, Pro = 30 AI calls/day
-- Image generation limits: Trial = 3/day, Pro = 3/day
+- Image generation limits: Trial = 3/day, Pro = 20/day
 - Feature gates: `can_execute_ai()`, `can_execute_automation()`, `can_watch_filesystem()`, `can_generate_image()`
 - Stripe integration for payment processing
 
@@ -493,7 +493,7 @@ A full-featured image generation and editing suite built into SortMeOut.
 | Plan | Images/Day |
 |------|-----------|
 | Trial | 3 |
-| Pro | 3 |
+| Pro | 20 |
 
 Limits are enforced through the `LicenseAuthority` system (`can_generate_image()` / `record_image_generation()`).
 
@@ -730,7 +730,7 @@ Pre-built rule templates for quick setup:
 | `/api/health` | GET | Health check |
 | `/api/checkout` | POST | Create Stripe checkout session |
 | `/api/verify` | POST | Verify license key |
-| `/api/license` | GET | Look up license by email |
+| `/api/license` | GET | Support/status lookup by email (masked key only) |
 
 **Payment flow:**
 

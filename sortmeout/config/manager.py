@@ -24,6 +24,7 @@ logger = get_logger(__name__)
 # Application identifiers
 APP_NAME = "SortMeOut"
 APP_AUTHOR = "SortMeOut"
+APP_VERSION = "1.0.1"
 
 
 def get_config_directory() -> Path:
@@ -122,7 +123,7 @@ class ConfigManager:
             config["_metadata"] = {
                 "version": "1.0",
                 "updated_at": datetime.now().isoformat(),
-                "app_version": "0.1.0",
+                "app_version": APP_VERSION,
             }
 
             with open(self.config_path, "w") as f:
@@ -184,7 +185,7 @@ class ConfigManager:
             "_metadata": {
                 "version": "1.0",
                 "created_at": datetime.now().isoformat(),
-                "app_version": "0.1.0",
+                "app_version": APP_VERSION,
             },
         }
 

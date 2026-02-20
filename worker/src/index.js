@@ -13,6 +13,52 @@
  *   User → enters key in app → POST /api/verify → validates key
  */
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_EMAIL_LENGTH = 254;
+const WEBHOOK_EVENT_TTL_SECONDS = 60 * 60 * 24 * 30;
+
+// ==========================================
+// Shared Helpers
+// ==========================================
+
+function normalizeEmail(email) {
+    return String(email || '').trim().toLowerCase();
+}
+
+function isValidEmail(email) {
+    const normalized = normalizeEmail(email);
+    return normalized.length > 3 && normalized.length <= MAX_EMAIL_LENGTH && EMAIL_REGEX.test(normalized);
+}
+
+function maskLicenseKey(licenseKey) {
+    if (typeof licenseKey !== 'string' || !licenseKey) {
+        return null;
+    }
+
+    const parts = licenseKey.split('-');
+    if (parts.length !== 5 || parts[0] !== 'SORTMEOUT') {
+        return null;
+    }
+
+    return `${parts[0]}-${parts[1]}-${parts[2]}-****-${parts[4]}`;
+}
+
+function timingSafeEqual(a, b) {
+    if (typeof a !== 'string' || typeof b !== 'string') {
+        return false;
+    }
+
+    const maxLength = Math.max(a.length, b.length);
+    let mismatch = a.length ^ b.length;
+
+    for (let i = 0; i < maxLength; i += 1) {
+        const codeA = i < a.length ? a.charCodeAt(i) : 0;
+        const codeB = i < b.length ? b.charCodeAt(i) : 0;
+        mismatch |= codeA ^ codeB;
+    }
+
+    return mismatch === 0;
+}
 
 // ==========================================
 // Owner Notifications
@@ -216,7 +262,7 @@ async function verifyStripeSignature(body, signature, secret) {
 
     // Check timestamp tolerance (5 minutes)
     const now = Math.floor(Date.now() / 1000);
-    if (Math.abs(now - parseInt(timestamp)) > 300) return false;
+    if (Math.abs(now - parseInt(timestamp, 10)) > 300) return false;
 
     // Compute expected signature
     const payload = `${timestamp}.${body}`;
@@ -238,7 +284,7 @@ async function verifyStripeSignature(body, signature, secret) {
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
 
-    return sig === expectedHex;
+    return timingSafeEqual(sig, expectedHex);
 }
 
 
@@ -251,7 +297,19 @@ async function verifyStripeSignature(body, signature, secret) {
  * Creates a Stripe Checkout session and returns the URL.
  */
 async function handleCheckout(request, env) {
-    const { email } = await request.json().catch(() => ({}));
+    const payload = await request.json().catch(() => null);
+    if (!payload || typeof payload !== 'object') {
+        return jsonResponse({ error: 'Invalid request body' }, 400);
+    }
+
+    if (!env.STRIPE_SECRET_KEY || !env.STRIPE_PRICE_ID || !env.CORS_ORIGIN) {
+        return jsonResponse({ error: 'Checkout is not configured' }, 500);
+    }
+
+    const email = typeof payload.email === 'string' ? normalizeEmail(payload.email) : '';
+    if (email && !isValidEmail(email)) {
+        return jsonResponse({ error: 'Invalid email format' }, 400);
+    }
 
     const params = new URLSearchParams({
         'mode': 'subscription',
@@ -305,17 +363,34 @@ async function handleWebhook(request, env) {
         return jsonResponse({ error: 'Invalid signature' }, 400);
     }
 
-    const event = JSON.parse(body);
+    let event;
+    try {
+        event = JSON.parse(body);
+    } catch {
+        return jsonResponse({ error: 'Invalid webhook JSON payload' }, 400);
+    }
+
+    if (!event || typeof event !== 'object' || !event.type || !event.id) {
+        return jsonResponse({ error: 'Invalid webhook event payload' }, 400);
+    }
+
+    const eventKey = `event:${event.id}`;
+    const previouslyProcessed = await env.LICENSES.get(eventKey);
+    if (previouslyProcessed) {
+        console.log(`Webhook event already processed: ${event.id}`);
+        return jsonResponse({ received: true, duplicate: true });
+    }
+
     console.log(`Webhook event: ${event.type}`);
 
     switch (event.type) {
         case 'checkout.session.completed': {
             const session = event.data.object;
-            const email = session.customer_email || session.customer_details?.email;
+            const email = normalizeEmail(session.customer_email || session.customer_details?.email);
             const customerId = session.customer;
             const subscriptionId = session.subscription;
 
-            if (email) {
+            if (email && isValidEmail(email)) {
                 // Generate license key
                 const licenseKey = await generateLicenseKey(email, env.LICENSE_SIGNING_KEY);
 
@@ -332,7 +407,7 @@ async function handleWebhook(request, env) {
                 // Store by license key (for verification)
                 await env.LICENSES.put(`key:${licenseKey}`, JSON.stringify(licenseData));
                 // Store by email (for lookup)
-                await env.LICENSES.put(`email:${email.toLowerCase()}`, JSON.stringify(licenseData));
+                await env.LICENSES.put(`email:${email}`, JSON.stringify(licenseData));
                 // Store by customer ID (for webhook updates)
                 await env.LICENSES.put(`customer:${customerId}`, JSON.stringify(licenseData));
 
@@ -346,6 +421,8 @@ async function handleWebhook(request, env) {
                     'Prenumeration': subscriptionId,
                     'Belopp': '$9.99/mån',
                 });
+            } else {
+                console.warn('Checkout session completed without valid customer email');
             }
             break;
         }
@@ -427,6 +504,10 @@ async function handleWebhook(request, env) {
         }
     }
 
+    await env.LICENSES.put(eventKey, new Date().toISOString(), {
+        expirationTtl: WEBHOOK_EVENT_TTL_SECONDS,
+    });
+
     return jsonResponse({ received: true });
 }
 
@@ -436,7 +517,14 @@ async function handleWebhook(request, env) {
  * Called by the desktop app when user enters a key.
  */
 async function handleVerify(request, env) {
-    const { license_key } = await request.json().catch(() => ({}));
+    const payload = await request.json().catch(() => null);
+    if (!payload || typeof payload !== 'object') {
+        return jsonResponse({ valid: false, error: 'Invalid request body' }, 400);
+    }
+
+    const license_key = typeof payload.license_key === 'string'
+        ? payload.license_key.trim().toUpperCase()
+        : '';
 
     if (!license_key) {
         return jsonResponse({ valid: false, error: 'Missing license key' }, 400);
@@ -463,27 +551,31 @@ async function handleVerify(request, env) {
 
 /**
  * GET /api/license?email=...
- * Look up license key by email (for re-sending).
+ * Support/status lookup by email (returns masked key only).
  */
 async function handleLicenseLookup(request, env) {
     const url = new URL(request.url);
-    const email = url.searchParams.get('email');
+    const email = normalizeEmail(url.searchParams.get('email'));
 
     if (!email) {
         return jsonResponse({ error: 'Missing email parameter' }, 400);
     }
 
-    const stored = await env.LICENSES.get(`email:${email.toLowerCase().trim()}`, 'json');
+    if (!isValidEmail(email)) {
+        return jsonResponse({ error: 'Invalid email format' }, 400);
+    }
+
+    const stored = await env.LICENSES.get(`email:${email}`, 'json');
     if (!stored) {
         return jsonResponse({ found: false });
     }
 
-    // Return license key only if subscription is active
+    // Never return full license keys from unauthenticated lookup.
+    // Keep this endpoint safe for support/status checks only.
     return jsonResponse({
         found: true,
         status: stored.status,
-        // Only reveal the key if active
-        license_key: stored.status === 'active' ? stored.licenseKey : null,
+        license_key_masked: stored.status === 'active' ? maskLicenseKey(stored.licenseKey) : null,
     });
 }
 
@@ -511,13 +603,13 @@ async function handleCheckoutSuccess(request, env) {
         return jsonResponse({ error: 'Invalid session' }, 400);
     }
 
-    const email = session.customer_email || session.customer_details?.email;
-    if (!email) {
+    const email = normalizeEmail(session.customer_email || session.customer_details?.email);
+    if (!email || !isValidEmail(email)) {
         return jsonResponse({ error: 'No email found for session' }, 400);
     }
 
     // Look up license
-    const stored = await env.LICENSES.get(`email:${email.toLowerCase().trim()}`, 'json');
+    const stored = await env.LICENSES.get(`email:${email}`, 'json');
     if (!stored) {
         // Webhook might not have fired yet — generate key now
         const licenseKey = await generateLicenseKey(email, env.LICENSE_SIGNING_KEY);
@@ -546,6 +638,7 @@ function jsonResponse(data, status = 200) {
         status,
         headers: {
             'Content-Type': 'application/json',
+            'Cache-Control': 'no-store',
         },
     });
 }

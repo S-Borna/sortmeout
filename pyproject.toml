@@ -129,7 +129,6 @@ exclude = [
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 addopts = "-v --tb=short"
-asyncio_mode = "auto"
 
 [tool.coverage.run]
 source = ["sortmeout"]
