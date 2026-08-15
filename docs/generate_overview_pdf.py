@@ -1,5 +1,7 @@
 """Generate SORTMEOUT_OVERVIEW.pdf matching the CodeTrust overview design."""
 
+from pathlib import Path
+
 from weasyprint import HTML
 
 HTML_CONTENT = """<!DOCTYPE html>
@@ -132,7 +134,7 @@ SortMeOut is in active development with a functional product already built and r
 </body>
 </html>"""
 
-OUTPUT_PATH = "/Users/REDACTED/Desktop/DevOps/Sortmeout/sortmeout/docs/SORTMEOUT_OVERVIEW.pdf"
+OUTPUT_PATH = str(Path(__file__).parent / "SORTMEOUT_OVERVIEW.pdf")
 
 HTML(string=HTML_CONTENT).write_pdf(OUTPUT_PATH)
 print(f"PDF generated: {OUTPUT_PATH}")
