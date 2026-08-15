@@ -4,18 +4,20 @@ compatibility_date = "2024-01-01"
 workers_dev = false
 
 # KV namespace for storing license keys
+# Real namespace ID is NOT committed. Set it locally in an untracked
+# wrangler.toml override, or pass --kv-namespace-id at deploy time.
 [[kv_namespaces]]
 binding = "LICENSES"
-id = "***KV_NAMESPACE_ID_REMOVED***"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
 
 # Secrets (set via `wrangler secret put`):
 # STRIPE_SECRET_KEY    — sk_live_...
 # STRIPE_WEBHOOK_SECRET — whsec_...
 # LICENSE_SIGNING_KEY  — random hex for HMAC signing
 # DISCORD_WEBHOOK_URL  — Discord channel webhook (optional, set when ready)
+# STRIPE_PRICE_ID      — set via `wrangler secret put STRIPE_PRICE_ID`
+# OWNER_EMAIL          — set via `wrangler secret put OWNER_EMAIL`
 
 [vars]
-STRIPE_PRICE_ID = "***STRIPE_PRICE_ID_REMOVED***"
 CORS_ORIGIN = "https://sortmeout.saidborna.com"
-OWNER_EMAIL = "said@saidborna.com"
 FROM_DOMAIN = "sortmeout.saidborna.com"

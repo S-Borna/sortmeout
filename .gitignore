@@ -126,6 +126,10 @@ logs/
 config/local.yaml
 *.plist
 
+# Built macOS app bundle and icon resources — build artifacts, not source
+*.app/
+*.icns
+
 # Test artifacts
 test_output/
 test_folders/

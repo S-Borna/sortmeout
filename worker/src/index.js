@@ -93,7 +93,11 @@ async function notifyOwner(env, subject, details) {
  * Requires DNS TXT record: _mailchannels.sortmeout.saidborna.com → "v=mc1 cfid=sortmeout-api"
  */
 async function sendEmailNotification(env, subject, details) {
-    const ownerEmail = env.OWNER_EMAIL || 'said@saidborna.com';
+    const ownerEmail = env.OWNER_EMAIL;
+    if (!ownerEmail) {
+        console.error('OWNER_EMAIL not configured — skipping notification email');
+        return;
+    }
     const fromDomain = env.FROM_DOMAIN || 'sortmeout.saidborna.com';
 
     const htmlBody = `
