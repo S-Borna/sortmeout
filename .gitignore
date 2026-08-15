@@ -137,3 +137,7 @@ test_folders/
 # Guardian MCP server venv
 Claude/.venv/
 Claude/*.pyc
+
+# Internal AI-agent tooling, not portfolio-relevant
+CLAUDE.md
+Claude/
